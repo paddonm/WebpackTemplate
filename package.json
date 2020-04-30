@@ -1,0 +1,10 @@
+{
+  "name": "OnSchedJs",
+  "version": "0.1.0",
+  "description": "Front end module for rapidly deploying OnSched to your app",
+  "main": "src/OnSched.js",
+  "repository": "https://github.com/Onsched/OnSchedJs",
+  "author": "John Paddon <john@onsched.com>",
+  "license": "MIT",
+  "private": false
+}
