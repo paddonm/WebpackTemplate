@@ -5,6 +5,8 @@
 
 // Main entry point for OnSched.js
 
+// import './css/font-awesome.css'
+
 function OnSched(ClientId, Environment, Scope) {
 
     var self = {};
