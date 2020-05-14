@@ -4,7 +4,7 @@ module.exports = {
   entry: './src/OnSched.js',
   output: {
     path: path.resolve(__dirname, 'dist'),
-    filename: 'index.min.js'
+    filename: 'index.js'
   },
   performance: { maxAssetSize: 500000 },
   module: {
