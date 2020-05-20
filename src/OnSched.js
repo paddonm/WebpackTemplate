@@ -6,7 +6,7 @@
 // Main entry point for OnSched.js
 'use strict'
 
-// import './css/onsched.css'
+import './css/index.css'
 
 function OnSched(ClientId, Environment, Scope) {
     var self = {};
@@ -2364,7 +2364,7 @@ var masking = {
 
 masking.init();
 
-module.exports = {
+export {
   OnSched,
   OnSchedOnChange,
   OnSchedOnClick,
