@@ -6,7 +6,7 @@
 // Main entry point for OnSched.js
 'use strict'
 
-import './css/index.css'
+import './assets/css/index.css'
 
 function OnSched(ClientId, Environment, Scope) {
     var self = {};
