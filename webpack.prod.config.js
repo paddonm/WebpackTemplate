@@ -7,6 +7,7 @@ const { babelLoaderConfig,
         fontLoaderConfig,
         imageLoaderConfig} = require('./webpack.loaders')
 
+
 module.exports = {
   mode: 'production',
   entry: [
@@ -33,5 +34,5 @@ module.exports = {
       imageLoaderConfig(),
       fontLoaderConfig()
     ]
-  }
+  },
 }
