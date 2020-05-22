@@ -1,6 +1,6 @@
 {
   "name": "OnSchedJs",
-  "version": "beta-0.0.1",
+  "version": "0.1.0-beta",
   "description": "Front end module for rapidly deploying OnSched to your app",
   "repository": "https://github.com/Onsched/OnSchedJs",
   "author": "John Paddon <john@onsched.com>",
