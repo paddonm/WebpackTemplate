@@ -1,0 +1,494 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <title>Test OnSched.js</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <!--
+  <script src="https://js.stripe.com/v3/"></script>
+  -->
+<!--  <link href="/css/onsched.css" rel="stylesheet" />-->
+  <!--
+  <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+      -->
+<!--  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.9.0/css/all.css" rel="stylesheet">-->
+  <!--
+      <script type="text/javascript" src="https://sandbox.onsched.com/js/onsched.min.js"></script>
+  -->
+  <script type="text/javascript" src="/index.js"></script>
+<!--  <script type="text/javascript" src="../dist/index.js"></script>-->
+
+  <style>
+    body {
+      font-family: Proxima Nova;
+      font-family: Roboto;
+    }
+
+    .open-modal {
+      font-weight: bold;
+      background: var(--blue);
+      color: var(--white);
+      padding: 0.75rem 1.75rem;
+      margin-bottom: 1rem;
+      border-radius: 5px;
+    }
+  </style>
+</head>
+<body>
+<div style="display:none;"><i class="fa fa-clock"> View</i></div>
+<div class="onsched-container">
+  <div style="padding:20px 0px; width:250px;">
+    <img alt="Brand" id="brand-image" class="logo" src="https://www.onsched.com/img/transdark.png" width="100" height="32" />
+  </div>
+</div>
+<!--
+    OnSchedJs elements
+-->
+<div id="search"></div>
+<div id="location"></div>
+<div id="locations"></div>
+<div id="service"></div>
+<div id="services"></div>
+<div id="resource"></div>
+<div id="resources"></div>
+
+<div id="availability"></div>
+<div id="booking-form"></div>
+<div id="confirmation"></div>
+<div id="appointment"></div>
+<div id="appointments"></div>
+
+<div class="onsched-container">
+  <div class="onsched-row">
+    <div class="onsched-col">
+      <div id="appointments-wrap" style="width:800px;margin: 0 auto;">
+      </div>
+    </div>
+  </div>
+</div>
+<div style="display:none;margin-left:20px;">
+  <div class="onsched-table">
+    <div class="row">
+      <div class="icon-col">
+        <div class="onsched-circle-icon">JP</div>
+      </div>
+      <div class="info-col">
+        <a href="#">Selection Link</a>
+        <div>Line 2 description or address</div>
+      </div>
+    </div>
+  </div>
+</div>
+<div class="closeFeedback" title="Close" style="display:none;">
+  <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
+    <path d="M11.7804 0.219938C11.4872 -0.0733125 11.0124 -0.0733125 10.7192 0.219938L5.99569 4.94344L1.27219 0.219938C0.973687 -0.0680625 0.498937 -0.0598125 0.210938 0.238687C-0.0703125 0.529687 -0.0703125 0.990937 0.210938 1.28194L4.93444 6.00544L0.210938 10.7289C-0.0770625 11.0274 -0.0688125 11.5022 0.229688 11.7902C0.520688 12.0714 0.981938 12.0714 1.27294 11.7902L5.99644 7.06669L10.7199 11.7902C11.0184 12.0782 11.4932 12.0699 11.7812 11.7714C12.0624 11.4804 12.0624 11.0192 11.7812 10.7289L7.05694 6.00469L11.7804 1.28119C12.0737 0.987937 12.0737 0.513188 11.7804 0.219938Z" fill="white">
+    </path>
+  </svg>
+</div>
+
+<div style="display:none;">
+  <div style="margin-top:20px;"></div>
+  <div class="onsched-info-icon" style="margin-left:30px;">
+    <button style="width:20px;height:20px;border-radius:50%;background-color:cornflowerblue;padding:1px;border:none;">
+      <span style="font-size:11px;font-style:italic;font-weight:bold;color:#fff;">i</span>
+    </button>
+  </div>
+  <div style="margin-top:10px;"></div>
+  <div style="display:flex;margin-left:30px">
+    <div style="color:hsl(var(--blue-hue), 100%, 50%)">111</div>
+    <div style="color:hsl(var(--red-hue), 100%, 50%)">222</div>
+    <div style="color:hsl(var(--green-hue), 100%, 50%)">333</div>
+    <div style="color:hsl(var(--yellow-hue), 100%, 50%)">444</div>
+    <div style="color:hsl(var(--cyan-hue), 100%, 50%)">555</div>
+    <div style="color:hsl(var(--magenta-hue), 100%, 50%)">666</div>
+  </div>
+</div>
+
+
+<div class="onsched-container">
+  <div class="onsched-row">
+    <div class="onsched-col">
+      <div style="margin-left:20px;margin-top:100px;padding: 8px 0">
+        <h3>Test OnSched.js</h3>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="btn-group" style="margin-top:20px;">
+  <button id="loadlocations" type="button" class="open-modal">
+    Locations
+  </button>
+  <button id="loadavailability" type="button" class="open-modal">
+    Availability
+  </button>
+  <button id="loadcustomer" type="button" class="open-modal">
+    Customer
+  </button>
+  <button id="loadservices" type="button" class="open-modal">
+    Services
+  </button>
+  <button id="loadresources" type="button" class="open-modal">
+    Resources
+  </button>
+</div>
+
+<div id="customer"></div>
+
+<template id="test-template" name="testTemplate">
+</template>
+<div class="onsched-row" style="display:none;">
+  <div class="onsched-col">
+    <form class="onsched-form onsched-form-aligned">
+      <fieldset>
+        <div class="onsched-control-group">
+          <label for="name">Username</label>
+          <input id="username" type="text" placeholder="Username">
+          <span class="onsched-form-message-inline">This is a required field.</span>
+        </div>
+
+        <div class="onsched-control-group">
+          <label for="password">Password</label>
+          <input id="password" type="password" placeholder="Password">
+        </div>
+
+        <div class="onsched-control-group">
+          <label for="emailAddress">Email Address</label>
+          <input id="emailAddress" type="email" placeholder="Email Address">
+        </div>
+
+        <div class="onsched-control-group">
+          <label for="foo">Supercalifragilistic Label</label>
+          <input id="foo" type="text" placeholder="Enter something here...">
+        </div>
+
+        <div class="onsched-controls">
+          <label for="cb" class="onsched-checkbox">
+            <input id="cb" type="checkbox"> I've read the terms and conditions
+          </label>
+
+          <button type="submit" class="onsched-button onsched-button-primary">Submit</button>
+        </div>
+      </fieldset>
+    </form>
+
+  </div>
+</div>
+
+<!-- see https://github.com/estelle/input-masking/ for a detailed explanation-->
+<ul style="display:none;">
+  <li>
+    <label for="expiration">Credit Card Expiration Month</label>
+    <input id="expiration" type="tel" placeholder="MM/YY" class="masked" pattern="(1[0-2]|0[1-9])\/\d\d" data-valid-example="11/18" title="2-digit month and 2-digit year">
+  </li>
+
+  <li>
+    <label for="zip">Zip Code</label>
+    <input id="zip" type="tel" name="zipcode" placeholder="XXXXX" pattern="\d{5}" class="masked" title="5-digit zip code">
+  </li>
+  <li>
+    <label for="zipca">Canadian Zip Code</label>
+    <input id="zipca" type="text" name="zipcodeca" placeholder="XXX XXX" pattern="\w\d\w \d\w\d" class="masked" data-charset="_X_ X_X" title="6-character alphanumeric zip code in the format of A1A 1A1">
+  </li>
+  <li>
+    <label for="tel">Telephone</label>
+    <input id="tel" type="tel" name="phone" placeholder="(XXX) XXX-XXXX" pattern="\(\d{3}\) \d{3}\-\d{4}" class="masked" title="10-digit number">
+  </li>
+  <li>
+    <label for="cc">Credit Card Number</label>
+    <input id="cc" type="tel" name="ccnumber" placeholder="XXXX XXXX XXXX XXXX" pattern="\d{4} \d{4} \d{4} \d{4}" class="masked" title="16-digit number">
+  </li>
+</ul>
+
+<div id="toast" class="toast"></div>
+
+<script>
+  //        alert("WTF");
+
+  //                var authResponse = OnSchedRest.Authorize("DemoUser", "live");
+  //                console.log(authResponse)
+  //                authResponse.then(x => console.log(x.access_token));
+  //                authResponse.then(x => console.log(x));
+  /*
+                  var token = OnSchedHelpers.SetToken("xxxtoken");
+                  token.then(x => console.log(x));
+                  console.log(token);
+
+                  var proxyBaseUrl = "https://onschedjsproxy.azurewebsites.net";
+                  var proxyUrl = proxyBaseUrl + "/api/onsched/consumer/locations";
+
+                  authResponse.then(x =>
+                      OnSchedRest.ProxyGet(proxyUrl, function (response) {
+                          console.log(response);
+                      })
+                  );
+  */
+  /*
+          //        <link rel="stylesheet" type="text/css" href="https://maxcdn.bootstrapcdn.com/font-awesome/4.3.0/css/font-awesome.min.css" />
+          var link = document.createElement("link");
+          link.href = "https://maxcdn.bootstrapcdn.com/font-awesome/4.7.0/css/font-awesome.min.css";
+          link.type = "text/css";
+          link.rel = "stylesheet";
+          link.media = "screen,print";
+          document.getElementsByTagName("head")[0].appendChild(link);
+  */
+
+  ///
+  /// JWT Test Code
+  ///
+
+  //        var authData = { clientId: 'DemoUser', firstName: 'John', lastName: 'Paddon', phoneNumber: '9053998404' };
+  var authData = { client_id: 'DemoUser', given_name: 'John', family_name: 'Paddon', name: "John Paddon", phone_number: '9053998404' };
+  var authUrl = "https://js.onsched.com/auth/mobile";
+
+  OnSchedRest.Post(null, authUrl, authData, function (response) {
+    //            console.log(response);
+    var validateUrl = "https://js.onsched.com/auth/validate_jwt";
+    var payload = { token: response.token };
+    OnSchedRest.Post(null, validateUrl, payload, function (data) { /*console.log(data)*/ });
+  })
+
+  ///
+  /// Begining of OnSchedJs logic
+  ///
+  var onsched = OnSched("DemoUser", "live");
+  var elements = onsched.elements();
+
+  var now = new Date();
+  var tzOffset = -now.getTimezoneOffset();
+  var availabilityParams = {
+    //            locationId: 'burlingtonmedical', serviceId: 5, resourceId: 13, customerId: 17780, tzOffset: tzOffset, completeBooking: "BK"
+    locationId: 'burlingtonmedical', serviceId: 5, resourceId: 13, tzOffset: tzOffset
+  };
+  var availabilityOptions = {};
+  var availability = elements.create("availability", availabilityParams, availabilityOptions);
+  //        availability.mount("availability");
+  var elAvailability = document.getElementById("availability");
+
+  elAvailability.addEventListener("clickTime", function (e) {
+    console.log("CLICKTIME EVENT")
+    console.log(e.detail);
+  });
+  elAvailability.addEventListener("bookingConfirmation", function (e) {
+    console.log("BOOKING CONFIRMATION EVENT")
+    elAvailability.innerHTML = "";
+    console.log(e.detail);
+    confirmationParams = { appointment: e.detail };
+    confirmation.update(confirmationParams);
+    confirmation.mount("confirmation");
+    HideToast();
+  });
+
+  var confirmationParams = {};
+  var confirmationOptions = {};
+  var confirmation = elements.create("confirmation", confirmationParams, confirmationOptions);
+  var elConfirmation = document.getElementById("confirmation");
+  // per API customer POST input model
+  var customerObject = {
+    locationId: 'burlingtonmedical', firstname: 'Jim', lastname: 'Beem', email: 'jim@onsched.com', type: 0, contact: { mobilePhone: '9053998404' }
+  };
+  var customerParams = { locationId: 'burlingtonmedical', customerId: '', email: 'jim@onsched.com', customerIM: customerObject };
+  var customerOptions = {};
+  var customer = elements.create("customer", customerParams, customerOptions);
+  //        customer.mount("customer");
+  var elCustomer = document.getElementById("customer");
+
+  var locationsParams = { units: 'imperial', limit: 8, offset: 0 };
+  var locationsOptions = {};
+  var locations = elements.create("locations", locationsParams, locationsOptions);
+  var elLocations = document.getElementById("locations");
+  elLocations.addEventListener("getLocations", function (e) {
+    elServices.innerHTML = "";
+    elAvailability.innerHTML = "";
+    //            console.log(e.detail);
+    HideToast();
+  });
+  elLocations.addEventListener("notFound", function (e) {
+    elLocations.innerHTML = "";
+    searchParams.message = e.detail.message;
+    searchParams.searchText = e.detail.searchText;
+    search.update(searchParams, searchOptions)
+    HideToast();
+  });
+  elLocations.addEventListener("clickLocation", function (e) {
+    ShowToast(e.detail.locationId);
+    console.log(e.detail);
+    serviceParams.locationId = e.detail.locationId;
+    serviceOptions.getFirst = true;
+    service.update(serviceParams, serviceOptions);
+    service.mount("service");
+    resource.params.locationId = e.detail.locationId;
+    resource.update(resourceParams);
+    console.log(resourceParams);
+  });
+  var locationParams = { locationId: '' };
+  var locationOptions = {};
+  // location variable is system variable so use something else
+  var xlocation = elements.create("location", locationParams, locationOptions);
+
+  var searchParams = { placeholder: 'Enter Zipcode to find nearest', message: '', searchText: '' };
+  var searchOptions = {};
+  // location variable is system variable so use something else
+  var search = elements.create("search", searchParams, searchOptions);
+  var elSearch = document.getElementById("search");
+  elSearch.addEventListener("clicked", function (e) {
+    HideToast();
+    locationsParams.nearestTo = e.detail.searchText;
+    ShowToast("Searching Locations...");
+    locations.mount("locations");
+  });
+  elSearch.addEventListener("notFound", function (e) {
+    console.log(e.detail);
+    HideToast();
+  });
+  //        search.mount("search");
+
+  var elLocation = document.getElementById("location");
+  elLocation.addEventListener("getLocation", function (e) {
+    console.log(e.detail);
+    HideToast();
+  });
+
+  var servicesParams = { locationId: '' };
+  var servicesOptions = {};
+  var services = elements.create("services", servicesParams, servicesOptions);
+
+  var serviceParams = { locationId: '', serviceId: '' };
+  var serviceOptions = { getFirst: true };
+  var service = elements.create("service", serviceParams, serviceOptions);
+  var elService = document.getElementById("service");
+  elService.addEventListener("getService", function (e) {
+    console.log(e.detail);
+    resource.mount("resource");
+    HideToast();
+  });
+  //        service.mount("service");
+
+  var resourcesParams = { locationId: '', resourceGroupId: '2' };
+  var resourcesOptions = {};
+  var resources = elements.create("resources", resourcesParams, resourcesOptions);
+
+  var resourceParams = { locationId: '', resourceId: '' };
+  var resourceOptions = { getFirst: true };
+  var resource = elements.create("resource", resourceParams, resourceOptions);
+  var elResource = document.getElementById("resource");
+  elResource.addEventListener("getResource", function (e) {
+    console.log(e.detail);
+    //
+    // now I have what I need to call availability
+    availabilityParams.locationId = e.detail.locationId;
+    //            availabilityParams.serviceId = serviceParams.
+    availabilityParams.resourceId = e.detail.id;
+    HideToast();
+  });
+  //        resource.mount("resource");
+
+  var appointmentParams = { locationId: '', appointmentId: '608348' };
+  var appointmentOptions = {};
+  var appointment = elements.create("appointment", appointmentParams, appointmentOptions);
+  var elAppointment = document.getElementById("appointment");
+  elAppointment.addEventListener("getAppointment", function (e) {
+    var confirmationParams = { appointment: e.detail };
+    var confirmationOptions = {};
+    //            var confirmation = elements.create("confirmation", confirmationParams, confirmationOptions);
+    //            confirmation.mount("confirmation");
+    HideToast();
+  });
+  appointment.mount("appointment");
+
+  /*
+   *  OnSchedJs Element event listeners
+   */
+
+  elCustomer.addEventListener("postCustomer", function (e) {
+    console.log(e.detail);
+  });
+  elCustomer.addEventListener("getCustomer", function (e) {
+    console.log(e.detail);
+    // update the customerId in the availabilityParams element
+    availabilityParams.customerId = e.detail.id;
+    availability.update(availabilityParams);
+    HideToast();
+  });
+  var elServices = document.getElementById("services");
+  elServices.addEventListener("getServices", function (e) {
+    console.log(e.detail);
+    elLocations.innerHTML = "";
+    elAvailability.innerHTML = "";
+    HideToast();
+  });
+  elServices.addEventListener("getService", function (e) {
+    console.log(e.detail);
+    serviceParams.serviceId = e.detail.serviceId;
+    HideToast();
+  });
+  elServices.addEventListener("clickService", function (e) {
+    ShowToast(e.detail.serviceId);
+    elServices.innerHTML = "";
+    availabilityParams.serviceId = e.detail.serviceId;
+    availability.update(availabilityParams);
+    availability.mount("availability");
+    console.log(availabilityParams);
+  });
+
+
+  var elAvailabilityButton = document.getElementById("loadavailability");
+  elAvailabilityButton.onclick = function (e) {
+    //            console.log(availabilityParams);
+    availability.mount("availability");
+    elServices.innerHTML = "";
+    elSearch.innerHTML = "";
+    elLocations.innerHTML = "";
+  }
+
+  var elCustomerButton = document.getElementById("loadcustomer");
+  elCustomerButton.onclick = function (e) {
+    ShowToast("Find existing or create new customer...")
+    customer.mount("customer");
+  }
+
+  var elServicesButton = document.getElementById("loadservices");
+  elServicesButton.onclick = function (e) {
+    ShowToast("Loading Services...");
+    elAvailability.innerHTML = "";
+    elSearch.innerHTML = "";
+    services.mount("services");
+  }
+
+  var elLocationsButton = document.getElementById("loadlocations");
+  elLocationsButton.onclick = function (e) {
+    //            ShowToast("Loading Locations...");
+    search.mount("search");
+    elLocations.innerHTML = ""
+    elAvailability.innerHTML = "";
+    //            locations.mount("locations");
+  }
+  var elResourcesButton = document.getElementById("loadresources");
+  elResourcesButton.onclick = function (e) {
+    ShowToast("Loading Resources...");
+    elAvailability.innerHTML = "";
+    elServices.innerHTML = "";
+    elSearch.innerHTML = "";
+    resources.mount("resources");
+  }
+
+
+  function ShowToast(message) {
+    var elToast = document.getElementById("toast");
+    elToast.innerHTML = message;
+    elToast.classList.add("show");
+    setTimeout(function () {
+      var elToast = document.getElementById("toast");
+      elToast.classList.remove("show");
+    }, 3000);
+  }
+  function HideToast() {
+    var elToast = document.getElementById("toast");
+    elToast.classList.remove("show");
+  }
+
+</script>
+
+
+</body>
+</html>

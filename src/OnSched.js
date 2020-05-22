@@ -4,11 +4,11 @@
  */
 
 // Main entry point for OnSched.js
+'use strict'
 
-// import './css/font-awesome.css'
+import './assets/css/index.css'
 
 function OnSched(ClientId, Environment, Scope) {
-
     var self = {};
     self.objectName = "OnSched";
     self.scope = Scope === null ? "OnSched Api" : Scope;
@@ -2207,8 +2207,6 @@ var OnSchedRest = function () {
 }();
 
 
-
-
 var masking = {
 
     // User defined Values
@@ -2365,3 +2363,13 @@ var masking = {
 };
 
 masking.init();
+
+export {
+  OnSched,
+  OnSchedOnChange,
+  OnSchedOnClick,
+  OnSchedHelpers,
+  OnSchedTemplates,
+  OnSchedRest,
+  masking
+}
