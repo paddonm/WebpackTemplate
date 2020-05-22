@@ -2,13 +2,18 @@ const path = require('path')
 const HtmlWebpackPlugin = require('html-webpack-plugin')
 const { CleanWebpackPlugin } = require('clean-webpack-plugin')
 
-const { cssLoaderConfig,
-        imageLoaderConfig,
-        fontLoaderConfig } = require('./webpack.loaders')
+const { babelLoaderConfig,
+        cssLoaderConfig,
+        fontLoaderConfig,
+        imageLoaderConfig } = require('./webpack.loaders')
 
 module.exports = {
   mode: 'development',
-  entry: './src/OnSched.js',
+  entry: [
+    'core-js/stable',
+    'regenerator-runtime/runtime',
+    './src/OnSched.js'
+  ],
   output: {
     path: path.resolve(__dirname, 'public'),
     filename: 'index.js',
@@ -17,6 +22,8 @@ module.exports = {
   devtool: 'inline-source-map',
   devServer: {
     port: 5000,
+    compress: true,
+    publicPath: '/',
     contentBase: path.join(__dirname, 'public')
   },
   plugins: [
@@ -29,6 +36,7 @@ module.exports = {
   performance: { maxAssetSize: 500000 },
   module: {
     rules: [
+      babelLoaderConfig(),
       cssLoaderConfig(),
       imageLoaderConfig(),
       fontLoaderConfig()
