@@ -1,4 +1,5 @@
-const path = require('path')
+const path                   = require('path')
+const { DefinePlugin }       = require('webpack')
 const { CleanWebpackPlugin } = require('clean-webpack-plugin')
 
 const { babelLoaderConfig,
@@ -14,6 +15,9 @@ module.exports = {
     './src/OnSched.js'
   ],
   plugins: [
+    new DefinePlugin({
+      __VERSION__: JSON.stringify(require("./package.json").version)
+    }),
     new CleanWebpackPlugin(),
   ],
   output: {

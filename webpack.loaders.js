@@ -1,7 +1,10 @@
+const path = require('path')
+
 const babelLoaderConfig = () => {
   return {
     test: /\.(m?js|jsx)$/,
     exclude: /(node_modules|bower_components)/,
+    include: path.resolve(__dirname, 'src'),
     use: {
       loader: 'babel-loader',
       options: {

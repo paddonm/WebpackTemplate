@@ -1,5 +1,6 @@
-const path = require('path')
-const HtmlWebpackPlugin = require('html-webpack-plugin')
+const path                   = require('path')
+const HtmlWebpackPlugin      = require('html-webpack-plugin')
+const { DefinePlugin }       = require('webpack')
 const { CleanWebpackPlugin } = require('clean-webpack-plugin')
 
 const { babelLoaderConfig,
@@ -27,6 +28,9 @@ module.exports = {
     contentBase: path.join(__dirname, 'public')
   },
   plugins: [
+    new DefinePlugin({
+      __VERSION__: JSON.stringify(require("./package.json").version)
+    }),
     new CleanWebpackPlugin(),
     new HtmlWebpackPlugin({
       template: './src/index.html',
