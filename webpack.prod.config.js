@@ -26,7 +26,6 @@ module.exports = {
       include: path.resolve(__dirname, 'dist'),
       ignore: ['node_modules', 'webpack.*.js'],
       ignoreFile: '.gitignore',
-      dryRun: true,
     }),
   ],
   output: {
