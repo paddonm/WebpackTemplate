@@ -38,7 +38,10 @@ module.exports = {
       filename: 'index.html'
     })
   ],
-  performance: { maxAssetSize: 500000 },
+  performance: {
+    maxEntrypointSize: 1000000,
+    maxAssetSize:       500000
+  },
   module: {
     rules: [
       babelLoaderConfig(),
