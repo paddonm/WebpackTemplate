@@ -28,6 +28,7 @@
     "webpack-dev-server": "^3.11.0"
   },
   "dependencies": {
-    "@babel/runtime": "^7.9.6"
+    "@babel/runtime": "^7.9.6",
+    "@sentry/browser": "^5.15.5"
   }
 }

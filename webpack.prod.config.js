@@ -33,7 +33,10 @@ module.exports = {
     filename: 'index.js',
     libraryTarget: 'this',
   },
-  performance: { maxAssetSize: 500000 },
+  performance: {
+    maxEntrypointSize: 1000000,
+    maxAssetSize:       500000
+  },
   module: {
     rules: [
       babelLoaderConfig(),

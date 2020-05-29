@@ -6,7 +6,14 @@
 // Main entry point for OnSched.js
 'use strict'
 
+import * as Sentry from '@sentry/browser'
+
 import './assets/css/index.css'
+
+Sentry.init({
+    dsn: "https://b1d16d94d7944f158fbd14c8060cf569@o77015.ingest.sentry.io/5245178",
+    release: __VERSION__
+})
 
 function OnSched(ClientId, Environment, Scope) {
     var self = {};
