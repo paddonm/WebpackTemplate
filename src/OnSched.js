@@ -234,6 +234,8 @@ var OnSchedMount = function () {
         element.params.date = OnSchedHelpers.IsEmpty(element.params.date) ? new Date() : element.params.date;
         element.timerId = null;
         html = OnSchedTemplates.availabilityContainer();
+        console.log("Availability Element");
+        console.log(html);
         var el = document.getElementById(element.id);
         el.innerHTML = html;
         // Now wire up events on the calendar

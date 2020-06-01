@@ -24,6 +24,7 @@ module.exports = {
   devtool: 'inline-source-map',
   devServer: {
     port: 5000,
+    https: true,
     compress: true,
     publicPath: '/',
     contentBase: path.join(__dirname, 'public')
