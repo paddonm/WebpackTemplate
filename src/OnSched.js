@@ -1,21 +1,24 @@
-/*!
- * OnSchedJs v1.0.0-beta (http://onsched.com)
+﻿/*!
+ * OnSchedJ (http://onsched.com)
  * Copyright 2014-2020 OnSched
  */
 
-// Main entry point for OnSched.js
-'use strict'
+'use strict';
+import * as Sentry from '@sentry/browser';
 
-import * as Sentry from '@sentry/browser'
-
-import './assets/css/index.css'
+import './assets/css/index.css';
 
 Sentry.init({
     dsn: "https://b1d16d94d7944f158fbd14c8060cf569@o77015.ingest.sentry.io/5245178",
     release: __VERSION__
-})
+});
+ 
+
+// Main entry point for OnSched.js
 
 function OnSched(ClientId, Environment, Scope) {
+
+    // Should probably include scope in an Options object
     var self = {};
     self.objectName = "OnSched";
     self.scope = Scope === null ? "OnSched Api" : Scope;
@@ -23,10 +26,17 @@ function OnSched(ClientId, Environment, Scope) {
     self.environment = Environment === null ? "live" : Environment;
     self.environment = self.environment === "live" || self.environment === "sbox" ? self.environment : "sbox";
     self.apiBaseUrl = self.environment === "live" ?
-      "https://api.onsched.com/consumer/v1" :
-      "https://sandbox-api.onsched.com/consumer/v1";
-    //    self.accessToken = OnSchedRest.GetAccessToken(self.environment);
+        "https://api.onsched.com/consumer/v1" :
+        "https://sandbox-api.onsched.com/consumer/v1";
+//    self.accessToken = OnSchedRest.GetAccessToken(self.environment);
     self.accessToken = OnSchedRest.Authorize(self.clientId, self.environment, self.scope);
+    if (Sentry != null) {
+        Sentry.init({ dsn: 'https://b1d16d94d7944f158fbd14c8060cf569@o77015.ingest.sentry.io/5245178' });
+        Sentry.setExtra("ClientId", ClientId);
+        Sentry.setExtra("Scope", Scope);
+    }
+    else
+        console.log("Sentry not initialized");
     // Elements method that creates elements instance
     self.elements = function () {
         var elements = {};
@@ -123,7 +133,7 @@ function OnSched(ClientId, Environment, Scope) {
             };
 
             element.onChange = function (event) {
-                //                console.log(event);
+//                console.log(event);
                 if (event.target.classList.contains("onsched-select") && event.target.classList.contains("timezone"))
                     OnSchedOnChange.OnChangeTimezone(event, element);
             };
@@ -143,6 +153,13 @@ function OnSched(ClientId, Environment, Scope) {
                 else
                 if (event.target.classList.contains("month-next"))
                     OnSchedOnClick.MonthNext(event, element);
+                if (event.target.classList.contains("btn-submit") == false)
+                    event.preventDefault();
+            };
+
+            element.handleException = function (e) {
+                // add the Sentry logic here
+                // also need to send some feedback to the user
             };
 
             return element; // return a reference to the element object for chaining
@@ -152,6 +169,9 @@ function OnSched(ClientId, Environment, Scope) {
         return elements; // return a reference to the elements object for chaining
     };
 
+    self.logError = function (error) {
+        Sentry.captureException(error);
+    };
 
     return self; // return reference to the OnSched object for chaining
 }
@@ -171,7 +191,6 @@ var OnSchedMount = function () {
             var eventModel = { searchText: elSearchText.value};
             var clickSearchEvent = new CustomEvent("clicked", { detail: eventModel });
             el.dispatchEvent(clickSearchEvent);
-            //            OnSchedHelpers.ShowProgress();
         });
     }
 
@@ -181,34 +200,12 @@ var OnSchedMount = function () {
         url = element.onsched.apiBaseUrl + "/services";
         url = element.options.getFirst ? OnSchedHelpers.AddUrlParam(url, "limit", "1") : url;
         url = element.params.locationId !== null && element.params.locationId.length > 0 ?
-          OnSchedHelpers.AddUrlParam(url, "locationId", element.params.locationId) : url;
-        element.onsched.accessToken.then(x =>
-                                           OnSchedRest.GetServices(x, url, function (response) {
-                                               var elServices = document.getElementById(element.id);
-                                               var service = {};
-                                               // need to add param to getById - pass serviceId as optional parameter
-                                               // or is this a different element - service????
-                                               if (element.options.getFirst) {
-                                                   //
-                                                   if (response.count > 0) {
-                                                       service = response.data[0];
-                                                       var getServiceEvent = new CustomEvent("getService", { detail: service });
-                                                       elServices.dispatchEvent(getServiceEvent);
-                                                   }
-                                               }
-                                               else {
-                                                   var htmlServices = OnSchedTemplates.servicesList(response);
-                                                   elServices.innerHTML = htmlServices;
-                                                   // fire a custom event here
-                                                   var eventModel = {
-                                                       'object': response.object, 'hasMore': response.hasMore,
-                                                       'count': response.count, 'total': response.total
-                                                   };
-                                                   var getServicesEvent = new CustomEvent("getServices", { detail: eventModel });
-                                                   elServices.dispatchEvent(getServicesEvent);
-                                               }
+            OnSchedHelpers.AddUrlParam(url, "locationId", element.params.locationId) : url;
 
-                                           })
+        element.onsched.accessToken.then(x =>
+            OnSchedRest.GetServices(x, url, function (response) {
+                OnSchedResponse.GetServices(element, response);
+            })
         );
     }
 
@@ -225,24 +222,9 @@ var OnSchedMount = function () {
         url = OnSchedHelpers.AddUrlParam(url, "nearestTo", element.params.nearestTo);
         OnSchedHelpers.ShowProgress();
         element.onsched.accessToken.then(x =>
-                                           OnSchedRest.GetLocations(x, url, function (response) {
-                                               var eventModel;
-                                               var getLocationsEvent;
-                                               if (response.error || response.count === 0) {
-                                                   //                    console.log(response.code);
-                                                   eventModel = { message: 'No locations found matching search input.', searchText: element.params.nearestTo };
-                                                   getLocationsEvent = new CustomEvent("notFound", { detail: eventModel });
-                                                   el.dispatchEvent(getLocationsEvent);
-                                                   return;
-                                               }
-                                               var htmlLocations = OnSchedTemplates.locationsList(response);
-                                               el.innerHTML = htmlLocations;
-                                               // fire a custom event here
-                                               eventModel = { 'object': response.object, 'hasMore': response.hasMore, 'count': response.count, 'total': response.total };
-                                               getLocationsEvent = new CustomEvent("getLocations", { detail: eventModel });
-                                               el.dispatchEvent(getLocationsEvent);
-
-                                           })
+            OnSchedRest.GetLocations(x, url, function (response) {
+                OnSchedResponse.GetLocations(element, response);
+            })
         ).catch(e => console.log(e));
     }
 
@@ -257,10 +239,8 @@ var OnSchedMount = function () {
         // Now wire up events on the calendar
         el.addEventListener("click", element.onClick);
         el.addEventListener("change", element.onChange);
-        //        console.log(element.params.tzOffset);
         var elTimezone = document.querySelector(".onsched-select.timezone");
         elTimezone.value = element.params.tzOffset;
-        //        console.log(elTimezone);
         // initialize the calendar using only the date which is lightening fast
         var elCalendar = document.querySelector(".onsched-calendar");
         elCalendar.innerHTML = OnSchedTemplates.calendarSelectorFromDate(element.params.date);
@@ -270,13 +250,13 @@ var OnSchedMount = function () {
 
         // calculate available days to pull when mounting
         url = OnSchedHelpers.AddUrlParam(url, "dayAvailabilityStartDate",
-                                         OnSchedHelpers.CreateDateString(OnSchedHelpers.GetFirstCalendarDate(element.params.date)));
+            OnSchedHelpers.CreateDateString(OnSchedHelpers.GetFirstCalendarDate(element.params.date)));
         url = OnSchedHelpers.AddUrlParam(url, "dayAvailability", 100);
         url = OnSchedHelpers.AddUrlParam(url, "firstDayAvailable", "true");
 
         var elDateSelected = document.querySelector(".onsched-available-times-header .date-selected");
         var dateSelectedTitle = element.params.date.toLocaleDateString(
-          "en-US", { weekday: 'long', month: 'short', day: 'numeric', year: 'numeric' });
+            "en-US", { weekday: 'long', month: 'short', day: 'numeric', year: 'numeric' });
         elDateSelected.title = dateSelectedTitle;
 
         var elDow = document.querySelector(".onsched-available-times-header .date-selected .dow");
@@ -285,46 +265,9 @@ var OnSchedMount = function () {
         elDom.innerHTML = element.params.date.toLocaleDateString("en-US", { day: 'numeric' });
 
         element.onsched.accessToken.then(x =>
-                                           OnSchedRest.GetAvailability(x, url, function (response) {
-                                               if (response.error) {
-                                                   console.log("Response Error: "+response.code);
-                                                   return;
-                                               }
-                                               //                console.log(response.firstAvailableDate);
-                                               // I need to update the calendar html from the availbleDays info in the response
-                                               // I need to use the FirstAvailableDate in the response if is returned
-                                               var selectedDate = response.firstAvailableDate.length > 0 ?
-                                                 OnSchedHelpers.ParseDate(response.firstAvailableDate) : element.params.date;
-                                               var days = OnSchedHelpers.GetCalendarDays(selectedDate);
-                                               var availableDays = response.availableDays.length > days ? response.availableDays.slice(0, days) : response.availableDays;
-                                               var elDateSelected = document.querySelector(".onsched-available-times-header .date-selected");
-                                               var dateSelectedTitle = selectedDate.toLocaleDateString(
-                                                 "en-US", { weekday: 'long', month: 'short', day: 'numeric', year: 'numeric' });
-                                               elDateSelected.title = dateSelectedTitle;
-                                               var elDow = document.querySelector(".onsched-available-times-header .date-selected .dow");
-                                               elDow.innerHTML = selectedDate.toLocaleDateString("en-US", { weekday: 'short' });
-                                               var elDom = document.querySelector(".onsched-available-times-header .date-selected .dom");
-                                               elDom.innerHTML = selectedDate.toLocaleDateString("en-US", { day: 'numeric' });
-
-                                               var elCalendar = document.querySelector(".onsched-calendar");
-                                               elCalendar.innerHTML = OnSchedTemplates.calendarSelector(availableDays, selectedDate);
-
-                                               var elBusinessName = document.querySelector(".onsched-available-times-header .onsched-business-name");
-                                               elBusinessName.innerHTML = response.businessName;
-
-                                               var elServiceName = document.querySelector(".onsched-available-times-header .onsched-service-name");
-                                               elServiceName.innerHTML = response.serviceName;
-
-                                               var elServiceDuration = document.querySelector(".onsched-available-times-header .onsched-service-duration");
-                                               var resourceName = response.resourceName;
-                                               var durationAndResource = OnSchedHelpers.FormatDuration(response.serviceDuration);
-                                               if (!OnSchedHelpers.IsEmpty(resourceName))
-                                                   durationAndResource += " - " + resourceName;
-                                               elServiceDuration.innerHTML = durationAndResource;
-                                               var htmlTimes = OnSchedTemplates.availableTimes2(response, element.params.date, element.params.customerId);
-                                               var elTimes = document.querySelector(".onsched-available-times");
-                                               elTimes.innerHTML = htmlTimes;
-                                           })
+            OnSchedRest.GetAvailability(x, url, function (response) {
+                OnSchedResponse.GetAvailability(element, response);
+            })
         );
     }
 
@@ -334,39 +277,16 @@ var OnSchedMount = function () {
         // Normal flow, form loads on mount and wait for a Submit
         // Alternate flow, customer data exists so just POST the customer with supplied data
         // It still happens on mount because I also need to send event back to the customer element
-        // What if the same customer booking second time around. Avalailability could provide the
-        // customerId.
+        // What if the same customer booking second time around. Avalailability could provide the 
+        // customerId. 
         url = element.onsched.apiBaseUrl + "/customers";
         url = OnSchedHelpers.AddUrlParam(url, "locationId", element.params.locationId);
         url = OnSchedHelpers.AddUrlParam(url, "email", element.params.email);
         console.log(url);
         element.onsched.accessToken.then(x =>
-                                           OnSchedRest.GetCustomers(x, url, function (response) {
-                                               //                                console.log(response);
-                                               if (response.count == 0) {
-                                                   // here is where I may need to do a POST to create the customer
-                                                   if (element.params.customerIM != null) {
-                                                       console.log(element.params.customerIM);
-                                                       url = element.onsched.apiBaseUrl + "/customers";
-                                                       element.onsched.accessToken.then(x =>
-                                                                                          OnSchedRest.PostCustomer(x, url, element.params.customerIM, function (response) {
-                                                                                              //                                                console.log(response);
-                                                                                              var createCustomerEvent = new CustomEvent("postCustomer", { detail: response });
-                                                                                              var elCustomer = document.getElementById(element.id);
-                                                                                              elCustomer.dispatchEvent(createCustomerEvent);
-                                                                                          })
-                                                       );
-                                                   }
-                                                   else
-                                                       throw new Error("Customer not found");
-                                               }
-                                               if (response.count > 0) {
-                                                   // fire a custom event here
-                                                   var getCustomerEvent = new CustomEvent("getCustomer", { detail: response.data[0] });
-                                                   var elCustomer = document.getElementById(element.id);
-                                                   elCustomer.dispatchEvent(getCustomerEvent);
-                                               }
-                                           })
+            OnSchedRest.GetCustomers(x, url, function (response) {
+                OnSchedResponse.GetCustomers(element, response);
+            })
         );
     }
 
@@ -380,10 +300,10 @@ var OnSchedMount = function () {
 
         // We build a url so call the endpoint now
         element.onsched.accessToken.then(x =>
-                                           OnSchedRest.Get(x, url, function (response) {
-                                               var getLocationEvent = new CustomEvent("getLocation", { detail: response });
-                                               el.dispatchEvent(getLocationEvent);
-                                           }) // end rest response
+            OnSchedRest.Get(x, url, function (response) {
+                var getLocationEvent = new CustomEvent("getLocation", { detail: response });
+                el.dispatchEvent(getLocationEvent);
+            }) // end rest response
         ); // end promise
         return;
     }
@@ -397,10 +317,13 @@ var OnSchedMount = function () {
 
         // We build a url so call the endpoint now
         element.onsched.accessToken.then(x =>
-                                           OnSchedRest.Get(x, url, function (response) {
-                                               var getAppointmentEvent = new CustomEvent("getAppointment", { detail: response });
-                                               el.dispatchEvent(getAppointmentEvent);
-                                           }) // end rest response
+            OnSchedRest.Get(x, url, function (response) {
+                if (response.error)
+                    console.log("Rest error response code=" + response.code);
+                console.log(response);
+                var getAppointmentEvent = new CustomEvent("getAppointment", { detail: response });
+                el.dispatchEvent(getAppointmentEvent);
+            }) // end rest response
         ); // end promise
         return;
     }
@@ -422,7 +345,6 @@ var OnSchedMount = function () {
     function ServiceElement(element) {
         var el = document.getElementById(element.id);
         el.addEventListener("click", element.onClick);
-        //        url = element.onsched.apiBaseUrl + "/services/" + element.params.serviceId;
 
         // url depends on getFirst or by serviceId
         if (element.params.serviceId != null && element.params.serviceId.length > 0) {
@@ -437,28 +359,28 @@ var OnSchedMount = function () {
             return;
 
         url = element.params.locationId != null && element.params.locationId.length > 0 ?
-          OnSchedHelpers.AddUrlParam(url, "locationId", element.params.locationId) : url;
-        //        console.log(url);
+            OnSchedHelpers.AddUrlParam(url, "locationId", element.params.locationId) : url;
+//        console.log(url);
 
         // We build a url so call the endpoint now
         element.onsched.accessToken.then(x =>
-                                           OnSchedRest.GetServices(x, url, function (response) {
-                                               var getServiceEvent;
-                                               var elService;
-                                               if (response.object == "service") {
-                                                   elService = document.getElementById(element.id);
-                                                   getServiceEvent = new CustomEvent("getService", { detail: response });
-                                                   elService.dispatchEvent(getServiceEvent);
-                                               }
-                                               else {
-                                                   elService = document.getElementById(element.id);
-                                                   if (response.count > 0) {
-                                                       var service = response.data[0]; // take the first service returned
-                                                       getServiceEvent = new CustomEvent("getService", { detail: service });
-                                                       elService.dispatchEvent(getServiceEvent);
-                                                   }
-                                               }
-                                           }) // end rest response
+            OnSchedRest.GetServices(x, url, function (response) {
+                var getServiceEvent;
+                var elService;
+                if (response.object == "service") {
+                    elService = document.getElementById(element.id);
+                    getServiceEvent = new CustomEvent("getService", { detail: response });
+                    elService.dispatchEvent(getServiceEvent);
+                }
+                else {
+                    elService = document.getElementById(element.id);
+                    if (response.count > 0) {
+                        var service = response.data[0]; // take the first service returned
+                        getServiceEvent = new CustomEvent("getService", { detail: service });
+                        elService.dispatchEvent(getServiceEvent);
+                    }
+                }
+            }) // end rest response
         ); // end promise
         return;
     }
@@ -467,34 +389,16 @@ var OnSchedMount = function () {
         var el = document.getElementById(element.id);
         el.addEventListener("click", element.onClick);
         url = element.onsched.apiBaseUrl + "/resources";
+        if (OnSchedHelpers.IsEmpty(element.params.locationId) == false)
+            url = OnSchedHelpers.AddUrlParam(url, "locationId", element.params.locationId);
+        if (OnSchedHelpers.IsEmpty(element.params.resourceGroupId) == false)
+            url = OnSchedHelpers.AddUrlParam(url, "resourceGroupId", element.params.resourceGroupId);
         url = element.options.getFirst ? OnSchedHelpers.AddUrlParam(url, "limit", "1") : url;
         console.log(url);
         element.onsched.accessToken.then(x =>
-                                           OnSchedRest.GetResources(x, url, function (response) {
-                                               var elResources = document.getElementById(element.id);
-                                               var resource;
-                                               // need to add param to getById - pass serviceId as optional parameter
-                                               // or is this a different element - service????
-                                               if (element.options.getFirst) {
-                                                   //
-                                                   if (response.count > 0) {
-                                                       resource = response.data[0];
-                                                       var getResourceEvent = new CustomEvent("getResource", { detail: resource });
-                                                       elResources.dispatchEvent(getResourceEvent);
-                                                   }
-                                               }
-                                               else {
-                                                   var htmlResources = OnSchedTemplates.resourcesList(response);
-                                                   elResources.innerHTML = htmlResources;
-                                                   // fire a custom event here
-                                                   var eventModel = {
-                                                       'object': response.object, 'hasMore': response.hasMore,
-                                                       'count': response.count, 'total': response.total
-                                                   };
-                                                   var getResourcesEvent = new CustomEvent("getResources", { detail: eventModel });
-                                                   elResources.dispatchEvent(getResourcesEvent);
-                                               }
-                                           })
+            OnSchedRest.GetResources(x, url, function (response) {
+                OnSchedResponse.GetResources(element, response);
+            })
         );
     }
     function ResourceElement(element) {
@@ -509,28 +413,28 @@ var OnSchedMount = function () {
             url = element.params.getFirst ? OnSchedHelpers.AddUrlParam(url, "limit", "1") : url;
         }
         else
-            return;
+                return;
 
         url = element.params.locationId != null && element.params.locationId.length > 0 ?
-          OnSchedHelpers.AddUrlParam(url, "locationId", element.params.locationId) : url;
+            OnSchedHelpers.AddUrlParam(url, "locationId", element.params.locationId) : url;
 
         // We build a url so call the endpoint now
         element.onsched.accessToken.then(x =>
-                                           OnSchedRest.GetResources(x, url, function (response) {
-                                               var getResourceEvent;
-                                               var elResource = document.getElementById(element.id);
-                                               if (response.object == "resource") {
-                                                   getResourceEvent = new CustomEvent("getResource", { detail: response });
-                                                   elResource.dispatchEvent(getResourceEvent);
-                                               }
-                                               else {
-                                                   if (response.count > 0) {
-                                                       var resource = response.data[0]; // take the first resource returned
-                                                       getResourceEvent = new CustomEvent("getResource", { detail: resource });
-                                                       elResource.dispatchEvent(getResourceEvent);
-                                                   }
-                                               }
-                                           }) // end rest response
+            OnSchedRest.GetResources(x, url, function (response) {
+                var getResourceEvent;
+                var elResource = document.getElementById(element.id);
+                if (response.object == "resource") {
+                    getResourceEvent = new CustomEvent("getResource", { detail: response });
+                    elResource.dispatchEvent(getResourceEvent);
+                }
+                else {
+                    if (response.count > 0) {
+                        var resource = response.data[0]; // take the first resource returned
+                        getResourceEvent = new CustomEvent("getResource", { detail: resource });
+                        elResource.dispatchEvent(getResourceEvent);
+                    }
+                }
+            }) // end rest response
         ); // end promise
     } // End OnSchedElements
 
@@ -549,6 +453,257 @@ var OnSchedMount = function () {
     };
 }(); // End OnSchedMount
 
+var OnSchedResponse = function () {
+
+    function GetAvailability(element, response) {
+        // TODO: any response error needs to be displayed and captured if not recoverable
+        if (response.error) {
+            console.log("Response Error: " + response.code);
+            return;
+        }
+        // I need to update the calendar html from the availbleDays info in the response
+        // I need to use the FirstAvailableDate in the response if is returned
+        var selectedDate = response.firstAvailableDate.length > 0 ?
+            OnSchedHelpers.ParseDate(response.firstAvailableDate) :
+            OnSchedHelpers.ParseDate(response.startDate);
+
+        var elDateSelected = document.querySelector(".onsched-available-times-header .date-selected");
+        var dateSelectedTitle = selectedDate.toLocaleDateString(
+            "en-US", { weekday: 'long', month: 'short', day: 'numeric', year: 'numeric' });
+        elDateSelected.title = dateSelectedTitle;
+        var elDow = document.querySelector(".onsched-available-times-header .date-selected .dow");
+        elDow.innerHTML = selectedDate.toLocaleDateString("en-US", { weekday: 'short' });
+        var elDom = document.querySelector(".onsched-available-times-header .date-selected .dom");
+        elDom.innerHTML = selectedDate.toLocaleDateString("en-US", { day: 'numeric' });
+
+        var rebuildCalendar = response.availableDays.length > 0;
+        if (rebuildCalendar) {
+            // Helper function to get the number of displayable calendar days
+            var days = OnSchedHelpers.GetCalendarDays(selectedDate);
+            // We only take the number of availableDays that we need to populate the calendar, hence the slice.
+            var availableDays = response.availableDays.length > days ? response.availableDays.slice(0, days) : response.availableDays;
+            var elCalendar = document.querySelector(".onsched-calendar");
+            elCalendar.innerHTML = OnSchedTemplates.calendarSelector(availableDays, selectedDate);
+        }
+
+        // Business name currently hidden. Leave logic for possible future use
+        var elBusinessName = document.querySelector(".onsched-available-times-header .onsched-business-name");
+        elBusinessName.innerHTML = response.businessName;
+
+        var elServiceName = document.querySelector(".onsched-available-times-header .onsched-service-name");
+        elServiceName.innerHTML = response.serviceName;
+
+        var elServiceDuration = document.querySelector(".onsched-available-times-header .onsched-service-duration");
+        var resourceName = response.resourceName;
+        var durationAndResource = OnSchedHelpers.FormatDuration(response.serviceDuration);
+        if (!OnSchedHelpers.IsEmpty(resourceName))
+            durationAndResource += " - " + resourceName;
+        elServiceDuration.innerHTML = durationAndResource;
+
+        // Populate the available times list
+
+        var htmlTimes = OnSchedTemplates.availableTimes2(response, selectedDate, element.params.customerId);
+        var elTimes = document.querySelector(".onsched-available-times");
+        elTimes.innerHTML = htmlTimes;
+    }
+
+    function GetLocations(element, response) {
+        var eventModel;
+        var getLocationsEvent;
+        if (response.error || response.count === 0) {
+            //                    console.log(response.code);
+            eventModel = { message: 'No locations found matching search input.', searchText: element.params.nearestTo };
+            getLocationsEvent = new CustomEvent("notFound", { detail: eventModel });
+            el.dispatchEvent(getLocationsEvent);
+            return;
+        }
+        var htmlLocations = OnSchedTemplates.locationsList(response);
+        var el = document.getElementById(element.id);
+        el.innerHTML = htmlLocations;
+        // fire a custom event here
+        eventModel = { 'object': response.object, 'hasMore': response.hasMore, 'count': response.count, 'total': response.total };
+        getLocationsEvent = new CustomEvent("getLocations", { detail: eventModel });
+        el.dispatchEvent(getLocationsEvent);
+    }
+
+    function GetLocation(element, response) {
+
+    }
+
+    function GetServices(element, response) {
+        // GetServices response can originate from either the service or services element.
+        var elServices = document.getElementById(element.id);
+        var service = {};
+        if (element.options.getFirst) {
+            //
+            if (response.count > 0) {
+                service = response.data[0];
+                var getServiceEvent = new CustomEvent("getService", { detail: service });
+                elServices.dispatchEvent(getServiceEvent);
+            }
+        }
+        else {
+            var htmlServices = OnSchedTemplates.servicesList(response);
+            elServices.innerHTML = htmlServices;
+            // fire a custom event here
+            var eventModel = {
+                'object': response.object, 'hasMore': response.hasMore,
+                'count': response.count, 'total': response.total
+            };
+            var getServicesEvent = new CustomEvent("getServices", { detail: eventModel });
+            elServices.dispatchEvent(getServicesEvent);
+        }
+    }
+
+    function GetService(element, response) {
+
+    }
+
+    function GetResources(element, response) {
+        var elResources = document.getElementById(element.id);
+        var resource;
+
+        if (element.options.getFirst) {
+            if (response.count > 0) {
+                resource = response.data[0];
+                var getResourceEvent = new CustomEvent("getResource", { detail: resource });
+                elResources.dispatchEvent(getResourceEvent);
+            }
+        }
+        else {
+            var htmlResources = OnSchedTemplates.resourcesList(response);
+            elResources.innerHTML = htmlResources;
+            // fire a custom event here
+            var eventModel = {
+                'object': response.object, 'hasMore': response.hasMore,
+                'count': response.count, 'total': response.total
+            };
+            var getResourcesEvent = new CustomEvent("getResources", { detail: eventModel });
+            elResources.dispatchEvent(getResourcesEvent);
+        }
+    }
+
+    function GetResource(element, response) {
+
+    }
+
+    function GetCustomers(element, response) {
+        if (response.count == 0) {
+            // here is where I may need to do a POST to create the customer
+            if (element.params.customerIM != null) {
+                console.log(element.params.customerIM);
+                url = element.onsched.apiBaseUrl + "/customers";
+                element.onsched.accessToken.then(x =>
+                    OnSchedRest.PostCustomer(x, url, element.params.customerIM, function (response) {
+                        //                                                console.log(response);
+                        var createCustomerEvent = new CustomEvent("postCustomer", { detail: response });
+                        var elCustomer = document.getElementById(element.id);
+                        elCustomer.dispatchEvent(createCustomerEvent);
+                    })
+                );
+            }
+            else
+                throw new Error("Customer not found");
+        }
+        if (response.count > 0) {
+            // fire a custom event here
+            var getCustomerEvent = new CustomEvent("getCustomer", { detail: response.data[0] });
+            var elCustomer = document.getElementById(element.id);
+            elCustomer.dispatchEvent(getCustomerEvent);
+        }
+    }
+
+    function PostAppointment(element, response) {
+        // POST appointment now supports two flows
+        // 1. Render a booking form, then do a PUT operation to complete later
+        // 2. Complete the booking with the information supplied
+
+        if (OnSchedHelpers.IsEmpty(element.params.completeBooking) || OnSchedHelpers.IsEmpty(element.params.customerId)) {
+            // Flow 1 - render the booking flow
+            console.log("PostAppointment Flow 1");
+            // Render the booking form here
+            var elBookingFormContainer = document.querySelector(".onsched-booking-form-container");
+            elBookingFormContainer.innerHTML = OnSchedTemplates.bookingForm(response);
+            var elPopup = document.querySelector(".onsched-popup-shadow");
+            elPopup.classList.add("is-visible");
+            element.timerId = OnSchedHelpers.StartBookingTimer(element.timerId, ".onsched-popup-header .booking-timer");
+
+            var elFormShadow = document.querySelector(".onsched-popup-shadow.is-visible");
+            elFormShadow.addEventListener("click", function (event) {
+                if (event.target.classList.contains("onsched-close-btn") ||
+                    event.target.classList.contains("onsched-popup-shadow") ||
+                    event.target.classList.contains("btn-cancel")) {
+                    OnSchedOnClick.BookingFormCancel(event, element);
+                }
+            });
+
+            var elBookingForm = document.querySelector(".onsched-form.booking-form");
+            elBookingForm.addEventListener("keyup", e => {
+                // if we press the ESC
+                if (e.key == "Escape") {
+                    OnSchedOnClick.BookingFormCancel(e, element);
+                }
+            });
+            console.log(elBookingForm);
+            elBookingForm.addEventListener("submit", function (e) {
+                console.log("Submit Booking Form");
+                e.preventDefault(); // before the code
+                OnSchedOnClick.BookingFormSubmit(e, element);
+            });
+        }
+        else {
+            // Flow 2 - completed booking with information supplied
+            // Fire event to the element to notify of booking complete
+            var elAvailability = document.getElementById(element.id);
+            var bookingConfirmationEvent = new CustomEvent("bookingConfirmation", { detail: response });
+            elAvailability.dispatchEvent(bookingConfirmationEvent);
+        }
+
+    }
+    function PutAppointmentBook(element, response) {
+        //                console.log(response);
+        var elCloseBtn = document.querySelector(".onsched-close-btn");
+
+        clearInterval(element.timerId);
+        if (response.error) {
+            if (response.validation) {
+                console.log(response.validation);
+                console.log(response.code);
+                console.log(response.data);
+                var errorBoxParams = { code: response.code, message: response.data.error };
+                var errorContainer = document.querySelector(".onsched-error-container");
+                errorContainer.innerHTML = OnSchedTemplates.errorBox(errorBoxParams);
+                elCloseBtn.click(); // simulate click of close button
+            }
+            else {
+                console.log(response.code);
+                console.log(response.data);
+                elCloseBtn.click(); // simulate click of close button
+            }
+        }
+        else {
+            document.querySelector(".onsched-popup-shadow").classList.remove("is-visible");
+            var elAvailability = document.querySelector(".onsched-container.onsched-availability");
+            elAvailability.innerHTML = "";
+            var bookingConfirmationHtml = OnSchedTemplates.confirmation(response);
+            var elBookingConfirmationContainer = document.querySelector(".onsched-booking-confirmation-container");
+            elBookingConfirmationContainer.innerHTML = bookingConfirmationHtml;
+        }
+    }
+    return {
+        GetAvailability: GetAvailability,
+        GetLocations: GetLocations,
+        GetLocation: GetLocation,
+        GetServices: GetServices,
+        GetService: GetService,
+        GetResources: GetResources,
+        GetResource: GetResource,
+        GetCustomers: GetCustomers,
+        PostAppointment: PostAppointment,
+        PutAppointmentBook: PutAppointmentBook,
+    };
+}(); // End OnSchedResponse
+
 ///
 ///     OnSchedOnChange
 ///     Element processing for change events
@@ -562,20 +717,17 @@ var OnSchedOnChange = function () {
         var elSelectedDate = document.querySelector(".onsched-calendar .day.selected");
         var selectedDate = OnSchedHelpers.ParseDate(elSelectedDate.dataset.date);
         var url = OnSchedHelpers.CreateAvailabilityUrl(element.onsched.apiBaseUrl, element.params, selectedDate);
-        console.log(url);
+//        console.log(url);
         var elDateSelected = document.querySelector(".onsched-available-times-header .date-selected");
         var dateSelectedTitle = selectedDate.toLocaleDateString(
-          "en-US", { weekday: 'long', month: 'short', day: 'numeric', year: 'numeric' });
-        //        dateSelectedTitle += " " + selectedDate.toTimeString();
+            "en-US", { weekday: 'long', month: 'short', day: 'numeric', year: 'numeric' });
         elDateSelected.title = dateSelectedTitle;
         OnSchedHelpers.ShowProgress();
 
         element.onsched.accessToken.then(x =>
-                                           OnSchedRest.GetAvailability(x, url, function (response) {
-                                               var htmlTimes = OnSchedTemplates.availableTimes2(response, selectedDate, element.params.customerId);
-                                               var elTimes = document.querySelector(".onsched-available-times");
-                                               elTimes.innerHTML = htmlTimes;
-                                           })
+            OnSchedRest.GetAvailability(x, url, function (response) {
+                OnSchedResponse.GetAvailability(element, response);
+            })
         );
     }
     return {
@@ -595,11 +747,11 @@ var OnSchedOnClick = function () {
         // implement logic here to switch the selection in UI and trigger availability call
         var calendarDays = document.querySelectorAll(".onsched-calendar-rowgroup .day");
         [].forEach.call(calendarDays, function (el) {
-            el.className = el.className.replace(/\bselected\b/g, "");
-            // el.classList.remove("selected");
+            el.className = el.className.replace(/\bselected\b/g, ""); // unselect all calendar days in UI
+            // el.classList.remove("selected"); above method more browser friendly
         });
 
-        // call logic to unselect the selected day and reselect it with the clicked element
+        // call logic to select day with the clicked element
         if (dayClicked.classList.contains("selected"))
             console.log("already selected");
         else
@@ -607,7 +759,6 @@ var OnSchedOnClick = function () {
 
         var title = document.querySelector(".onsched-calendar-header .onsched-calendar-title");
         var clickedDate = OnSchedHelpers.ParseDate(dayClicked.dataset.date);
-        var rebuildCalendar = clickedDate.getMonth() != title.dataset.month || clickedDate.getFullYear() != title.dataset.year;
         var url = OnSchedHelpers.CreateAvailabilityUrl(element.onsched.apiBaseUrl, element.params, clickedDate);
         if (clickedDate.getMonth() != title.dataset.month || clickedDate.getFullYear() != title.dataset.year) {
             calendarHtml = OnSchedTemplates.calendarSelectorFromDate(clickedDate);
@@ -616,12 +767,9 @@ var OnSchedOnClick = function () {
 
             // calculate available days to pull when mounting
             url = OnSchedHelpers.AddUrlParam(url, "dayAvailabilityStartDate",
-                                             OnSchedHelpers.CreateDateString(OnSchedHelpers.GetFirstCalendarDate(clickedDate)));
+                OnSchedHelpers.CreateDateString(OnSchedHelpers.GetFirstCalendarDate(clickedDate)));
             url = OnSchedHelpers.AddUrlParam(url, "dayAvailability", OnSchedHelpers.GetCalendarDays(clickedDate));
-
         }
-        var elTimes = document.querySelector(".onsched-available-times");
-        //        elTimes.innerHTML = "";
 
         var elDow = document.querySelector(".onsched-available-times-header .date-selected .dow");
         elDow.innerHTML = clickedDate.toLocaleDateString("en-US", { weekday: 'short' });
@@ -629,33 +777,14 @@ var OnSchedOnClick = function () {
         elDom.innerHTML = clickedDate.toLocaleDateString("en-US", { day: 'numeric' });
         var elDateSelected = document.querySelector(".onsched-available-times-header .date-selected");
         var dateSelectedTitle = clickedDate.toLocaleDateString(
-          "en-US", { weekday: 'long', month: 'short', day: 'numeric', year: 'numeric' });
-        //        dateSelectedTitle += " " + clickedDate.toTimeString();
+            "en-US", { weekday: 'long', month: 'short', day: 'numeric', year: 'numeric' });
         elDateSelected.title = dateSelectedTitle;
 
         OnSchedHelpers.ShowProgress();
         element.onsched.accessToken.then(x =>
-                                           OnSchedRest.GetAvailability(x, url, function (response) {
-                                               var elCalendar = document.querySelector(".onsched-calendar");
-                                               if (url.indexOf("dayAvailabilityStartDate") != -1)
-                                                   elCalendar.innerHTML = OnSchedTemplates.calendarSelector(response.availableDays, clickedDate);
-                                               var elBusinessName = document.querySelector(".onsched-business-name");
-                                               elBusinessName.innerHTML = response.businessName;
-                                               var elServiceName = document.querySelector(".onsched-available-times-header .onsched-service-name");
-                                               elServiceName.innerHTML = response.serviceName;
-                                               var elServiceDuration = document.querySelector(".onsched-available-times-header .onsched-service-duration");
-                                               var resourceName = response.resourceName;
-                                               var durationAndResource = OnSchedHelpers.FormatDuration(response.serviceDuration);
-                                               if (!OnSchedHelpers.IsEmpty(resourceName))
-                                                   durationAndResource += " - " + resourceName;
-                                               elServiceDuration.innerHTML = durationAndResource;
-
-                                               //                        var elServiceDescription = document.querySelector(".onsched-available-times-header .onsched-service-description");
-                                               //                        elServiceDescription.innerHTML = response.serviceDescription;
-                                               var htmlTimes = OnSchedTemplates.availableTimes2(response, clickedDate, element.params.customerId);
-                                               var elTimes = document.querySelector(".onsched-available-times");
-                                               elTimes.innerHTML = htmlTimes;
-                                           })
+            OnSchedRest.GetAvailability(x, url, function (response) {
+                OnSchedResponse.GetAvailability(element, response);
+            })
         );
     }
 
@@ -672,80 +801,26 @@ var OnSchedOnClick = function () {
         postData.endDateTime = timeClicked.dataset.enddatetime;
         if (OnSchedHelpers.IsEmpty(element.params.customerId) === false)
             postData.customerId = element.params.customerId;
-        //        console.log(postData);
+//        console.log(postData);
 
         OnSchedHelpers.ShowProgress();
         // Invoke POST /appointments endpoint
         var appointmentsUrl = element.onsched.apiBaseUrl + "/appointments";
-
-        // TODO HANDLE POST to IN Status or Complete the booking
+        if (OnSchedHelpers.IsNotEmpty(element.params.completeBooking) &&
+            OnSchedHelpers.IsNotEmpty(element.params.customerId)) {
+            appointmentsUrl = OnSchedHelpers.AddUrlParam(appointmentsUrl, "completeBooking", "BK");
+        }
 
         // TWO DIFFERENT FLOWS ARE POSSIBLE
-        // 1. Inform the client of the timeClicked. Client then renders booking form.
-        //    client then does a PUT Book upon completion of the booking form
-        // 2. Complete the booking, have enough information
+        // 1. Render the booking form
+        // 2. Complete the booking, with supplied information
 
-        // TODO - complete flow 1. Flow 2 finished.
-        if (OnSchedHelpers.IsEmpty(element.params.completeBooking) || OnSchedHelpers.IsEmpty(element.params.customerId)) {
 
-            // FLOW 1:
-            //            console.log("FLOW 1");
-            // POST appointment in IN status, then render the Booking form
-            // If client doing their own booking form send event with Posted data
-            // Event would be something to indicate loading the booking form
-            // Booking form need to have the appointmentId from the POST response
-
-            // Will need a new action to handle BookingForm submit
-            // that is the action where I will initiate the PUT /book call
-            element.onsched.accessToken.then(x =>
-                                               OnSchedRest.PostAppointment(x, appointmentsUrl, postData, function (response) {
-                                                   //                    console.log(response);
-
-                                                   // Render the booking form here
-                                                   var elBookingFormContainer = document.querySelector(".onsched-booking-form-container");
-                                                   elBookingFormContainer.innerHTML = OnSchedTemplates.bookingForm(response);
-                                                   var elPopup = document.querySelector(".onsched-popup-shadow");
-                                                   elPopup.classList.add("is-visible");
-                                                   element.timerId = OnSchedHelpers.StartBookingTimer(element.timerId, ".onsched-popup-header .booking-timer");
-
-                                                   var elFormShadow = document.querySelector(".onsched-popup-shadow.is-visible");
-                                                   elFormShadow.addEventListener("click", function (event) {
-                                                       if (event.target.classList.contains("onsched-close-btn") ||
-                                                         event.target.classList.contains("onsched-popup-shadow") ||
-                                                         event.target.classList.contains("btn-cancel")) {
-                                                           BookingFormCancel(event, element);
-                                                       }
-                                                   });
-                                                   //                    var elName = document.querySelector(".onsched-form.booking-form input[name=name");
-                                                   //                    elName.focus();
-
-                                                   var elBookingForm = document.querySelector(".onsched-form.booking-form");
-                                                   elBookingForm.addEventListener("keyup", e => {
-                                                       // if we press the ESC
-                                                       if (e.key == "Escape") {
-                                                           BookingFormCancel(e, element);
-                                                       }
-                                                   });
-
-                                                   elBookingForm.addEventListener("submit", function (e) {
-                                                       e.preventDefault(); // before the code
-                                                       BookingFormSubmit(e, element);
-                                                   });
-                                               })
-            );
-        }
-        else {
-            // this is flow 2
-            appointmentsUrl = OnSchedHelpers.AddUrlParam(appointmentsUrl, "completeBooking", "BK");
-            element.onsched.accessToken.then(x =>
-                                               OnSchedRest.PostAppointment(x, appointmentsUrl, postData, function (response) {
-                                                   // Fire event to the element to notify of booking complete
-                                                   var elAvailability = document.getElementById(element.id);
-                                                   var bookingConfirmationEvent = new CustomEvent("bookingConfirmation", { detail: response });
-                                                   elAvailability.dispatchEvent(bookingConfirmationEvent);
-                                               })
-            );
-        }
+        element.onsched.accessToken.then(x =>
+            OnSchedRest.PostAppointment(x, appointmentsUrl, postData, function (response) {
+                OnSchedResponse.PostAppointment(element, response);
+            })
+        );
     }
 
     function BookingFormCancel(event, element) {
@@ -754,9 +829,9 @@ var OnSchedOnClick = function () {
         var appointmentsUrl = element.onsched.apiBaseUrl + "/appointments/" + id;
         clearInterval(element.timerId);
         element.onsched.accessToken.then(x =>
-                                           OnSchedRest.DeleteAppointment(x, appointmentsUrl, function (response) {
-                                               //                console.log("Initial Appointment Deleted");
-                                           }));
+            OnSchedRest.DeleteAppointment(x, appointmentsUrl, function (response) {
+//                console.log("Initial Appointment Deleted");
+            }));
     }
 
     function BookingFormSubmit(event, element) {
@@ -788,29 +863,24 @@ var OnSchedOnClick = function () {
         if (OnSchedHelpers.IsEmpty(name) === false)
             appointmentBM[name] = name;
 
-        console.log(appointmentBM);
+//        console.log(appointmentBM);
         var id = document.querySelector(".onsched-form.booking-form input[name=id]").value;
         var url = element.onsched.apiBaseUrl + "/appointments/" + id + "/book";
         element.onsched.accessToken.then(x =>
-                                           OnSchedRest.PutAppointmentBook(x, url, appointmentBM, function (response) {
-                                               console.log(response);
-                                               console.log("Appointment Booked");
-                                               clearInterval(element.timerId);
-                                               document.querySelector(".onsched-popup-shadow").classList.remove("is-visible");
-                                               var elAvailability = document.querySelector(".onsched-container.onsched-availability");
-                                               elAvailability.innerHTML = "";
-                                               var bookingConfirmationHtml = OnSchedTemplates.confirmation(response);
-                                               var elBookingConfirmationContainer = document.querySelector(".onsched-booking-confirmation-container");
-                                               elBookingConfirmationContainer.innerHTML = bookingConfirmationHtml;
-                                           }));
+            OnSchedRest.PutAppointmentBook(x, url, appointmentBM, function (response) {
+                OnSchedResponse.PutAppointmentBook(element, response);
+            }));
     }
 
 
     function MonthPrev(event, element) {
 
+        event.target.disabled = true;
+
         var firstDayDate = OnSchedHelpers.ParseDate(event.target.dataset.firstday);
         var prevDate = OnSchedHelpers.AddDaysToDate(firstDayDate, -1);
         prevDate = OnSchedHelpers.FirstDayOfMonth(prevDate);
+
 
         var url = OnSchedHelpers.CreateAvailabilityUrl(element.onsched.apiBaseUrl, element.params, prevDate);
 
@@ -819,7 +889,7 @@ var OnSchedOnClick = function () {
         elCalendar.innerHTML = calendarHtml;
         // calculate available days to pull when mounting
         url = OnSchedHelpers.AddUrlParam(url, "dayAvailabilityStartDate",
-                                         OnSchedHelpers.CreateDateString(OnSchedHelpers.GetFirstCalendarDate(prevDate)));
+            OnSchedHelpers.CreateDateString(OnSchedHelpers.GetFirstCalendarDate(prevDate)));
         url = OnSchedHelpers.AddUrlParam(url, "dayAvailability", OnSchedHelpers.GetCalendarDays(prevDate));
         url = OnSchedHelpers.AddUrlParam(url, "firstDayAvailable", "true");
         var elTimes = document.querySelector(".onsched-available-times");
@@ -831,57 +901,20 @@ var OnSchedOnClick = function () {
         elDom.innerHTML = prevDate.toLocaleDateString("en-US", { day: 'numeric' });
         var elDateSelected = document.querySelector(".onsched-available-times-header .date-selected");
         var dateSelectedTitle = prevDate.toLocaleDateString(
-          "en-US", { weekday: 'long', month: 'short', day: 'numeric', year: 'numeric' });
-        //        dateSelectedTitle += " " + prevDate.toTimeString();
+            "en-US", { weekday: 'long', month: 'short', day: 'numeric', year: 'numeric' });
         elDateSelected.title = dateSelectedTitle;
 
         OnSchedHelpers.ShowProgress();
         element.onsched.accessToken.then(x =>
-                                           OnSchedRest.GetAvailability(x, url, function (response) {
-
-                                               var selectedDate = response.firstAvailableDate.length > 0 ?
-                                                 OnSchedHelpers.ParseDate(response.firstAvailableDate) : prevDate;
-
-                                               var days = OnSchedHelpers.GetCalendarDays(selectedDate);
-                                               var availableDays = response.availableDays.length > days ? response.availableDays.slice(0, days) : response.availableDays;
-                                               var elDow = document.querySelector(".onsched-available-times-header .date-selected .dow");
-                                               elDow.innerHTML = selectedDate.toLocaleDateString("en-US", { weekday: 'short' });
-                                               var elDom = document.querySelector(".onsched-available-times-header .date-selected .dom");
-                                               elDom.innerHTML = selectedDate.toLocaleDateString("en-US", { day: 'numeric' });
-                                               var elDateSelected = document.querySelector(".onsched-available-times-header .date-selected");
-                                               var dateSelectedTitle = selectedDate.toLocaleDateString(
-                                                 "en-US", { weekday: 'long', month: 'short', day: 'numeric', year: 'numeric' });
-                                               elDateSelected.title = dateSelectedTitle;
-
-                                               // Here is where I have to update the DOM with the dateSelected. Could be different from firstAvailableDate
-                                               var calendarHtml = OnSchedTemplates.calendarSelector(availableDays, selectedDate);
-                                               var elCalendar = document.querySelector(".onsched-calendar");
-                                               elCalendar.innerHTML = calendarHtml;
-
-                                               var elBusinessName = document.querySelector(".onsched-business-name");
-                                               elBusinessName.innerHTML = response.businessName;
-
-                                               var elServiceName = document.querySelector(".onsched-available-times-header .onsched-service-name");
-                                               elServiceName.innerHTML = response.serviceName;
-
-                                               var elServiceDuration = document.querySelector(".onsched-available-times-header .onsched-service-duration");
-                                               var resourceName = response.resourceName;
-                                               var durationAndResource = OnSchedHelpers.FormatDuration(response.serviceDuration);
-                                               if (!OnSchedHelpers.IsEmpty(resourceName))
-                                                   durationAndResource += " - " + resourceName;
-                                               elServiceDuration.innerHTML = durationAndResource;
-
-                                               //                        var elServiceDescription = document.querySelector(".onsched-available-times-header .onsched-service-description");
-                                               //                        elServiceDescription.innerHTML = response.serviceDescription;
-
-                                               var htmlTimes = OnSchedTemplates.availableTimes2(response, prevDate, element.params.customerId);
-                                               var elTimes = document.querySelector(".onsched-available-times");
-                                               elTimes.innerHTML = htmlTimes;
-                                           })
+            OnSchedRest.GetAvailability(x, url, function (response) {
+                OnSchedResponse.GetAvailability(element, response);
+            })
         );
     }
 
     function MonthNext(event, element) {
+
+        event.target.disabled = true;
 
         var lastDayDate = OnSchedHelpers.ParseDate(event.target.dataset.lastday);
         var nextDate = OnSchedHelpers.AddDaysToDate(lastDayDate, 1);
@@ -893,7 +926,7 @@ var OnSchedOnClick = function () {
 
         // calculate available days to pull when mounting
         url = OnSchedHelpers.AddUrlParam(url, "dayAvailabilityStartDate",
-                                         OnSchedHelpers.CreateDateString(OnSchedHelpers.GetFirstCalendarDate(nextDate)));
+            OnSchedHelpers.CreateDateString(OnSchedHelpers.GetFirstCalendarDate(nextDate)));
         url = OnSchedHelpers.AddUrlParam(url, "dayAvailability", OnSchedHelpers.GetCalendarDays(nextDate));
         url = OnSchedHelpers.AddUrlParam(url, "firstDayAvailable", "true");
 
@@ -906,53 +939,15 @@ var OnSchedOnClick = function () {
         elDom.innerHTML = nextDate.toLocaleDateString("en-US", { day: 'numeric' });
         var elDateSelected = document.querySelector(".onsched-available-times-header .date-selected");
         var dateSelectedTitle = nextDate.toLocaleDateString(
-          "en-US", { weekday: 'long', month: 'short', day: 'numeric', year: 'numeric' });
-        //        dateSelectedTitle += " " + nextDate.toTimeString();
+            "en-US", { weekday: 'long', month: 'short', day: 'numeric', year: 'numeric' });
+//        dateSelectedTitle += " " + nextDate.toTimeString();
         elDateSelected.title = dateSelectedTitle;
 
         OnSchedHelpers.ShowProgress();
         element.onsched.accessToken.then(x =>
-                                           OnSchedRest.GetAvailability(x, url, function (response) {
-
-                                               var selectedDate = response.firstAvailableDate.length > 0 ?
-                                                 OnSchedHelpers.ParseDate(response.firstAvailableDate) : nextDate;
-
-                                               var days = OnSchedHelpers.GetCalendarDays(selectedDate);
-                                               var availableDays = response.availableDays.length > days ? response.availableDays.slice(0, days) : response.availableDays;
-                                               var elDow = document.querySelector(".onsched-available-times-header .date-selected .dow");
-                                               elDow.innerHTML = selectedDate.toLocaleDateString("en-US", { weekday: 'short' });
-                                               var elDom = document.querySelector(".onsched-available-times-header .date-selected .dom");
-                                               elDom.innerHTML = selectedDate.toLocaleDateString("en-US", { day: 'numeric' });
-                                               var elDateSelected = document.querySelector(".onsched-available-times-header .date-selected");
-                                               var dateSelectedTitle = selectedDate.toLocaleDateString(
-                                                 "en-US", { weekday: 'long', month: 'short', day: 'numeric', year: 'numeric' });
-                                               elDateSelected.title = dateSelectedTitle;
-
-                                               // Here is where I have to update the DOM with the dateSelected. Could be different from firstAvailableDate
-                                               var calendarHtml = OnSchedTemplates.calendarSelector(availableDays, selectedDate);
-                                               var elCalendar = document.querySelector(".onsched-calendar");
-                                               elCalendar.innerHTML = calendarHtml;
-
-                                               var elBusinessName = document.querySelector(".onsched-business-name");
-                                               elBusinessName.innerHTML = response.businessName;
-
-                                               var elServiceName = document.querySelector(".onsched-available-times-header .onsched-service-name");
-                                               elServiceName.innerHTML = response.serviceName;
-
-                                               var elServiceDuration = document.querySelector(".onsched-available-times-header .onsched-service-duration");
-                                               var resourceName = response.resourceName;
-                                               var durationAndResource = OnSchedHelpers.FormatDuration(response.serviceDuration);
-                                               if (!OnSchedHelpers.IsEmpty(resourceName))
-                                                   durationAndResource += " - " + resourceName;
-                                               elServiceDuration.innerHTML = durationAndResource;
-
-                                               //                        var elServiceDescription = document.querySelector(".onsched-available-times-header .onsched-service-description");
-                                               //                        elServiceDescription.innerHTML = response.serviceDescription;
-
-                                               var htmlTimes = OnSchedTemplates.availableTimes2(response, nextDate, element.params.customerId);
-                                               var elTimes = document.querySelector(".onsched-available-times");
-                                               elTimes.innerHTML = htmlTimes;
-                                           })
+            OnSchedRest.GetAvailability(x, url, function (response) {
+                OnSchedResponse.GetAvailability(element, response);
+            })
         );
     }
 
@@ -1002,6 +997,9 @@ var OnSchedHelpers = function () {
 
     function IsEmpty(val) {
         return (val === undefined || val == null || val.length <= 0) ? true : false;
+    }
+    function IsNotEmpty(val) {
+        return (val === undefined || val == null || val.length <= 0) ? false : true;
     }
     function GetFunctionName(fun) {
         var ret = fun.toString();
@@ -1085,6 +1083,10 @@ var OnSchedHelpers = function () {
         return totalDisplayableWeeks;
     }
     function ShowProgress() {
+        // clear out any errors that are currently displayed
+        var errorContainer = document.querySelector(".onsched-error-container");
+        if (errorContainer != null)
+            errorContainer.innerHTML = "";
         var indicators = document.getElementsByClassName("onsched-progress");
         for (var i = 0; i < indicators.length; i++) {
             indicators[i].style.display = "block";
@@ -1125,12 +1127,12 @@ var OnSchedHelpers = function () {
         if (duration <= 0)
             return formatted;
         else
-        if (duration > 90 && duration % 60 > 0)
-            formatted = duration / 60 + " hours" + duration % 60 + " min";
-        else if (duration > 90)
-            formatted = duration / 60 + " hours";
-        else
-            formatted = duration + " min";
+            if (duration > 90 && duration % 60 > 0)
+                formatted = duration / 60 + " hours" + duration % 60 + " min";
+            else if (duration > 90)
+                formatted = duration / 60 + " hours";
+            else
+                formatted = duration + " min";
 
         return formatted;
     }
@@ -1149,7 +1151,7 @@ var OnSchedHelpers = function () {
             today.setSeconds(timerSecs);
             today.setMilliseconds(0);
 
-            var options = { minute: "2-digit", second:"2-digit" };
+            var options = { minute: "2-digit", second:"2-digit" };  
             var timerText = today.toLocaleTimeString("en-us", options);
             timerText += today.getMinutes() > 0 ? " mins" : " secs";
             if (today.getMinutes() > 0)
@@ -1157,29 +1159,29 @@ var OnSchedHelpers = function () {
             var elBookingTimer = document.querySelector(timerSelector);
             elBookingTimer.innerHTML = timerText;
             timerId = setInterval(
-              function () {
-                  var mins = today.getMinutes();
-                  var secs = today.getSeconds();
-                  var elBookingTimer = document.querySelector(timerSelector);
-                  var timerText = today.toLocaleTimeString("en-us", { minute: "2-digit", second: "2-digit" });
-                  timerText += today.getMinutes() > 0 ? " mins" : " secs";
-                  if (today.getMinutes() > 0)
-                      timerText = timerText.replace(/^0+/, "");
-                  elBookingTimer.innerHTML = timerText;
-                  mins = today.getMinutes();
-                  secs = today.getSeconds() - 1;
-                  today.setMinutes(secs > 60 ? mins - 1 : mins);
-                  today.setSeconds(secs > 60 ? 0 : secs);
-                  if (mins === 0 && secs === 0) {
-                      clearInterval(timerId);
-                      var elCloseBtn = document.querySelector(".onsched-close-btn");
-                      elCloseBtn.click();
-                  }
-              }, 1000);
+                function () {
+                    var mins = today.getMinutes();
+                    var secs = today.getSeconds();
+                    var elBookingTimer = document.querySelector(timerSelector);
+                    var timerText = today.toLocaleTimeString("en-us", { minute: "2-digit", second: "2-digit" });
+                    timerText += today.getMinutes() > 0 ? " mins" : " secs";
+                    if (today.getMinutes() > 0)
+                        timerText = timerText.replace(/^0+/, "");
+                    elBookingTimer.innerHTML = timerText;
+                    mins = today.getMinutes();
+                    secs = today.getSeconds() - 1;
+                    today.setMinutes(secs > 60 ? mins - 1 : mins);
+                    today.setSeconds(secs > 60 ? 0 : secs);
+                    if (mins === 0 && secs === 0) {
+                        clearInterval(timerId);
+                        var elCloseBtn = document.querySelector(".onsched-close-btn");
+                        elCloseBtn.click();
+                    }
+                }, 1000);
             return timerId;
         } catch (e) {
             console.log("OnSchedHelpers.StartBookingTimer failed " + e.message);
-            //            OnSchedule.LogException(filename, "StartBookingTimer", e);
+//            OnSchedule.LogException(filename, "StartBookingTimer", e);
         }
     } // StartBookingTimer
 
@@ -1189,6 +1191,7 @@ var OnSchedHelpers = function () {
 
     return {
         IsEmpty: IsEmpty,
+        IsNotEmpty: IsNotEmpty,
         GetFunctionName: GetFunctionName,
         GetUrlParameter: GetUrlParameter,
         CreateAvailabilityUrl: CreateAvailabilityUrl,
@@ -1218,6 +1221,7 @@ var OnSchedTemplates = function () {
     function availabilityContainer() {
         const markup = `
     <div class="onsched-container onsched-availability">
+        <div class="onsched-error-container"></div>
         <div class="onsched-row">
             <div class="onsched-col">
                 <div class="onsched-business-name" style="display:none">&nbsp;</div>
@@ -1263,7 +1267,7 @@ var OnSchedTemplates = function () {
         const timesHtml = `
             <div class="time-container">
                 ${availableTimes.map((availableTime, index) =>
-                                                                  `<a href="#" class="time onsched-chip hoverable"
+                `<a href="#" class="time onsched-chip hoverable"
                     data-locationId="${locationId}"
                     data-customerId="${customerId}"
                     data-startDateTime="${availableTime.startDateTime}"
@@ -1277,7 +1281,7 @@ var OnSchedTemplates = function () {
                     >
                     ${timeFromDisplayTime(availableTime.displayTime)} <span class="ampm">${ampmFromDisplayTime(availableTime.displayTime)}</span>
                  </a>`
-        ).join("")}
+            ).join("")}
             </div>
         `;
         return timesHtml;
@@ -1309,11 +1313,11 @@ var OnSchedTemplates = function () {
                     <tbody>
                         <tr>
                         ${week.map((date, index) =>
-                                                                          `<td aria-selected="true" data-day="${date.getDay()}" class="${DatesAreEqual(selectedDate, date) ? 'selected' : ''}">
+                `<td aria-selected="true" data-day="${date.getDay()}" class="${DatesAreEqual(selectedDate, date) ? 'selected' : ''}">
                                 <button data-day="${date.getDay()}" data-date="${date}" class="datepicker-day-button" class="waves-effect">
                                     ${week[index].toLocaleDateString("en-US", dayOptions)}</button>
                             </td>`
-        ).join("")}
+            ).join("")}
                         </tr>
                     </tbody>
                 </table>
@@ -1359,7 +1363,7 @@ var OnSchedTemplates = function () {
         // bust up times into morning, afternoon and evening
         var morning = []; // < 1200
         var afternoon = []; // 1200 to 1800
-        var evening = []; // > 1800
+        var evening = []; // > 1800 
 
         for (var i = 0; i < availability.availableTimes.length; i++) {
             if (availability.availableTimes[i].time < 1200)
@@ -1404,12 +1408,12 @@ var OnSchedTemplates = function () {
         const timesHtml = `
             <div class="onsched-time-container">
                 ${response.availableTimes.map((availableTime, index) =>
-                                                                           `<a href="#" class="time">
+                `<a href="#" class="time">
                     <div class="onsched-chip hoverable">
                         ${timeFromDisplayTime(availableTime.displayTime)} <span class="ampm">${ampmFromDisplayTime(availableTime.displayTime)}</span>
                     </div>
                 </a>`
-        ).join("")}
+            ).join("")}
             </div>
         `;
         return timesHtml;
@@ -1500,7 +1504,7 @@ var OnSchedTemplates = function () {
                         <div class="onsched-list">
                             <div class="onsched-table">
                                 ${response.data.map((location, index) =>
-                                                                                     `<div class="row">
+                `<div class="row">
                                         <div class="icon-col">
                                             <div class="onsched-circle-icon">${getLettersForIcon(location.name)}</div>
                                         </div>
@@ -1511,11 +1515,11 @@ var OnSchedTemplates = function () {
                                             <div class="list-item-description">${location.address.addressLine1}</div>
                                             <div class="list-item-distance">
                                                 ${location.travel != null && location.travel.distance != null ?
-                                                                                       location.travel.distance : ""}
+                    location.travel.distance : ""}
                                             </div>
                                         </div>
                                      </div>`
-        ).join("")}
+            ).join("")}
                             </div>
                         </div>
                     </div>
@@ -1533,7 +1537,7 @@ var OnSchedTemplates = function () {
                         <div class="onsched-list">
                             <div class="onsched-table">
                                 ${response.data.map((service, index) =>
-                                                                                    `<div class="row">
+                `<div class="row">
                                         <div class="icon-col">
                                             <div class="onsched-circle-icon">${getLettersForIcon(service.name)}</div>
                                         </div>
@@ -1544,7 +1548,7 @@ var OnSchedTemplates = function () {
                                             <div class="list-item-description">${service.description}</div>
                                         </div>
                                      </div>`
-        ).join("")}
+            ).join("")}
                             </div>
                         </div>
                     </div>
@@ -1562,7 +1566,7 @@ var OnSchedTemplates = function () {
                         <div class="onsched-list">
                             <div class="onsched-table">
                                 ${response.data.map((resource, index) =>
-                                                                                     `<div class="row">
+                `<div class="row">
                                         <div class="icon-col">
                                             <div class="onsched-circle-icon">${getLettersForIcon(resource.name)}</div>
                                         </div>
@@ -1574,7 +1578,7 @@ var OnSchedTemplates = function () {
                                             <div class="list-item-description">${resource.description}</div>
                                         </div>
                                      </div>`
-        ).join("")}
+            ).join("")}
                             </div>
                         </div>
                     </div>
@@ -1610,6 +1614,16 @@ var OnSchedTemplates = function () {
         return tmplSearchForm;
     }
 
+    function errorBox(params) {
+        const tmplErrorBox = `
+            <div class="onsched-alert error">
+                <button class="close" data-dismiss="onsched-alert" aria-hidden="true">x</button>
+                <h4>Application Error<span>${params.code}</span></h4>
+                <p>${params.message}</p>
+            </div>
+        `;
+        return tmplErrorBox;
+    }
     function bookingFields(data) {
         const tmplBookingFields = `
         `;
@@ -1646,9 +1660,9 @@ var OnSchedTemplates = function () {
             <select name="${data.fieldName}" ${data.required ? "required" : ""}>
 
         ${ data.fieldListItems.map((item, index) =>
-                                                                                                                                                     `<option value="${item.value}">${item.name}</option>
+                `<option value="${item.value}">${item.name}</option>
                 `
-        ).join("")}
+            ).join("")}
             </select>
         `;
         return tmplSelectField;
@@ -1666,7 +1680,7 @@ var OnSchedTemplates = function () {
         var date = OnSchedHelpers.ParseDate(response.dateInternational);
         var bookingDateOptions = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
         var bookingDate = date.toLocaleString("en-US", bookingDateOptions);
-        //        console.log(bookingDate);
+//        console.log(bookingDate);
         const tmplBookingForm = `
     <div class="onsched-popup-shadow" data-animation="zoomInOut">
         <div class="onsched-popup">
@@ -1760,7 +1774,7 @@ var OnSchedTemplates = function () {
         var options = {
             weekday: "short", year: "numeric", month: "short",
             day: "numeric"
-        };
+        };  
         var formattedDate = date.toLocaleString("en-US", options);
         const tmplConfirmation = `
             <div class="onsched-container onsched-confirmation-container">
@@ -1809,15 +1823,15 @@ var OnSchedTemplates = function () {
         var firstPart = parts[0];
         var secondPart = parts.length > 1 ? parts[1] : "";
         secondPart = secondPart.length > 0 ? secondPart :
-          firstPart.length > 1 ? firstPart[2] : "";
+            firstPart.length > 1 ? firstPart[2] : "";
         var initials = secondPart.length > 0 ?
-          firstPart[0] + secondPart[0] : firstPart[0];
+            firstPart[0] + secondPart[0] : firstPart[0];
         initials = initials.toUpperCase();
         return initials;
     }
 
     function getAvailableMonthWeeks(availableDays, date) {
-        // To render the calendar html with templates we need to transform the
+        // To render the calendar html with templates we need to transform the 
         // available days into an array of weeks of the month.
         var weeksInMonth = getDisplayableWeeks(date);
         var weekStartDate = ParseDate(availableDays[0].date);
@@ -1889,18 +1903,18 @@ var OnSchedTemplates = function () {
         const today = new Date();
         var date = ParseDate(day.date);
         var isToday =
-              date.getDate() == today.getDate() &&
-              date.getMonth() == today.getMonth() &&
-              date.getFullYear() == today.getFullYear();
+            date.getDate() == today.getDate() &&
+            date.getMonth() == today.getMonth() &&
+            date.getFullYear() == today.getFullYear();
         return isToday ? "today" : "";
     }
 
     function IsSelected(day, selectedDate) {
         var date = ParseDate(day.date);
         var isSelected =
-              date.getDate() == selectedDate.getDate() &&
-              date.getMonth() == selectedDate.getMonth() &&
-              date.getFullYear() == selectedDate.getFullYear();
+            date.getDate() == selectedDate.getDate() &&
+            date.getMonth() == selectedDate.getMonth() &&
+            date.getFullYear() == selectedDate.getFullYear();
         return isSelected ? "selected" : "";
     }
     function IsAvailable(day) {
@@ -1960,6 +1974,7 @@ var OnSchedTemplates = function () {
         bookingForm: bookingForm,
         bookingTimer: bookingTimer,
         popupFormHeader: popupFormHeader,
+        errorBox: errorBox,
         selectField: selectField,
         inputField: inputField,
     };
@@ -1969,18 +1984,12 @@ var OnSchedTemplates = function () {
 
 var OnSchedRest = function () {
 
-    function HandleErrors(response) {
-        if (!response.ok) {
-            throw new Error(response.status);
-        }
-        return response;
-    }
     async function Authorize(clientId, environment, scope) {
         var headers = new Headers({ 'Content-Type': 'application/json', 'Accept': 'application/json' });
 
         var url = environment == null || environment == "sbox" ?
-          "https://onschedjsproxy-sandbox.azurewebsites.net/auth/initialize" :
-          "https://onschedjsproxy.azurewebsites.net/auth/initialize";
+            "https://onschedjsproxy-sandbox.azurewebsites.net/auth/initialize" :
+            "https://onschedjsproxy.azurewebsites.net/auth/initialize";
 
         scope = scope == null ? "OnSchedApi" : scope;
 
@@ -1992,15 +2001,22 @@ var OnSchedRest = function () {
             headers: headers
         });
         const response = await fetch(request);
-        const json = await response.json();
+        const json = await response.json().catch(function (error) {
+            console.log(error);
+        });
+        if (json.success == false) {
+            reject (new Error(json.message));
+//            console.log(json.message);
+        }
+
         return json.access_token;
     }
 
     async function GetAccessToken(environment) {
         try {
             var url = environment == null || environment == "sbox" ?
-              "https://sandbox-identity.onsched.com/connect/token" :
-              "https://identity.onsched.com/connect/token";
+                "https://sandbox-identity.onsched.com/connect/token" :
+                "https://identity.onsched.com/connect/token";
             var clientId = "DemoUser";
             var clientSecret = "DemoUser";
 
@@ -2016,8 +2032,8 @@ var OnSchedRest = function () {
                 method: 'POST',
                 body: postData,
                 headers: new Headers({
-                                         'Content-Type': 'application/x-www-form-urlencoded'
-                                     })
+                    'Content-Type': 'application/x-www-form-urlencoded'
+                })
             });
 
             const response = await fetch(request);
@@ -2031,8 +2047,8 @@ var OnSchedRest = function () {
     function Get(token, url, callback) {
         try {
             var headers = token == null ?
-              new Headers({ 'Accept': 'application/json' }) :
-              new Headers({ 'Accept': 'application/json', 'Authorization': 'Bearer ' + token });
+                new Headers({ 'Accept': 'application/json' }) :
+                new Headers({ 'Accept': 'application/json', 'Authorization': 'Bearer ' + token });
 
             var request = new Request(url, {
                 method: 'GET',
@@ -2041,17 +2057,21 @@ var OnSchedRest = function () {
             });
 
             fetch(request)
-              .then(HandleErrors)
-              // Transform the data into json
-              .then(resp => resp.json())
-              .then(function (response) {
-                  callback(response);
-                  HideProgress();
-              }).catch(function (error) {
-                //                    console.log(error.name + " " + error.message);
-                callback({ error: true, code: error.message });
-                HideProgress();
-            });
+                .then((response) =>
+                {
+                    if (response.status != 401) // for debugging auth errors
+                        return new Promise((resolve) => response.json().then((json) => resolve({ status: response.status, ok: response.ok, json })));
+                    else
+                        return new Promise((resolve) => resolve({ status: response.status, ok: response.ok, json: '' }));
+                }).then(({ status, json, ok }) => {
+                    var validation = status == 400;
+                    ok ? callback(json) : callback({ error: true, code: status, validation: validation, data:json });
+                    HideProgress();
+                })
+                .catch(function (error) {
+                    console.log(error);
+                    HideProgress();
+                });
         } catch (e) {
             console.log(e);
             throw e;
@@ -2078,8 +2098,8 @@ var OnSchedRest = function () {
     function Post(token, url, payload, callback) {
 
         var headers = token == null ?
-          new Headers({ 'Content-Type': 'application/json','Accept': 'application/json' }) :
-          new Headers({ 'Content-Type': 'application/json','Accept': 'application/json', 'Authorization': 'Bearer ' + token });
+            new Headers({ 'Content-Type': 'application/json','Accept': 'application/json' }) :
+            new Headers({ 'Content-Type': 'application/json','Accept': 'application/json', 'Authorization': 'Bearer ' + token });
 
         var request = new Request(url, {
             method: 'POST',
@@ -2088,20 +2108,23 @@ var OnSchedRest = function () {
             headers: headers
         });
         fetch(request)
-          .then((resp) => resp.json()) // Transform the data into json
-          .then(function (response) {
-              callback(response);
-              HideProgress();
-          }).catch(function (error) {
-            console.log(error);
-        });
+            .then((response) => {
+                return new Promise((resolve) => response.json().then((json) => resolve({ status: response.status, ok: response.ok, json })));
+            }).then(({ status, json, ok }) => {
+                var validation = status == 400;
+                ok ? callback(json) : callback({ error: true, code: status, validation: validation, data: json });
+                HideProgress();
+            })
+            .catch(function (error) {
+                console.log(error);
+            });
     }
 
     function Put(token, url, payload, callback) {
 
         var headers = token == null ?
-          new Headers({ 'Content-Type': 'application/json', 'Accept': 'application/json' }) :
-          new Headers({ 'Content-Type': 'application/json', 'Accept': 'application/json', 'Authorization': 'Bearer ' + token });
+            new Headers({ 'Content-Type': 'application/json', 'Accept': 'application/json' }) :
+            new Headers({ 'Content-Type': 'application/json', 'Accept': 'application/json', 'Authorization': 'Bearer ' + token });
 
         var request = new Request(url, {
             method: 'PUT',
@@ -2109,35 +2132,42 @@ var OnSchedRest = function () {
             mode: 'cors',
             headers: headers
         });
+
         fetch(request)
-          .then((resp) => resp.json()) // Transform the data into json
-          .then(function (response) {
-              callback(response);
-              HideProgress();
-          }).catch(function (error) {
-            console.log(error);
-        });
+            .then((response) => {
+                return new Promise((resolve) => response.json().then((json) => resolve({ status: response.status, ok: response.ok, json })));
+            }).then(({ status, json, ok }) => {
+                var validation = status == 400;
+                ok ? callback(json) : callback({ error: true, code: status, validation: validation, data: json });
+                HideProgress();
+            })
+            .catch(function (error) {
+                HideProgress();
+                console.log(error);
+            });
     }
     function Delete(token, url, callback) {
 
         var headers = token == null ?
-          new Headers({ 'Content-Type': 'application/json', 'Accept': 'application/json' }) :
-          new Headers({ 'Content-Type': 'application/json', 'Accept': 'application/json', 'Authorization': 'Bearer ' + token });
+            new Headers({ 'Content-Type': 'application/json', 'Accept': 'application/json' }) :
+            new Headers({ 'Content-Type': 'application/json', 'Accept': 'application/json', 'Authorization': 'Bearer ' + token });
 
         var request = new Request(url, {
             method: 'DELETE',
-            //            body: JSON.stringify(payload),
             mode: 'cors',
             headers: headers
         });
         fetch(request)
-          .then((resp) => resp.json()) // Transform the data into json
-          .then(function (response) {
-              callback(response);
-              HideProgress();
-          }).catch(function (error) {
-            console.log(error);
-        });
+            .then((response) => {
+                return new Promise((resolve) => response.json().then((json) => resolve({ status: response.status, ok: response.ok, json })));
+            }).then(({ status, json, ok }) => {
+                var validation = status == 400;
+                ok ? callback(json) : callback({ error: true, code: status, validation: validation, data: json });
+                HideProgress();
+            })
+            .catch(function (error) {
+                console.log(error);
+            });
     }
     function PostAppointment(token, url, payload, callback) {
         return Post(token, url, payload, callback);
@@ -2214,169 +2244,10 @@ var OnSchedRest = function () {
 }();
 
 
-var masking = {
-
-    // User defined Values
-    //maskedInputs : document.getElementsByClassName('masked'), // add with IE 8's death
-    maskedInputs: document.querySelectorAll('.masked'), // kill with IE 8's death
-    maskedNumber: 'XdDmMyY9',
-    maskedLetter: '_',
-
-    init: function () {
-        masking.setUpMasks(masking.maskedInputs);
-        masking.maskedInputs = document.querySelectorAll('.masked'); // Repopulating. Needed b/c static node list was created above.
-        masking.activateMasking(masking.maskedInputs);
-    },
-
-    setUpMasks: function (inputs) {
-        var i, l = inputs.length;
-
-        for (i = 0; i < l; i++) {
-            masking.createShell(inputs[i]);
-        }
-    },
-
-    // replaces each masked input with a shall containing the input and it's mask.
-    createShell: function (input) {
-        var text = '',
-            placeholder = input.getAttribute('placeholder');
-
-        input.setAttribute('maxlength', placeholder.length);
-        input.setAttribute('data-placeholder', placeholder);
-        input.removeAttribute('placeholder');
-
-        text = '<span class="shell">' +
-          '<span aria-hidden="true" id="' + input.id +
-          'Mask"><i></i>' + placeholder + '</span>' +
-          input.outerHTML +
-          '</span>';
-
-        input.outerHTML = text;
-    },
-
-    setValueOfMask: function (e) {
-        var value = e.target.value,
-            placeholder = e.target.getAttribute('data-placeholder');
-
-        return "<i>" + value + "</i>" + placeholder.substr(value.length);
-    },
-
-    // add event listeners
-    activateMasking: function (inputs) {
-        var i, l;
-
-        for (i = 0, l = inputs.length; i < l; i++) {
-            if (masking.maskedInputs[i].addEventListener) { // remove "if" after death of IE 8
-                masking.maskedInputs[i].addEventListener('keyup', function (e) {
-                    masking.handleValueChange(e);
-                }, false);
-            } else if (masking.maskedInputs[i].attachEvent) { // For IE 8
-                masking.maskedInputs[i].attachEvent("onkeyup", function (e) {
-                    e.target = e.srcElement;
-                    masking.handleValueChange(e);
-                });
-            }
-        }
-    },
-
-    handleValueChange: function (e) {
-        var id = e.target.getAttribute('id');
-
-        switch (e.keyCode) { // allows navigating thru input
-            case 20: // caplocks
-            case 17: // control
-            case 18: // option
-            case 16: // shift
-            case 37: // arrow keys
-            case 38:
-            case 39:
-            case 40:
-            case 9: // tab (let blur handle tab)
-                return;
-        }
-
-        document.getElementById(id).value = masking.handleCurrentValue(e);
-        document.getElementById(id + 'Mask').innerHTML = masking.setValueOfMask(e);
-
-    },
-
-    handleCurrentValue: function (e) {
-        var isCharsetPresent = e.target.getAttribute('data-charset'),
-            placeholder = isCharsetPresent || e.target.getAttribute('data-placeholder'),
-            value = e.target.value, l = placeholder.length, newValue = '',
-            i, j, isInt, isLetter, strippedValue;
-
-        // strip special characters
-        strippedValue = isCharsetPresent ? value.replace(/\W/g, "") : value.replace(/\D/g, "");
-
-        for (i = 0, j = 0; i < l; i++) {
-            var x =
-                  isInt = !isNaN(parseInt(strippedValue[j]));
-            isLetter = strippedValue[j] ? strippedValue[j].match(/[A-Z]/i) : false;
-            matchesNumber = masking.maskedNumber.indexOf(placeholder[i]) >= 0;
-            matchesLetter = masking.maskedLetter.indexOf(placeholder[i]) >= 0;
-
-            if ((matchesNumber && isInt) || (isCharsetPresent && matchesLetter && isLetter)) {
-
-                newValue += strippedValue[j++];
-
-            } else if ((!isCharsetPresent && !isInt && matchesNumber) || (isCharsetPresent && ((matchesLetter && !isLetter) || (matchesNumber && !isInt)))) {
-                // masking.errorOnKeyEntry(); // write your own error handling function
-                return newValue;
-
-            } else {
-                newValue += placeholder[i];
-            }
-            // break if no characters left and the pattern is non-special character
-            if (strippedValue[j] == undefined) {
-                break;
-            }
-        }
-        if (e.target.getAttribute('data-valid-example')) {
-            return masking.validateProgress(e, newValue);
-        }
-        return newValue;
-    },
-
-    validateProgress: function (e, value) {
-        var validExample = e.target.getAttribute('data-valid-example'),
-            pattern = new RegExp(e.target.getAttribute('pattern')),
-            placeholder = e.target.getAttribute('data-placeholder'),
-            l = value.length, testValue = '';
-
-        //convert to months
-        if (l == 1 && placeholder.toUpperCase().substr(0, 2) == 'MM') {
-            if (value > 1 && value < 10) {
-                value = '0' + value;
-            }
-            return value;
-        }
-        // test the value, removing the last character, until what you have is a submatch
-        for (i = l; i >= 0; i--) {
-            testValue = value + validExample.substr(value.length);
-            if (pattern.test(testValue)) {
-                return value;
-            } else {
-                value = value.substr(0, value.length - 1);
-            }
-        }
-
-        return value;
-    },
-
-    errorOnKeyEntry: function () {
-        // Write your own error handling
-    }
-};
-
-masking.init();
-
 export {
-  OnSched,
-  OnSchedOnChange,
-  OnSchedOnClick,
-  OnSchedHelpers,
-  OnSchedTemplates,
-  OnSchedRest,
-  masking
+    OnSched,
+    OnSchedHelpers,
+    OnSchedTemplates,
+    OnSchedRest
 }
+
