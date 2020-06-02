@@ -30,13 +30,7 @@ function OnSched(ClientId, Environment, Scope) {
         "https://sandbox-api.onsched.com/consumer/v1";
 //    self.accessToken = OnSchedRest.GetAccessToken(self.environment);
     self.accessToken = OnSchedRest.Authorize(self.clientId, self.environment, self.scope);
-    if (Sentry != null) {
-        Sentry.init({ dsn: 'https://b1d16d94d7944f158fbd14c8060cf569@o77015.ingest.sentry.io/5245178' });
-        Sentry.setExtra("ClientId", ClientId);
-        Sentry.setExtra("Scope", Scope);
-    }
-    else
-        console.log("Sentry not initialized");
+
     // Elements method that creates elements instance
     self.elements = function () {
         var elements = {};
