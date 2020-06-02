@@ -191,7 +191,7 @@ var OnSchedMount = function () {
     function ServicesElement(element) {
         var el = document.getElementById(element.id);
         el.addEventListener("click", element.onClick);
-        url = element.onsched.apiBaseUrl + "/services";
+        var url = element.onsched.apiBaseUrl + "/services";
         url = element.options.getFirst ? OnSchedHelpers.AddUrlParam(url, "limit", "1") : url;
         url = element.params.locationId !== null && element.params.locationId.length > 0 ?
             OnSchedHelpers.AddUrlParam(url, "locationId", element.params.locationId) : url;
@@ -208,7 +208,7 @@ var OnSchedMount = function () {
         // need to support lookup by postalCode. API changes.
         var el = document.getElementById(element.id);
         el.addEventListener("click", element.onClick);
-        url = element.onsched.apiBaseUrl + "/locations";
+        var url = element.onsched.apiBaseUrl + "/locations";
         //                        console.log(element.params);
         url = element.params.units != null ? OnSchedHelpers.AddUrlParam(url, "units", element.params.units) : url;
         url = element.params.offset != null ? OnSchedHelpers.AddUrlParam(url, "offset", element.params.offset) : url;
@@ -227,9 +227,7 @@ var OnSchedMount = function () {
         // then replace the calendar element within the container
         element.params.date = OnSchedHelpers.IsEmpty(element.params.date) ? new Date() : element.params.date;
         element.timerId = null;
-        html = OnSchedTemplates.availabilityContainer();
-        console.log("Availability Element");
-        console.log(html);
+        var html = OnSchedTemplates.availabilityContainer();
         var el = document.getElementById(element.id);
         el.innerHTML = html;
         // Now wire up events on the calendar
@@ -275,7 +273,7 @@ var OnSchedMount = function () {
         // It still happens on mount because I also need to send event back to the customer element
         // What if the same customer booking second time around. Avalailability could provide the 
         // customerId. 
-        url = element.onsched.apiBaseUrl + "/customers";
+        var url = element.onsched.apiBaseUrl + "/customers";
         url = OnSchedHelpers.AddUrlParam(url, "locationId", element.params.locationId);
         url = OnSchedHelpers.AddUrlParam(url, "email", element.params.email);
         console.log(url);
@@ -354,7 +352,7 @@ var OnSchedMount = function () {
         else
             return;
 
-        url = element.params.locationId != null && element.params.locationId.length > 0 ?
+        var url = element.params.locationId != null && element.params.locationId.length > 0 ?
             OnSchedHelpers.AddUrlParam(url, "locationId", element.params.locationId) : url;
 //        console.log(url);
 
@@ -389,7 +387,7 @@ var OnSchedMount = function () {
             url = OnSchedHelpers.AddUrlParam(url, "locationId", element.params.locationId);
         if (OnSchedHelpers.IsEmpty(element.params.resourceGroupId) == false)
             url = OnSchedHelpers.AddUrlParam(url, "resourceGroupId", element.params.resourceGroupId);
-        url = element.options.getFirst ? OnSchedHelpers.AddUrlParam(url, "limit", "1") : url;
+        var url = element.options.getFirst ? OnSchedHelpers.AddUrlParam(url, "limit", "1") : url;
         console.log(url);
         element.onsched.accessToken.then(x =>
             OnSchedRest.GetResources(x, url, function (response) {
@@ -411,7 +409,7 @@ var OnSchedMount = function () {
         else
                 return;
 
-        url = element.params.locationId != null && element.params.locationId.length > 0 ?
+        var url = element.params.locationId != null && element.params.locationId.length > 0 ?
             OnSchedHelpers.AddUrlParam(url, "locationId", element.params.locationId) : url;
 
         // We build a url so call the endpoint now
@@ -1014,7 +1012,7 @@ var OnSchedHelpers = function () {
     function CreateAvailabilityUrl(baseUrl, params, date, tzOffset) {
         var startDate = date == null ? params.date : date;
         var endDate = date == null ? params.date : date;
-        url = baseUrl;
+        var url = baseUrl;
         url += "/" + "availability";
         url += "/" + params.serviceId;
         url += "/" + CreateDateString(startDate);

@@ -296,6 +296,8 @@
   var locationsParams = { units: 'imperial', limit: 8, offset: 0 };
   var locationsOptions = {};
   var locations = elements.create("locations", locationsParams, locationsOptions);
+  console.log("create locations");
+  console.log(locations);
   var elLocations = document.getElementById("locations");
   elLocations.addEventListener("getLocations", function (e) {
     elServices.innerHTML = "";
