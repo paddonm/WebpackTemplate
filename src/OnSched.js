@@ -755,7 +755,7 @@ var OnSchedOnClick = function () {
         var clickedDate = OnSchedHelpers.ParseDate(dayClicked.dataset.date);
         var url = OnSchedHelpers.CreateAvailabilityUrl(element.onsched.apiBaseUrl, element.params, clickedDate);
         if (clickedDate.getMonth() != title.dataset.month || clickedDate.getFullYear() != title.dataset.year) {
-            calendarHtml = OnSchedTemplates.calendarSelectorFromDate(clickedDate);
+            var calendarHtml = OnSchedTemplates.calendarSelectorFromDate(clickedDate);
             var elCalendar = document.querySelector(".onsched-calendar");
             elCalendar.innerHTML = calendarHtml;
 
