@@ -833,7 +833,7 @@ var OnSchedOnClick = function () {
         var lastname, firstname;
         var form = document.querySelector(".onsched-form.booking-form");
         for (var i = 0; i < form.elements.length; i++) {
-            e = form.elements[i];
+            var e = form.elements[i];
             if (OnSchedHelpers.IsEmpty(e.name))
                 continue;
             if (e.type === "hidden")
