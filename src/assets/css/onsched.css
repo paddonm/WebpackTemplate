@@ -867,6 +867,7 @@ a {
 .onsched-popup-shadow.is-visible {
     visibility: visible;
     opacity: 1;
+    z-index: 9999;
 }
 
 .onsched-popup {

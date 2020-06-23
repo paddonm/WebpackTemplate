@@ -508,6 +508,7 @@ var OnSchedResponse = function () {
             //                    console.log(response.code);
             eventModel = { message: 'No locations found matching search input.', searchText: element.params.nearestTo };
             getLocationsEvent = new CustomEvent("notFound", { detail: eventModel });
+            var el = document.getElementById(element.id);
             el.dispatchEvent(getLocationsEvent);
             return;
         }
@@ -515,7 +516,7 @@ var OnSchedResponse = function () {
         var el = document.getElementById(element.id);
         el.innerHTML = htmlLocations;
         // fire a custom event here
-        eventModel = { 'object': response.object, 'hasMore': response.hasMore, 'count': response.count, 'total': response.total };
+        eventModel = { 'object': response.object, 'hasMore': response.hasMore, 'count': response.count, 'total': response.total, 'data': response.data };
         getLocationsEvent = new CustomEvent("getLocations", { detail: eventModel });
         el.dispatchEvent(getLocationsEvent);
     }
@@ -542,7 +543,7 @@ var OnSchedResponse = function () {
             // fire a custom event here
             var eventModel = {
                 'object': response.object, 'hasMore': response.hasMore,
-                'count': response.count, 'total': response.total
+                'count': response.count, 'total': response.total, 'data': response.data
             };
             var getServicesEvent = new CustomEvent("getServices", { detail: eventModel });
             elServices.dispatchEvent(getServicesEvent);
@@ -570,7 +571,7 @@ var OnSchedResponse = function () {
             // fire a custom event here
             var eventModel = {
                 'object': response.object, 'hasMore': response.hasMore,
-                'count': response.count, 'total': response.total
+                'count': response.count, 'total': response.total, 'data': response.data
             };
             var getResourcesEvent = new CustomEvent("getResources", { detail: eventModel });
             elResources.dispatchEvent(getResourcesEvent);
@@ -855,9 +856,9 @@ var OnSchedOnClick = function () {
         if (OnSchedHelpers.IsEmpty(lastname) === false)
             name += lastname;
         if (OnSchedHelpers.IsEmpty(name) === false)
-            appointmentBM[name] = name;
+            appointmentBM["name"] = name;
 
-//        console.log(appointmentBM);
+        console.log(appointmentBM);
         var id = document.querySelector(".onsched-form.booking-form input[name=id]").value;
         var url = element.onsched.apiBaseUrl + "/appointments/" + id + "/book";
         element.onsched.accessToken.then(x =>
