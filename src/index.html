@@ -4,19 +4,8 @@
   <meta charset="utf-8" />
   <title>Test OnSched.js</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <!--
-  <script src="https://js.stripe.com/v3/"></script>
-  -->
-<!--  <link href="/css/onsched.css" rel="stylesheet" />-->
-  <!--
-  <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
-      -->
-<!--  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.9.0/css/all.css" rel="stylesheet">-->
-  <!--
-      <script type="text/javascript" src="https://sandbox.onsched.com/js/onsched.min.js"></script>
-  -->
+
   <script type="text/javascript" src="/index.js"></script>
-<!--  <script type="text/javascript" src="../dist/index.js"></script>-->
 
   <style>
     body {
@@ -251,7 +240,7 @@
   ///
   /// Begining of OnSchedJs logic
   ///
-  var onsched = OnSched("DemoUser", "live");
+  var onsched = OnSched("DemoUser", "sbox");
   var elements = onsched.elements();
 
   var now = new Date();
@@ -473,6 +462,25 @@
     elSearch.innerHTML = "";
     resources.mount("resources");
   }
+
+  var fieldListItems = [
+    {"name": "Item 1", "value":"1"}, 
+    {"name": "Item 2", "value":"2"}, 
+  ];
+
+  var bookingField = {};
+      bookingField.id = "109";
+      bookingField.companyId = "5e737c4b-379f-481d-b075-1c7cab1ac822";
+      bookingField.businessId = "";
+      bookingField.fieldName = "companyName";
+      bookingField.fieldLabel = "Company Name";
+      bookingField.fieldRequired = true;
+      bookingField.fieldLength = 50;
+      bookingField.fieldType = "string";
+      bookingField.fieldListItems = fieldListItems;
+      console.log(bookingField);
+      var inputFieldHtml = OnSchedTemplates.selectField(bookingField, "customer");
+      console.log(inputFieldHtml);
 
 
   function ShowToast(message) {

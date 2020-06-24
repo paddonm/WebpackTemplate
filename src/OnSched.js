@@ -7,6 +7,7 @@
 import * as Sentry from '@sentry/browser';
 
 import './assets/css/index.css';
+import { configureScope } from '@sentry/browser';
 
 Sentry.init({
     dsn: "https://b1d16d94d7944f158fbd14c8060cf569@o77015.ingest.sentry.io/5245178",
@@ -831,8 +832,11 @@ var OnSchedOnClick = function () {
 
     function BookingFormSubmit(event, element) {
         var appointmentBM = {};
+        var appointmentBookingFields = [];
+        var customerBookingFields = [];
         var lastname, firstname;
         var form = document.querySelector(".onsched-form.booking-form");
+
         for (var i = 0; i < form.elements.length; i++) {
             var e = form.elements[i];
             if (OnSchedHelpers.IsEmpty(e.name))
@@ -847,9 +851,22 @@ var OnSchedOnClick = function () {
             else
             if (e.name === "lastname")
                 lastname = e.value;
-            else
-                appointmentBM[e.name] = e.value;
+            else {
+                // need to handle booking fields different than other form fields
+                if (e.dataset.bookingfield == "appointment" || e.dataset.bookingfield == "customer") {
+                    var bookingField = {};        
+                    bookingField["name"] = e.name;
+                    bookingField["value"] = e.value;  
+                    if (e.dataset.bookingfield == "appointment")
+                        appointmentBookingFields.push(bookingField);
+                    else
+                        customerBookingFields.push(bookingField);
+                }
+                else
+                    appointmentBM[e.name] = e.value;
+            }
         }
+
         var name = "";
         if (OnSchedHelpers.IsEmpty(firstname) === false)
             name = firstname + " ";
@@ -858,9 +875,15 @@ var OnSchedOnClick = function () {
         if (OnSchedHelpers.IsEmpty(name) === false)
             appointmentBM["name"] = name;
 
-        console.log(appointmentBM);
+        appointmentBM.appointmentBookingFields = appointmentBookingFields;
+        appointmentBM.customerBookingFields = customerBookingFields;
+
+//        console.log(appointmentBM);
+//        console.log(appointmentBookingFields);
+//        console.log(customerBookingFields);        
         var id = document.querySelector(".onsched-form.booking-form input[name=id]").value;
         var url = element.onsched.apiBaseUrl + "/appointments/" + id + "/book";
+
         element.onsched.accessToken.then(x =>
             OnSchedRest.PutAppointmentBook(x, url, appointmentBM, function (response) {
                 OnSchedResponse.PutAppointmentBook(element, response);
@@ -1619,22 +1642,24 @@ var OnSchedTemplates = function () {
         `;
         return tmplErrorBox;
     }
-    function bookingFields(data) {
+    // Create booking fields from POST appointment response
+    function bookingFields(data, type) {
         const tmplBookingFields = `
+        ${ data.map((item, index) =>
+            bookingField(item, type)
+            
+        ).join("")}
         `;
         return tmplBookingFields;
     }
     // Prob need separate functions for input,select, checkbox etc
-    function bookingField(data) {
-        // Do I need checkbox support?
-        if (data.fieldListItems.length > 0)
-            ; // select list
-        else
-            ; // input field
+    function bookingField(data, type) {
 
         const tmplBookingField = `
-            <div class="onsched-form-col">
-            <label>${data.fieldLabel}</label>
+            <div class="onsched-form-row">
+                <div class="onsched-form-col">
+                    ${data.fieldListItems.length > 0 ? selectField(data, type) : inputField(data, type)}
+                </div>
             </div>
         `;
         return tmplBookingField;
@@ -1642,17 +1667,30 @@ var OnSchedTemplates = function () {
     function bookingFieldControl(data) {
 
     }
-    function inputField(data) {
+    function inputField(data, type) {
         const tmplInputField = `
             <label for="${data.fieldName}">${data.fieldLabel}</label>
-            <input type="text" name="${data.fieldName}" ${data.required ? "required" : ""} />
+            <input type="text" id="${data.fieldName}" name="${data.fieldName}" ${data.fieldRequired ? "required" : ""} ${sizeAttribute(data.fieldLength)} ${bookingFieldDataAttribute(type)} />
         `;
         return tmplInputField;
     }
-    function selectField(data) {
+    function sizeAttribute(length) {
+        if (length > 0)
+            return "size="+length;
+        else
+            return "";
+    }
+    function bookingFieldDataAttribute(type) {
+        if (type == "appointment" || type == "customer")
+            return "data-bookingfield=" + '"'+type+'"';
+        else
+            return "";
+    }
+    function selectField(data, type) {
 
         const tmplSelectField = `
-            <select name="${data.fieldName}" ${data.required ? "required" : ""}>
+        <label for="${data.fieldName}">${data.fieldLabel}</label>
+        <select id="${data.fieldName}" name="${data.fieldName}" ${data.fieldRequired ? "required" : ""}  ${bookingFieldDataAttribute(type)}>
 
         ${ data.fieldListItems.map((item, index) =>
                 `<option value="${item.value}">${item.name}</option>
@@ -1675,7 +1713,7 @@ var OnSchedTemplates = function () {
         var date = OnSchedHelpers.ParseDate(response.dateInternational);
         var bookingDateOptions = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
         var bookingDate = date.toLocaleString("en-US", bookingDateOptions);
-//        console.log(bookingDate);
+
         const tmplBookingForm = `
     <div class="onsched-popup-shadow" data-animation="zoomInOut">
         <div class="onsched-popup">
@@ -1720,13 +1758,16 @@ var OnSchedTemplates = function () {
                             <input id="onsched-field-phone" type="phone" name="phone" placeholder="Enter phone number (optional)">
                         </div>
                     </div>
+                    <div class="onsched-form-booking-fields">
+                        ${bookingFields(response.appointmentBookingFields, "appointment")}
+                        ${bookingFields(response.customerBookingFields, "customer")}
+                    </div>
                     <div class="onsched-form-row last">
                         <div class="onsched-form-col">
                             <label for="onsched-field-message">Customer Message</label>
                             <textarea id="onsched-field-message" name="customerMessage" cols="3" rows="4" placeholder="Send us a message (optional)"></textarea>
                         </div>
                     </div>
-                    <div class="onsched-form-booking-fields"></div>
                     <div class="onsched-form-row">
                         <div class="onsched-form-col">
                             <button type="submit" class="btn-submit">Complete Booking</button>
