@@ -240,7 +240,7 @@
   ///
   /// Begining of OnSchedJs logic
   ///
-  var onsched = OnSched("DemoUser", "sbox");
+  var onsched = OnSched("DemoUser", "live");
   var elements = onsched.elements();
 
   var now = new Date();
@@ -249,7 +249,11 @@
     //            locationId: 'burlingtonmedical', serviceId: 5, resourceId: 13, customerId: 17780, tzOffset: tzOffset, completeBooking: "BK"
     locationId: 'burlingtonmedical', serviceId: 5, resourceId: 13, tzOffset: tzOffset
   };
-  var availabilityOptions = {};
+  var availabilityOptions = 
+  { privacyFields: { 
+    checkboxLabel: "Accept GDPR Terms", linkText:"View our Privacy Policy", linkUrl: "https://onsched.com", linkTitle: "View in new tab"
+    }
+  };
   var availability = elements.create("availability", availabilityParams, availabilityOptions);
   //        availability.mount("availability");
   var elAvailability = document.getElementById("availability");

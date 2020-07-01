@@ -98,7 +98,15 @@ function OnSched(ClientId, Environment, Scope) {
                         case "search":
                             OnSchedMount.SearchElement(this);
                             break;
-                        default:
+                        case "setupLocation":
+                            break;
+                        case "setupResource":
+                            break;
+                        case "setupService":
+                            break;
+                        case "setupLocation":
+                            break;
+                            default:
                             // TODO - raise App error event
                             console.log("Unsupported element " + element.type);
                             html = "Unsupported element";
@@ -148,8 +156,8 @@ function OnSched(ClientId, Environment, Scope) {
                 else
                 if (event.target.classList.contains("month-next"))
                     OnSchedOnClick.MonthNext(event, element);
-                if (event.target.classList.contains("btn-submit") == false)
-                    event.preventDefault();
+//                if (event.target.classList.contains("btn-submit") == false)
+//                    event.preventDefault();
             };
 
             element.handleException = function (e) {
@@ -619,7 +627,7 @@ var OnSchedResponse = function () {
             console.log("PostAppointment Flow 1");
             // Render the booking form here
             var elBookingFormContainer = document.querySelector(".onsched-booking-form-container");
-            elBookingFormContainer.innerHTML = OnSchedTemplates.bookingForm(response);
+            elBookingFormContainer.innerHTML = OnSchedTemplates.bookingForm(response, element.options);
             var elPopup = document.querySelector(".onsched-popup-shadow");
             elPopup.classList.add("is-visible");
             element.timerId = OnSchedHelpers.StartBookingTimer(element.timerId, ".onsched-popup-header .booking-timer");
@@ -1709,7 +1717,59 @@ var OnSchedTemplates = function () {
         `;
         return tmplCheckboxField;
     }
-    function bookingForm(response) {
+    function privacyFields(options) {
+        if (options.privacyFields == null)
+            return "";
+        if (options.privacyFields.checkboxLabel == null)
+            return privacyFieldsLinkOnly(options);
+        if (options.privacyFields.formRows > 1)
+            return privacyFieldsTwoRows(options);
+        const tmplPrivacyFields = `
+        <div class="onsched-form-row">
+            <div class="onsched-form-col">
+                <label for="acceptPrivacyTerms"><input id="acceptPrivacyTerms" type="checkbox" required>${options.privacyFields.checkboxLabel}</label>
+            </div>
+            <div class="onsched-form-col">
+                <a href="${options.privacyFields.linkUrl}" target="_blank" title="${options.privacyFields.linkTitle}">
+                    ${options.privacyFields.linkText}
+                </a>
+            </div>
+        </div>
+        `;
+        return tmplPrivacyFields;
+    }
+    function privacyFieldsTwoRows(options) {
+        const tmplPrivacyFields = `
+        <div class="onsched-form-row">
+            <div class="onsched-form-col">
+                <label for="acceptPrivacyTerms"><input id="acceptPrivacyTerms" type="checkbox" required>${options.privacyFields.checkboxLabel}</label>
+            </div>
+        </div>
+        <div class="onsched-form-row">
+            <div class="onsched-form-col">
+                <a href="${options.privacyFields.linkUrl}" target="_blank" title="${options.privacyFields.linkTitle}">
+                    ${options.privacyFields.linkText}
+                </a>
+            </div>
+        </div>
+            `;
+        return tmplPrivacyFields;        
+    }
+    function privacyFieldsLinkOnly(options) {
+        if (options.privacyFields == null)
+            return "";
+        const tmplPrivacyFields = `
+        <div class="onsched-form-row">
+            <div class="onsched-form-col">
+                <a href="${options.privacyFields.linkUrl}" target="_blank" title="${options.privacyFields.linkTitle}">
+                    ${options.privacyFields.linkText}
+                </a>
+            </div>
+        </div>
+        `;
+        return tmplPrivacyFields;
+    }    
+    function bookingForm(response, options) {
         var date = OnSchedHelpers.ParseDate(response.dateInternational);
         var bookingDateOptions = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
         var bookingDate = date.toLocaleString("en-US", bookingDateOptions);
@@ -1746,7 +1806,6 @@ var OnSchedTemplates = function () {
                             <label for="onsched-field-lastname">Last Name</label>
                             <input id="onsched-field-lastname" type="text" name="lastname" placeholder="* required" required>
                         </div>
-
                     </div>
                     <div class="onsched-form-row">
                         <div class="onsched-form-col">
@@ -1757,6 +1816,9 @@ var OnSchedTemplates = function () {
                             <label for="onsched-field-phone">Phone</label>
                             <input id="onsched-field-phone" type="phone" name="phone" placeholder="Enter phone number (optional)">
                         </div>
+                    </div>
+                    <div class="onsched-form-privacy-fields">
+                        ${privacyFields(options)}
                     </div>
                     <div class="onsched-form-booking-fields">
                         ${bookingFields(response.appointmentBookingFields, "appointment")}
