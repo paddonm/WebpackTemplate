@@ -624,7 +624,7 @@ var OnSchedResponse = function () {
 
         if (OnSchedHelpers.IsEmpty(element.params.completeBooking) || OnSchedHelpers.IsEmpty(element.params.customerId)) {
             // Flow 1 - render the booking flow
-            console.log("PostAppointment Flow 1");
+//            console.log("PostAppointment Flow 1");
             // Render the booking form here
             var elBookingFormContainer = document.querySelector(".onsched-booking-form-container");
             elBookingFormContainer.innerHTML = OnSchedTemplates.bookingForm(response, element.options);
@@ -648,7 +648,7 @@ var OnSchedResponse = function () {
                     OnSchedOnClick.BookingFormCancel(e, element);
                 }
             });
-            console.log(elBookingForm);
+ //           console.log(elBookingForm);
             elBookingForm.addEventListener("submit", function (e) {
                 console.log("Submit Booking Form");
                 e.preventDefault(); // before the code
@@ -885,6 +885,11 @@ var OnSchedOnClick = function () {
 
         appointmentBM.appointmentBookingFields = appointmentBookingFields;
         appointmentBM.customerBookingFields = customerBookingFields;
+
+        if (element.params.appointmentBM != null) {
+            console.log(element.params.appointmentBM);
+            appointmentBM.customFields = element.params.appointmentBM.customFields;
+        }
 
 //        console.log(appointmentBM);
 //        console.log(appointmentBookingFields);
