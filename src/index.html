@@ -253,7 +253,8 @@
   var availabilityOptions = 
   { privacyFields: { 
     checkboxLabel: "Accept GDPR Terms", linkText:"View our Privacy Policy", linkUrl: "https://onsched.com", linkTitle: "View in new tab"
-    }
+    },
+    bookingConfirmation: { suppressUI: false }
   };
   var availability = elements.create("availability", availabilityParams, availabilityOptions);
   //        availability.mount("availability");
@@ -265,11 +266,11 @@
   });
   elAvailability.addEventListener("bookingConfirmation", function (e) {
     console.log("BOOKING CONFIRMATION EVENT")
-    elAvailability.innerHTML = "";
-    console.log(e.detail);
+ //   elAvailability.innerHTML = "";
+ //   console.log(e.detail);
     confirmationParams = { appointment: e.detail };
     confirmation.update(confirmationParams);
-    confirmation.mount("confirmation");
+//    confirmation.mount("confirmation");
     HideToast();
   });
 

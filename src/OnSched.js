@@ -333,16 +333,16 @@ var OnSchedMount = function () {
 
     function ConfirmationElement(element) {
         console.log("creating confirmation element in mount");
-        console.log(element.params);
+ //       console.log(element.params);
         var el = document.getElementById(element.id);
         el.addEventListener("click", element.onClick);
         if (element.params.appointment === null)
             return;
-        // render the bitch with a template. element.params.appointment object
-        console.log(el);
+        // render with a template. element.params.appointment object
+//        console.log(el);
         console.log(OnSchedTemplates.confirmation(element.params.appointment));
         el.innerHTML = OnSchedTemplates.confirmation(element.params.appointment);
-        console.log(el);
+//        console.log(el);
     }
 
     function ServiceElement(element) {
@@ -687,11 +687,26 @@ var OnSchedResponse = function () {
         }
         else {
             document.querySelector(".onsched-popup-shadow").classList.remove("is-visible");
-            var elAvailability = document.querySelector(".onsched-container.onsched-availability");
-            elAvailability.innerHTML = "";
-            var bookingConfirmationHtml = OnSchedTemplates.confirmation(response);
-            var elBookingConfirmationContainer = document.querySelector(".onsched-booking-confirmation-container");
-            elBookingConfirmationContainer.innerHTML = bookingConfirmationHtml;
+
+            // clear out the availbility container
+            var elAvailabilityContainer = document.querySelector(".onsched-container.onsched-availability")
+            elAvailabilityContainer.innerHTML = "";
+
+            // Need logic here to check if overriding the bookingConfirmation.
+
+            if (element.options.bookingConfirmation != null && element.options.bookingConfirmation.suppressUI) {
+                console.log("Suppress UI in BookingConfirmation")
+            }
+            else {
+                var bookingConfirmationHtml = OnSchedTemplates.confirmation(response);
+                var elBookingConfirmationContainer = document.querySelector(".onsched-booking-confirmation-container");
+                elBookingConfirmationContainer.innerHTML = bookingConfirmationHtml;    
+            }
+
+            // fire client event to inform of bookingConfirmation with response data
+            var elAvailability = document.getElementById(element.id);
+            var bookingConfirmationEvent = new CustomEvent("bookingConfirmation", { detail: response });
+            elAvailability.dispatchEvent(bookingConfirmationEvent);
         }
     }
     return {
