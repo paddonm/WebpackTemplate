@@ -1,12 +1,7 @@
 ﻿
 
+.onsched-container {
 
-
-/*  Hue is a degree on the color wheel (from 0 to 360) - 0 (or 360) is red, 120 is green, 240 is blue. 
-    Saturation is a percentage value; 0% means a shade of gray and 100% is the full color. 
-    Lightness is also a percentage; 0% is black, 100% is white.*/
-
-:root {
     --red-hue: 0;
     --yellow-hue: 60;
     --green-hue: 120;
@@ -22,15 +17,15 @@
 
     /*filter: invert(1) brightness(0.6);*/
 
-    /*This was in the RESET section for modal dialog*/
     --lightgray: #efefef;
     --blue: steelblue;
     --white: #fff;
     --black: rgba(0, 0, 0, 0.8);
     --bounceEasing: cubic-bezier(0.51, 0.92, 0.24, 1.15);
-}
 
-.onsched-container {
+
+
+
     max-width: 1200px;
     margin: 0 auto;
     font-family: "Avenir", Helvetica, Arial, sans-serif;
@@ -128,11 +123,12 @@
         text-align: center;
     }
 
-.hoverable {
+.onsched-chip.hoverable {
     transition: box-shadow .25s;
+    text-decoration: none;
 }
 
-.hoverable:hover {
+.onssched-chip.hoverable:hover {
     cursor: pointer;
     box-shadow: 0 8px 17px 0 rgba(0, 0, 0, 0.2), 0 6px 20px 0 rgba(0, 0, 0, 0.19);
 }
@@ -280,19 +276,6 @@
     background: #1abc9c;
     color: white !important
 }
-
-.waves-effect {
-    position: relative;
-    cursor: pointer;
-    display: inline-block;
-    overflow: hidden;
-    user-select: none;
-    -webkit-tap-highlight-color: transparent;
-    vertical-align: middle;
-    z-index: 1;
-    transition: .3s ease-out;
-}
-
 
 .onsched-progress-container {
     width: 120px;
@@ -459,30 +442,7 @@
     font-family: Roboto;
 }
 
-/* The snackbar - position it at the bottom and in the middle of the screen */
-.toast {
-    visibility: hidden; /* Hidden by default. Visible on click */
-    min-width: 250px; /* Set a default minimum width */
-    margin-left: -125px; /* Divide value of min-width by 2 */
-    background-color: #333; /* Black background color */
-    color: #fff; /* White text color */
-    text-align: center; /* Centered text */
-    border-radius: 2px; /* Rounded borders */
-    padding: 16px; /* Padding */
-    position: fixed; /* Sit on top of the screen */
-    z-index: 1; /* Add a z-index if needed */
-    left: 50%; /* Center the snackbar */
-    bottom: 30px; /* 30px from the bottom */
-}
 
-    /* Show the snackbar when clicking on a button (class added with JavaScript) */
-    .toast.show {
-        visibility: visible; /* Show the snackbar */
-        /* Add animation: Take 0.5 seconds to fade in and out the snackbar. 
-However, delay the fade out process for 2.5 seconds */
-        -webkit-animation: fadein 0.5s, fadeout 0.5s 2.5s;
-        animation: fadein 0.5s, fadeout 0.5s 2.5s;
-    }
 
 
 
@@ -525,14 +485,7 @@ However, delay the fade out process for 2.5 seconds */
 .onsched-booking-confirmation h4 {
     padding: 4px 0;
 }
-h2 {
-    margin: 0;
-}
 
-h3 {
-    margin: 0;
-    font-weight: 500;
-}
 .onsched-weekday-grid {
     display: table;
     table-layout: fixed;
@@ -736,9 +689,6 @@ h3 {
 
 }
 
-select > option {
-    background: #fff;
-}
 
 .onsched-select {
     display: block;
@@ -816,19 +766,6 @@ select > option {
     }
 }
 
-/* RESET RULES 
-–––––––––––––––––––––––––––––––––––––––––––––––––– */
-
-
-* {
-    padding: 0;
-    margin: 0;
-}
-
-a {
-    color: inherit;
-    text-decoration: none;
-}
 /*:not([disabled="disabled"])*/
 .onsched-container button:not([disabled="disabled"]) {
     cursor: pointer;
@@ -842,10 +779,6 @@ a {
     border: none;
     outline: none;
     font-size: inherit;
-}
-
-.btn-group {
-    text-align: center;
 }
 
 .onsched-popup-shadow {
@@ -1091,18 +1024,6 @@ a {
     }
 }
 
-
-/* FOOTER
-–––––––––––––––––––––––––––––––––––––––––––––––––– */
-.page-footer {
-    position: absolute;
-    bottom: 1rem;
-    right: 1rem;
-}
-
-.page-footer span {
-    color: #e31b23;
-}
 
 /* OnSched forms */
 
@@ -1427,22 +1348,6 @@ a {
     outline:none;
 }
 
-.pure-button {
-    display: inline-block;
-    zoom: 1;
-    line-height: normal;
-    white-space: nowrap;
-    vertical-align: middle;
-    text-align: center;
-    cursor: pointer;
-    -webkit-user-drag: none;
-    -webkit-user-select: none;
-    -moz-user-select: none;
-    -ms-user-select: none;
-    user-select: none;
-    -webkit-box-sizing: border-box;
-    box-sizing: border-box;
-}
 .onsched-button-primary, .onsched-button-selected, a.onsched-button-primary, a.onsched-button-selected {
     background-color: #0078e7;
     color: #fff;
@@ -1454,56 +1359,6 @@ a {
 
 /* OnSched Grid */
 
-
-
-/* Masked Input */
-.shell {
-    position: relative;
-    line-height: 1;
-}
-
-.shell span {
-    position: absolute;
-    left: 3px;
-    top: 1px;
-    color: red;
-    pointer-events: none;
-    z-index: -1;
-}
-
-.shell span i {
-    /* any of these 3 will work */
-    color: transparent;
-    opacity: 0;
-    visibility: hidden;
-}
-
-input.masked,
-.shell span {
-    font-size: 16px;
-    font-family: monospace;
-    padding-right: 10px;
-    background-color: transparent;
-    text-transform: uppercase;
-}
-
-/* Look and feel (not lib specific) 
-li {
-    line-height: 2;
-    font-family: helvetica;
-    list-style-type: none;
-    border-bottom: 1px solid #ccc;
-}
-
-label {
-    display: inline-block;
-    width: 14em;
-}
-
-input {
-    border: none;
-}
-*/
 
 @media only screen and (max-width: 600px) {
     .onsched-container {
@@ -1595,6 +1450,12 @@ input {
         line-height: 36px;
         font-size: 14px;
         color:ButtonText;
+        color:#262626;
+        background-color:lightgray;
+    }
+    
+    a.time.onsched-chip.hoverable {
+        text-decoration: none !important;
     }
 
     .onsched-select {

@@ -1,0 +1,5 @@
+[defaults]
+url=https://sentry.io/
+org=onsched
+[auth]
+token=8d621b65f8264c2fb7b3602ee6098a18d713f9690515454999affa778d476f66
