@@ -1807,13 +1807,13 @@ var OnSchedTemplates = function () {
                 <a href="#" class="onsched-close-btn" title="Close" aria-label="close modal" data-close></a>
             </header>
             <section class="onsched-booking-summary">
-                <h4 style="opacity:.8;padding:2px 0;">${response.businessName}</h4>
-                <h5 style="opacity:.8;padding:2px 0;">${response.serviceName}</h5>
-                <h5 style="opacity:.8;padding:2px 0;">
+                <h4>${response.businessName}</h4>
+                <h5>${response.serviceName}</h5>
+                <h5>
                     ${OnSchedHelpers.FormatDuration(response.duration)}
                     - ${response.resourceName}
                 </h5>
-                <h5 style="opacity:.8;padding:2px 0;">
+                <h5>
                     ${bookingDate} @ ${OnSchedHelpers.FormatTime(response.time)}
                 </h5>
             </section>

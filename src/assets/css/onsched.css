@@ -1274,10 +1274,13 @@
     font-size:smaller;
 }
 .onsched-booking-summary h4 {
-    margin:4px;
+    margin:3px;
+    padding: 2px 0;
 }
 .onsched-booking-summary h5 {
-    margin: 2px 4px;
+    margin: 1px 4px;
+    opacity: .8;
+    padding: 2px 0;
 }
 
 .onsched-button, .onsched-form button {
