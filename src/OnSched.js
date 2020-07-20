@@ -238,6 +238,11 @@ var OnSchedMount = function () {
         // then replace the calendar element within the container
         element.params.date = OnSchedHelpers.IsEmpty(element.params.date) ? new Date() : element.params.date;
         element.timerId = null;
+
+        var now = new Date();
+        var tzOffset = -now.getTimezoneOffset();
+        element.params.tzOffset = OnSchedHelpers.IsEmpty(element.params.tzOffset) ? tzOffset : element.params.tzOffset;
+
         var html = OnSchedTemplates.availabilityContainer();
         var el = document.getElementById(element.id);
         el.innerHTML = html;

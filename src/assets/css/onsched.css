@@ -1273,6 +1273,12 @@
     margin: 8px 12px;
     font-size:smaller;
 }
+.onsched-booking-summary h4 {
+    margin:4px;
+}
+.onsched-booking-summary h5 {
+    margin: 2px 4px;
+}
 
 .onsched-button, .onsched-form button {
     font-family: inherit;
