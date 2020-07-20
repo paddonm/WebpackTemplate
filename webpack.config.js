@@ -21,6 +21,7 @@ module.exports = {
   output: {
     path: path.resolve(__dirname, 'public'),
     filename: 'index.js',
+    sourceMapFilename: 'index.js.map',
     libraryTarget: 'this',
   },
   devtool: 'inline-source-map',

@@ -742,7 +742,7 @@
     border: 1px solid #fff;
 }
 
-*, *:before, *:after {
+.onsched-container *, *:before, *:after {
     -webkit-box-sizing: inherit;
     box-sizing: inherit;
 }
@@ -1427,7 +1427,7 @@
         content: '\0025BC';
         font: normal normal normal 12px/1 FontAwesome;
         color: #707070;
-        right: 8px;
+        right: 0;
         top: -2px;
         height: 26px;
         padding: 15px 0px 0px 8px;

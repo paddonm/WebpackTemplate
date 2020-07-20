@@ -5,6 +5,8 @@
 
 'use strict';
 import * as Sentry from '@sentry/browser';
+import moment from 'moment';
+import momenttimezone from 'moment-timezone';
 
 import './assets/css/index.css';
 import { configureScope } from '@sentry/browser';
@@ -1191,7 +1193,7 @@ var OnSchedHelpers = function () {
             }
             // default to 2 mins
             timerSecs = timerSecs == null ? 120 : timerSecs;
-            var today = new Date();
+            var today = new Date(); 
             today.setHours(0);
             today.setMinutes(0);
             today.setSeconds(timerSecs);
@@ -1287,10 +1289,7 @@ var OnSchedTemplates = function () {
                 <div class="onsched-calendar"></div>
                 <div class="onsched-timezone">
                     <select class="onsched-select timezone">
-                        <option value="-420">Pacific Daylight Time (UTC-07:00)</option>
-                        <option value="-360">Mountain Daylight Time (UTC-06:00)</option>
-                        <option value="-300">Central Daylight Time (UTC-05:00)</option>
-                        <option value="-240">Eastern Daylight Time (UTC-04:00)</option>
+                        ${TimezoneSelectOptions(Timezones())}
                     </select>
                 </div>
             </div>
@@ -1704,7 +1703,7 @@ var OnSchedTemplates = function () {
     }
     function sizeAttribute(length) {
         if (length > 0)
-            return "size="+length;
+            return "maxlength="+length;
         else
             return "";
     }
@@ -2076,6 +2075,109 @@ var OnSchedTemplates = function () {
         var ampm = displayTime.substr(spaceIndex + 1);
         return ampm;
     }
+
+    // Timezone select functions
+
+    function TimezoneSelectOptions(tzRegionData) {
+        // need to do this template style in onschedjs
+        const markup = `
+            ${tzRegionData.map((tzRegion, index) =>
+                `${TimezoneOptionGroups(tzRegion.name, tzRegion.timezones)}`
+            ).join("")}
+        `;
+        return markup;
+    }
+
+    function TimezoneOptionGroups(name, timezones) {
+        // need to do this template style in onschedjs
+        const markup = `
+            <optgroup label="${name}">              
+            ${timezones.map((timezone, index) =>
+            `<option value="${timezone.offset}" data-offset="${timezone.offset}" data-tz="${timezone.id}">${timezone.name}</option>`
+            ).join("")}
+            </optgroup>
+        `;
+        return markup;
+    }
+
+    function Timezones() {
+        var tzRegionData = [
+            { "name": "US / Canada", "timezones": TzUsCanada() },
+            { "name": "Europe", "timezones": TzEurope() },
+            { "name": "Australia", "timezones": TzAustralia() },
+        ];
+        return tzRegionData;
+    }
+    function TzUtcTime(tzData) {
+        var today = new Date();
+        for (var i = 0; i < tzData.length; i++) {
+            var m = moment.tz(today, tzData[i].id);
+            tzData[i].name += " " + "(UTC" + m.format("Z") + ")";
+            tzData[i].offset = m.utcOffset();
+        }
+        return tzData;
+    }
+    function TzUsCanada() {
+
+        var tzData = [
+
+            { "name": "Pacific Time", "id": "America/Los_Angeles", "offset": "0"},
+            { "name": "Mountain Time", "id": "America/Denver", "offset": "0" },
+            { "name": "Central Time", "id": "America/Chicago", "offset": "0" },
+            { "name": "Eastern Time", "id": "America/New_York", "offset": "0" },
+            { "name": "Alaska Time", "id": "America/Anchorage", "offset": "0" },
+            { "name": "Hawaii Time", "id": "Pacific/Honolulu", "offset": "0" },
+            { "name": "Atlantic Time", "id": "America/Halifax", "offset": "0" },
+            { "name": "Newfoundland Time", "id": "America/St_Johns", "offset": "0" }
+        ];
+
+        return TzUtcTime(tzData);
+    }
+    function TzEurope() {
+        var tzData = [
+
+            { "name": "UK,Ireland,Lisbon", "id": "Europe/London", "offset": "0" },
+            { "name": "Central European Time", "id": "Europe/Madrid", "offset": "0" },
+            { "name": "Eastern European Time", "id": "Europe/Bucharest", "offset": "0" },
+            { "name": "Minsk Time", "id": "Europe/Minsk", "offset": "0" },
+        ];
+        return TzUtcTime(tzData);
+    }
+    function TzAustralia() {
+        var tzData = [
+
+            { "name": "Australian Western Time", "id": "Australia/Perth", "offset": "0" },
+            { "name": "Australian Central Western Time", "id": "Australia/Eucla", "offset": "0" },
+            { "name": "Austrailian Adelaide Time", "id": "Australia/Adelaide", "offset": "0" },
+            { "name": "Austrailian Brisbane Time", "id": "Australia/Brisbane", "offset": "0" },
+            { "name": "Austrailian Eastern Time", "id": "Australia/Sydney", "offset": "0" },
+            { "name": "Austrailian Lord Howe Time", "id": "Australia/Lord_Howe", "offset": "0" },
+        ];
+        return TzUtcTime(tzData);
+    }
+    function TzAsia() {
+        var tzData = [
+
+            { "name": "Placeholder", "id": "America/Los_Angeles", "offset": "0" },
+
+        ];
+        return TzUtcTime(tzData);
+    }
+    function TzAtlantic() {
+        var tzData = [
+            { "name": "Placeholder", "id": "America/Los_Angeles", "offset": "0" },
+
+        ];
+        return TzUtcTime(tzData);
+    }
+    function TzPacific() {
+        var tzData = [
+            { "name": "Placeholder", "id": "America/Los_Angeles", "offset": "0" },
+
+        ];
+        return TzUtcTime(tzData);
+    }
+
     return {
         availabilityContainer: availabilityContainer,
         timesContainer: timesContainer,
