@@ -534,7 +534,8 @@
     width: 30px;
     text-align: center;
     padding: 4px;
-    cursor:default
+    cursor:default;
+    text-transform: capitalize;
 }
 .onsched-available-times-header .date-selected .dom {
     background-color: #1a73e8;
@@ -597,6 +598,7 @@
     justify-content: space-between;
     padding: 0 0;
     width: 240px;
+    text-transform: capitalize;
 }
 
 .onsched-calendar-grid {
@@ -1416,7 +1418,13 @@
     a.time.onsched-chip.hoverable {
         text-decoration: none !important;
     }
-
+    .onsched-table .time-container .time.onsched-chip {
+        width: 100px;
+    }
+    div.time-container {
+        display: flex;
+        flex-wrap: nowrap;
+    }
     .onsched-select {
         font-size: 16px;
         line-height:16px;

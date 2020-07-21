@@ -269,7 +269,8 @@ However, delay the fade out process for 2.5 seconds */
   ///
   /// Begining of OnSchedJs logic
   ///
-  var onsched = OnSched("DemoUser", "live");
+  var onschedOptions = { locale: "sv-SE"};
+  var onsched = OnSched("DemoUser", "live", onschedOptions);
   var elements = onsched.elements();
 
   var now = new Date();

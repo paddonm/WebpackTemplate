@@ -19,12 +19,13 @@ Sentry.init({
 
 // Main entry point for OnSched.js
 
-function OnSched(ClientId, Environment, Scope) {
+function OnSched(ClientId, Environment, Options) {
 
     // Should probably include scope in an Options object
     var self = {};
     self.objectName = "OnSched";
-    self.scope = Scope === null ? "OnSched Api" : Scope;
+    self.scope = Options === undefined ? "OnSchedApi" : Options.scope;
+    self.locale = Options === undefined || Options.locale == null ? "en-US" : Options.locale;
     self.clientId = ClientId;
     self.environment = Environment === null ? "live" : Environment;
     self.environment = self.environment === "live" || self.environment === "sbox" ? self.environment : "sbox";
@@ -243,6 +244,8 @@ var OnSchedMount = function () {
         var tzOffset = -now.getTimezoneOffset();
         element.params.tzOffset = OnSchedHelpers.IsEmpty(element.params.tzOffset) ? tzOffset : element.params.tzOffset;
 
+        console.log("avail locale="+element.onsched.locale);
+
         var html = OnSchedTemplates.availabilityContainer();
         var el = document.getElementById(element.id);
         el.innerHTML = html;
@@ -253,7 +256,7 @@ var OnSchedMount = function () {
         elTimezone.value = element.params.tzOffset;
         // initialize the calendar using only the date which is lightening fast
         var elCalendar = document.querySelector(".onsched-calendar");
-        elCalendar.innerHTML = OnSchedTemplates.calendarSelectorFromDate(element.params.date);
+        elCalendar.innerHTML = OnSchedTemplates.calendarSelectorFromDate(element.params.date, element.onsched.locale);
         var elTimes = document.querySelector(".onsched-available-times");
         elTimes.innerHTML = "";
         var url = OnSchedHelpers.CreateAvailabilityUrl(element.onsched.apiBaseUrl, element.params);
@@ -266,13 +269,13 @@ var OnSchedMount = function () {
 
         var elDateSelected = document.querySelector(".onsched-available-times-header .date-selected");
         var dateSelectedTitle = element.params.date.toLocaleDateString(
-            "en-US", { weekday: 'long', month: 'short', day: 'numeric', year: 'numeric' });
+            element.onsched.locale, { weekday: 'long', month: 'short', day: 'numeric', year: 'numeric' });
         elDateSelected.title = dateSelectedTitle;
 
         var elDow = document.querySelector(".onsched-available-times-header .date-selected .dow");
-        elDow.innerHTML = element.params.date.toLocaleDateString("en-US", { weekday: 'short' });
+        elDow.innerHTML = element.params.date.toLocaleDateString(element.onsched.locale, { weekday: 'short' });
         var elDom = document.querySelector(".onsched-available-times-header .date-selected .dom");
-        elDom.innerHTML = element.params.date.toLocaleDateString("en-US", { day: 'numeric' });
+        elDom.innerHTML = element.params.date.toLocaleDateString(element.onsched.locale, { day: 'numeric' });
 
         element.onsched.accessToken.then(x =>
             OnSchedRest.GetAvailability(x, url, function (response) {
@@ -339,17 +342,12 @@ var OnSchedMount = function () {
     }
 
     function ConfirmationElement(element) {
-        console.log("creating confirmation element in mount");
- //       console.log(element.params);
         var el = document.getElementById(element.id);
         el.addEventListener("click", element.onClick);
         if (element.params.appointment === null)
             return;
         // render with a template. element.params.appointment object
-//        console.log(el);
-        console.log(OnSchedTemplates.confirmation(element.params.appointment));
-        el.innerHTML = OnSchedTemplates.confirmation(element.params.appointment);
-//        console.log(el);
+        el.innerHTML = OnSchedTemplates.confirmation(element.params.appointment, element.onsched.locale);
     }
 
     function ServiceElement(element) {
@@ -479,12 +477,12 @@ var OnSchedResponse = function () {
 
         var elDateSelected = document.querySelector(".onsched-available-times-header .date-selected");
         var dateSelectedTitle = selectedDate.toLocaleDateString(
-            "en-US", { weekday: 'long', month: 'short', day: 'numeric', year: 'numeric' });
+            element.onsched.locale, { weekday: 'long', month: 'short', day: 'numeric', year: 'numeric' });
         elDateSelected.title = dateSelectedTitle;
         var elDow = document.querySelector(".onsched-available-times-header .date-selected .dow");
-        elDow.innerHTML = selectedDate.toLocaleDateString("en-US", { weekday: 'short' });
+        elDow.innerHTML = selectedDate.toLocaleDateString(element.onsched.locale, { weekday: 'short' });
         var elDom = document.querySelector(".onsched-available-times-header .date-selected .dom");
-        elDom.innerHTML = selectedDate.toLocaleDateString("en-US", { day: 'numeric' });
+        elDom.innerHTML = selectedDate.toLocaleDateString(element.onsched.locale, { day: 'numeric' });
 
         var rebuildCalendar = response.availableDays.length > 0;
         if (rebuildCalendar) {
@@ -493,7 +491,7 @@ var OnSchedResponse = function () {
             // We only take the number of availableDays that we need to populate the calendar, hence the slice.
             var availableDays = response.availableDays.length > days ? response.availableDays.slice(0, days) : response.availableDays;
             var elCalendar = document.querySelector(".onsched-calendar");
-            elCalendar.innerHTML = OnSchedTemplates.calendarSelector(availableDays, selectedDate);
+            elCalendar.innerHTML = OnSchedTemplates.calendarSelector(availableDays, selectedDate, element.onsched.locale);
         }
 
         // Business name currently hidden. Leave logic for possible future use
@@ -512,7 +510,7 @@ var OnSchedResponse = function () {
 
         // Populate the available times list
 
-        var htmlTimes = OnSchedTemplates.availableTimes2(response, selectedDate, element.params.customerId);
+        var htmlTimes = OnSchedTemplates.availableTimes2(response, selectedDate, element.params.customerId, element.onsched.locale);
         var elTimes = document.querySelector(".onsched-available-times");
         elTimes.innerHTML = htmlTimes;
     }
@@ -634,7 +632,7 @@ var OnSchedResponse = function () {
 //            console.log("PostAppointment Flow 1");
             // Render the booking form here
             var elBookingFormContainer = document.querySelector(".onsched-booking-form-container");
-            elBookingFormContainer.innerHTML = OnSchedTemplates.bookingForm(response, element.options);
+            elBookingFormContainer.innerHTML = OnSchedTemplates.bookingForm(response, element.options, element.onsched.locale);
             var elPopup = document.querySelector(".onsched-popup-shadow");
             elPopup.classList.add("is-visible");
             element.timerId = OnSchedHelpers.StartBookingTimer(element.timerId, ".onsched-popup-header .booking-timer");
@@ -705,7 +703,7 @@ var OnSchedResponse = function () {
                 console.log("Suppress UI in BookingConfirmation")
             }
             else {
-                var bookingConfirmationHtml = OnSchedTemplates.confirmation(response);
+                var bookingConfirmationHtml = OnSchedTemplates.confirmation(response, element.onsched.locale);
                 var elBookingConfirmationContainer = document.querySelector(".onsched-booking-confirmation-container");
                 elBookingConfirmationContainer.innerHTML = bookingConfirmationHtml;    
             }
@@ -746,7 +744,7 @@ var OnSchedOnChange = function () {
 //        console.log(url);
         var elDateSelected = document.querySelector(".onsched-available-times-header .date-selected");
         var dateSelectedTitle = selectedDate.toLocaleDateString(
-            "en-US", { weekday: 'long', month: 'short', day: 'numeric', year: 'numeric' });
+            element.onsched.locale, { weekday: 'long', month: 'short', day: 'numeric', year: 'numeric' });
         elDateSelected.title = dateSelectedTitle;
         OnSchedHelpers.ShowProgress();
 
@@ -787,7 +785,7 @@ var OnSchedOnClick = function () {
         var clickedDate = OnSchedHelpers.ParseDate(dayClicked.dataset.date);
         var url = OnSchedHelpers.CreateAvailabilityUrl(element.onsched.apiBaseUrl, element.params, clickedDate);
         if (clickedDate.getMonth() != title.dataset.month || clickedDate.getFullYear() != title.dataset.year) {
-            var calendarHtml = OnSchedTemplates.calendarSelectorFromDate(clickedDate);
+            var calendarHtml = OnSchedTemplates.calendarSelectorFromDate(clickedDate, element.onsched.locale);
             var elCalendar = document.querySelector(".onsched-calendar");
             elCalendar.innerHTML = calendarHtml;
 
@@ -798,12 +796,12 @@ var OnSchedOnClick = function () {
         }
 
         var elDow = document.querySelector(".onsched-available-times-header .date-selected .dow");
-        elDow.innerHTML = clickedDate.toLocaleDateString("en-US", { weekday: 'short' });
+        elDow.innerHTML = clickedDate.toLocaleDateString(element.onsched.locale, { weekday: 'short' });
         var elDom = document.querySelector(".onsched-available-times-header .date-selected .dom");
-        elDom.innerHTML = clickedDate.toLocaleDateString("en-US", { day: 'numeric' });
+        elDom.innerHTML = clickedDate.toLocaleDateString(element.onsched.locale, { day: 'numeric' });
         var elDateSelected = document.querySelector(".onsched-available-times-header .date-selected");
         var dateSelectedTitle = clickedDate.toLocaleDateString(
-            "en-US", { weekday: 'long', month: 'short', day: 'numeric', year: 'numeric' });
+            element.onsched.locale, { weekday: 'long', month: 'short', day: 'numeric', year: 'numeric' });
         elDateSelected.title = dateSelectedTitle;
 
         OnSchedHelpers.ShowProgress();
@@ -937,7 +935,7 @@ var OnSchedOnClick = function () {
 
         var url = OnSchedHelpers.CreateAvailabilityUrl(element.onsched.apiBaseUrl, element.params, prevDate);
 
-        var calendarHtml = OnSchedTemplates.calendarSelectorFromDate(prevDate);
+        var calendarHtml = OnSchedTemplates.calendarSelectorFromDate(prevDate, element.onsched.locale);
         var elCalendar = document.querySelector(".onsched-calendar");
         elCalendar.innerHTML = calendarHtml;
         // calculate available days to pull when mounting
@@ -949,12 +947,12 @@ var OnSchedOnClick = function () {
         elTimes.innerHTML = "";
 
         var elDow = document.querySelector(".onsched-available-times-header .date-selected .dow");
-        elDow.innerHTML = prevDate.toLocaleDateString("en-US", { weekday: 'short' });
+        elDow.innerHTML = prevDate.toLocaleDateString(element.onsched.locale, { weekday: 'short' });
         var elDom = document.querySelector(".onsched-available-times-header .date-selected .dom");
-        elDom.innerHTML = prevDate.toLocaleDateString("en-US", { day: 'numeric' });
+        elDom.innerHTML = prevDate.toLocaleDateString(element.onsched.locale, { day: 'numeric' });
         var elDateSelected = document.querySelector(".onsched-available-times-header .date-selected");
         var dateSelectedTitle = prevDate.toLocaleDateString(
-            "en-US", { weekday: 'long', month: 'short', day: 'numeric', year: 'numeric' });
+            element.onsched.locale, { weekday: 'long', month: 'short', day: 'numeric', year: 'numeric' });
         elDateSelected.title = dateSelectedTitle;
 
         OnSchedHelpers.ShowProgress();
@@ -973,7 +971,7 @@ var OnSchedOnClick = function () {
         var nextDate = OnSchedHelpers.AddDaysToDate(lastDayDate, 1);
         var url = OnSchedHelpers.CreateAvailabilityUrl(element.onsched.apiBaseUrl, element.params, nextDate);
 
-        var calendarHtml = OnSchedTemplates.calendarSelectorFromDate(nextDate);
+        var calendarHtml = OnSchedTemplates.calendarSelectorFromDate(nextDate, element.onsched.locale);
         var elCalendar = document.querySelector(".onsched-calendar");
         elCalendar.innerHTML = calendarHtml;
 
@@ -987,12 +985,12 @@ var OnSchedOnClick = function () {
         elTimes.innerHTML = "";
 
         var elDow = document.querySelector(".onsched-available-times-header .date-selected .dow");
-        elDow.innerHTML = nextDate.toLocaleDateString("en-US", { weekday: 'short' });
+        elDow.innerHTML = nextDate.toLocaleDateString(element.onsched.locale, { weekday: 'short' });
         var elDom = document.querySelector(".onsched-available-times-header .date-selected .dom");
-        elDom.innerHTML = nextDate.toLocaleDateString("en-US", { day: 'numeric' });
+        elDom.innerHTML = nextDate.toLocaleDateString(element.onsched.locale, { day: 'numeric' });
         var elDateSelected = document.querySelector(".onsched-available-times-header .date-selected");
         var dateSelectedTitle = nextDate.toLocaleDateString(
-            "en-US", { weekday: 'long', month: 'short', day: 'numeric', year: 'numeric' });
+            element.onsched.locale, { weekday: 'long', month: 'short', day: 'numeric', year: 'numeric' });
 //        dateSelectedTitle += " " + nextDate.toTimeString();
         elDateSelected.title = dateSelectedTitle;
 
@@ -1309,7 +1307,7 @@ var OnSchedTemplates = function () {
         return markup;
     }
 
-    function timesContainer(availableTimes, locationId, customerId) {
+    function timesContainer(availableTimes, locationId, customerId, locale) {
 
         locationId = OnSchedHelpers.IsEmpty(locationId) ? "" : locationId;
         customerId = OnSchedHelpers.IsEmpty(customerId) ? "" : customerId;
@@ -1329,7 +1327,7 @@ var OnSchedTemplates = function () {
                     data-slots="${availableTime.availableBookings}"
                     title="Click to book now. ${availableTime.availableBookings} remaining"
                     >
-                    ${timeFromDisplayTime(availableTime.displayTime)} <span class="ampm">${ampmFromDisplayTime(availableTime.displayTime)}</span>
+                    ${timeFromMilitaryTime(availableTime.time, locale)}
                  </a>`
             ).join("")}
             </div>
@@ -1394,7 +1392,7 @@ var OnSchedTemplates = function () {
         return html;
     }
 
-    function availableTimes2(availability, selectedDate, customerId) {
+    function availableTimes2(availability, selectedDate, customerId, locale) {
 
         const htmlNoAvailableTimes = `
             <div class="onsched-no-available-times">
@@ -1431,15 +1429,15 @@ var OnSchedTemplates = function () {
 
         const htmlMorningRows = `
                 <tr><th>Morning</th></tr>
-                <tr><td>${timesContainer(morning, availability.locationId, customerId)}</td></tr>
+                <tr><td>${timesContainer(morning, availability.locationId, customerId, locale)}</td></tr>
         `;
         const htmlAfternoonRows = `
                 <tr><th>Afternoon</th></tr>
-                <tr><td>${timesContainer(afternoon, availability.locationId, customerId)}</td></tr>
+                <tr><td>${timesContainer(afternoon, availability.locationId, customerId, locale)}</td></tr>
         `;
         const htmlEveningRows = `
                 <tr><th>Evening</th></tr>
-                <tr><td>${timesContainer(evening, availability.locationId, customerId)}</td></tr>
+                <tr><td>${timesContainer(evening, availability.locationId, customerId, locale)}</td></tr>
         `;
 
         const html = `
@@ -1469,13 +1467,13 @@ var OnSchedTemplates = function () {
         return timesHtml;
     }
 
-    function calendarSelectorFromDate(date) {
+    function calendarSelectorFromDate(date, locale) {
         // For a quick render of the calendar
         // we build day availability from the date
         var availableDays = availableDaysFromDate(date);
-        return calendarSelector(availableDays, date);
+        return calendarSelector(availableDays, date, locale);
     }
-    function calendarSelector(availableDays, date) {
+    function calendarSelector(availableDays, date, locale) {
 
         var options = { year: 'numeric', month: 'long' };
 
@@ -1485,7 +1483,7 @@ var OnSchedTemplates = function () {
 
             <div class="onsched-calendar-header">
                 <div class="onsched-calendar-title" data-month="${date.getMonth()}" data-year="${date.getFullYear()}">
-                    ${date.toLocaleDateString("en-US", options)}
+                    ${date.toLocaleDateString(locale, options)}
                 </div>
                 <div class="onsched-progress-container">
                     <div class="onsched-progress">
@@ -1506,15 +1504,17 @@ var OnSchedTemplates = function () {
             </div>
         `;
 
+        var weekdayDate = new Date(1960, 10-1, 30, 0, 0, 0); // my birtgday was on a sunday
+
         const tmplCalendarWeekDayRow = `
             <div class="onsched-calendar-row onsched-weekdays">
-                <div class="onsched-calendar-col dow" title="Sunday">Sun</div>
-                <div class="onsched-calendar-col dow" title="Monday">Mon</div>
-                <div class="onsched-calendar-col dow" title="Tuesday">Tue</div>
-                <div class="onsched-calendar-col dow" title="Wednesday">Wed</div>
-                <div class="onsched-calendar-col dow" title="Thursday">Thu</div>
-                <div class="onsched-calendar-col dow" title="Friday">Fri</div>
-                <div class="onsched-calendar-col dow" title="Saturday">Sat</div>
+                <div class="onsched-calendar-col dow" title="Sunday">${weekdayDate.toLocaleDateString(locale,  {weekday: "short"})}</div>
+                <div class="onsched-calendar-col dow" title="Monday">${AddDaysToDate(weekdayDate, 2).toLocaleDateString(locale,  {weekday: "short"})}</div>
+                <div class="onsched-calendar-col dow" title="Tuesday">${AddDaysToDate(weekdayDate, 3).toLocaleDateString(locale,  {weekday: "short"})}</div>
+                <div class="onsched-calendar-col dow" title="Wednesday">${AddDaysToDate(weekdayDate, 4).toLocaleDateString(locale,  {weekday: "short"})}</div>
+                <div class="onsched-calendar-col dow" title="Thursday">${AddDaysToDate(weekdayDate, 5).toLocaleDateString(locale,  {weekday: "short"})}</div>
+                <div class="onsched-calendar-col dow" title="Friday">${AddDaysToDate(weekdayDate, 6).toLocaleDateString(locale,  {weekday: "short"})}</div>
+                <div class="onsched-calendar-col dow" title="Saturday">${AddDaysToDate(weekdayDate, 7).toLocaleDateString(locale,  {weekday: "short"})}</div>
             </div>
         `;
 
@@ -1793,10 +1793,10 @@ var OnSchedTemplates = function () {
         `;
         return tmplPrivacyFields;
     }    
-    function bookingForm(response, options) {
+    function bookingForm(response, options, locale) {
         var date = OnSchedHelpers.ParseDate(response.dateInternational);
         var bookingDateOptions = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
-        var bookingDate = date.toLocaleString("en-US", bookingDateOptions);
+        var bookingDate = date.toLocaleString(locale, bookingDateOptions);
 
         const tmplBookingForm = `
     <div class="onsched-popup-shadow" data-animation="zoomInOut">
@@ -1891,13 +1891,13 @@ var OnSchedTemplates = function () {
         return tmplPopupFormHeader;
     }
 
-    function confirmation(appointment) {
+    function confirmation(appointment, locale) {
         var date = OnSchedHelpers.ParseDate(appointment.dateInternational);
         var options = {
             weekday: "short", year: "numeric", month: "short",
             day: "numeric"
         };  
-        var formattedDate = date.toLocaleString("en-US", options);
+        var formattedDate = date.toLocaleString(locale, options);
         const tmplConfirmation = `
             <div class="onsched-container onsched-confirmation-container">
                 <div class="onsched-row">
@@ -2068,6 +2068,13 @@ var OnSchedTemplates = function () {
             equal = true;
 
         return equal;
+    }
+
+    function timeFromMilitaryTime(time, locale) {
+        var hours = time / 100;
+        var mins = time % 100;
+        var timeDate = new Date(1960, 10-1, 30, hours, mins, 0);
+        return timeDate.toLocaleTimeString(locale, { hour: '2-digit', minute: '2-digit'});
     }
 
     function timeFromDisplayTime(displayTime) {
