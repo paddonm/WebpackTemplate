@@ -17,6 +17,7 @@ module.exports = {
     'regenerator-runtime/runtime',
     './src/OnSched.js'
   ],
+  // devtool: 'source-map',
   plugins: [
     new DefinePlugin({
       __VERSION__: JSON.stringify(require("./package.json").version)
@@ -30,7 +31,10 @@ module.exports = {
     }),
     new SourceMapDevToolPlugin({
       filename: 'index.js.map',
-      // exclude: ['vendor.js']
+      exclude:  ['node_modules'],
+      module:    true,
+      columns:   true,
+      noSources: false,
     })
   ],
   output: {

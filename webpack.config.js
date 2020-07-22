@@ -37,16 +37,13 @@ module.exports = {
       __VERSION__: JSON.stringify(require("./package.json").version)
     }),
     new CleanWebpackPlugin(),
-    new SentryWebpackPlugin({
-      release: require('./package.json').version,
-      include: path.resolve(__dirname, 'dist'),
-      ignore: ['node_modules', 'webpack.*.js'],
-      ignoreFile: '.gitignore',
-    }),
     new SourceMapDevToolPlugin({
       filename: 'index.js.map',
-      // exclude: ['vendor.js']
-    }),   
+      exclude:  ['node_modules'],
+      module:    true,
+      columns:   true,
+      noSources: false,
+    }),
     new HtmlWebpackPlugin({
       template: './src/index.html',
       filename: 'index.html'
