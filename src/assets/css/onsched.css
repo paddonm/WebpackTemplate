@@ -1318,6 +1318,172 @@
     margin: 1.5em 0 0 11em;
 }
 
+/* Wizard css */
+.onsched-wizard {
+    padding: 24px;
+}
+
+.onsched-wizard.onsched-form .onsched-select {
+    -webkit-appearance: menulist-button;
+    height: 30px;
+}
+
+.onsched-wizard button {
+    background-color:#1a73e8;
+    color:#fff;
+}
+
+.onsched-wizard-section {
+    margin-bottom: 12px;
+    min-height:400px;
+    display:none;
+}
+.onsched-wizard-nav {
+    display: table;
+    width: 100%;
+    border-top:3px solid #efefef;
+    padding: 12px 0;
+}
+
+.onsched-wizard-nav-status {
+    text-align: left;
+    vertical-align: middle;
+    display: table-cell;
+}
+.onsched-wizard-nav-buttons {
+    display: table-cell;
+    vertical-align: middle;
+    text-align:right;
+}
+.onsched-wizard-nav-buttons button {
+    display:inline-block;
+}
+
+.onsched-wizard-nav .step {
+    position:relative;
+    top: 10px;
+    height: 15px;
+    width: 15px;
+    margin: 0 2px;
+    background-color: #bbbbbb;
+    border: none;
+    border-radius: 50%;
+    display: inline-block;
+    opacity: 0.5;
+}
+
+.onsched-wizard-nav .step.active {
+    opacity: 1;
+}
+
+.onsched-wizard-nav .step.finish {
+    background-color: #4CAF50;
+}
+
+.onsched-business-hours {
+    display:table;
+    width:100%;
+}
+
+.onsched-business-hours-row {
+    display:table-row;
+}
+
+.onsched-business-hours-day, .onsched-business-hours-time {
+    display:table-cell;
+    padding:10px;
+    text-align:center;
+    line-height:24px;
+}
+.onsched-business-hours-time .closed {
+    color:darkred;
+    display:none;
+}
+.onsched-business-hours-time .hrs24 {
+    display:none;
+}
+.onsched-business-hours-time select {
+    width:100%;
+}
+.onsched-business-hours-tz {
+    opacity: .6;
+    margin:0 0 16px 0;
+}
+
+.onsched-dropdown {
+    position: relative;
+    display: inline-block;
+}
+button.onsched-dropdown-menu-button {
+    background-color: #fff;
+    color: #337ab7;
+    border:none;
+}
+button.onsched-dropdown-menu-button:focus {
+    border: none;
+}
+button.onsched-dropdown-menu-button:hover {
+    border: none;
+    text-decoration:underline;
+}
+button.onsched-dropdown-menu-button span {
+    text-decoration: none;
+}
+button.onsched-dropdown-menu-button span.caret {
+    display:inline-block;
+    width: 0;
+    height: 0;
+    margin-left: 10px;
+    vertical-align: middle;
+    border-top: 4px dashed;
+    border-top: 4px solid\9;
+    border-right: 4px solid transparent;
+    border-left: 4px solid transparent;
+}
+
+.onsched-dropdown-menu {
+    position: absolute;
+    top: 28px;
+    left: 0;
+    z-index: 1000;
+    display: none;
+    min-width: 120px;
+    padding: 5px 0;
+    margin: 2px 0 0;
+    font-size: 14px;
+    text-align: left;
+    list-style: none;
+    background-color: #fff;
+    -webkit-background-clip: padding-box;
+    background-clip: padding-box;
+    border: 1px solid #ccc;
+    border: 1px solid rgba(0,0,0,.15);
+    border-radius: 4px;
+    -webkit-box-shadow: 0 6px 12px rgba(0,0,0,.175);
+    box-shadow: 0 6px 12px rgba(0,0,0,.175);
+}
+ul.onsched-dropdown-menu li {
+    margin:0;
+}
+ul.onsched-dropdown-menu li a {
+    position:relative;
+    text-decoration:none;
+}
+ul.onsched-dropdown-menu li a:hover {
+    text-decoration: none;
+    background-color:lightgrey;
+}
+
+.onsched-dropdown-menu > li > a {
+    display: block;
+    padding: 3px 20px;
+    clear: both;
+    font-weight: 400;
+    line-height: 1.42857143;
+    color: #333;
+    white-space: nowrap;
+}
+
 /* OnSched Grid */
 
 
@@ -1475,4 +1641,6 @@
         height:36px;
         line-height:36px;
     }
+
+    
 }

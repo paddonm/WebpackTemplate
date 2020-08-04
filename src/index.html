@@ -76,6 +76,10 @@ However, delay the fade out process for 2.5 seconds */
 <div id="appointment"></div>
 <div id="appointments"></div>
 
+<div id="locationSetup"></div>
+<div id="resourceSetup"></div>
+
+
 <div class="onsched-container">
   <div class="onsched-row">
     <div class="onsched-col">
@@ -151,6 +155,15 @@ However, delay the fade out process for 2.5 seconds */
   </button>
 </div>
 
+<div class="btn-group" style="margin-top:20px;">
+    <button id="loadLocationSetup" type="button" class="open-modal">
+        Location Setup
+    </button>
+    <button id="loadResourceSetup" type="button" class="open-modal">
+        Resource Setup
+    </button>
+</div>
+
 <div id="customer"></div>
 
 <template id="test-template" name="testTemplate">
@@ -221,7 +234,6 @@ However, delay the fade out process for 2.5 seconds */
 <div id="toast" class="toast"></div>
 
 <script>
-  //        alert("WTF");
 
   //                var authResponse = OnSchedRest.Authorize("DemoUser", "live");
   //                console.log(authResponse)
@@ -269,8 +281,8 @@ However, delay the fade out process for 2.5 seconds */
   ///
   /// Begining of OnSchedJs logic
   ///
-  var onschedOptions = { locale: "sv-SE"};
-  var onsched = OnSched("DemoUser", "live", onschedOptions);
+  var onschedOptions = { locale: "en-US"};
+  var onsched = OnSched("DemoUser", "sbox", onschedOptions);
   var elements = onsched.elements();
 
   var now = new Date();
@@ -497,6 +509,43 @@ However, delay the fade out process for 2.5 seconds */
     elSearch.innerHTML = "";
     resources.mount("resources");
   }
+   var elLocationSetupButton = document.getElementById("loadLocationSetup");
+   elLocationSetupButton.onclick = function(e) {
+    ShowToast("Loading LocationSetup...");
+    locationSetup.mount("locationSetup");
+   }
+
+   var elResourceSetupButton = document.getElementById("loadResourceSetup");
+   elResourceSetupButton.onclick = function(e) {
+    ShowToast("Loading ResourceSetup...");
+    resourceSetup.mount("resourceSetup");
+     
+   }
+// Setup element testing
+  console.log("SETUP ELEMENT TESTING");
+  var elLocationSetup = document.getElementById("locationSetup");
+  var businessHours = {
+                "mon": { "startTime": 800, "endTime": 1700 },
+                "tue": { "startTime": 800, "endTime": 1700 },
+                "wed": { "startTime": 900, "endTime": 1700 },
+                "thu": { "startTime": 800, "endTime": 1700 },
+                "fri": { "startTime": 0, "endTime": 2400 },
+                "sat": { "startTime": 800, "endTime": 1200 },
+                "sun": { "startTime": 0, "endTime": 0 },
+            };
+  var locationSetupParams = { "id":"burlingtonmedical", "tzOffset": tzOffset, "businessHours": businessHours};
+  console.log(locationSetupParams);
+  var locationSetupOptions = {};
+  var locationSetup = elements.create("locationSetup", locationSetupParams, locationSetupOptions);
+  //console.log(locationSetup);
+  //locationSetup.mount("locationSetup");
+
+
+  var elResourceSetup = document.getElementById("resourceSetup");
+  var resourceSetupParams = {};
+  var resourceSetupOptions = {};
+  var resourceSetup = elements.create("resourceSetup", resourceSetupParams, resourceSetupOptions);
+  //resourceSetup.mount("resourceSetup");
 
   var fieldListItems = [
     {"name": "Item 1", "value":"1"}, 
