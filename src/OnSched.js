@@ -107,7 +107,8 @@ function OnSched(ClientId, Environment, Options) {
                         case "resourceSetup":
                             OnSchedMount.ResourceSetupElement(this);
                             break;
-                        case "setupService":
+                        case "serviceSetup":
+                            OnSchedMount.ServiceSetupElement(this);
                             break;
                             default:
                             // TODO - raise App error event
@@ -563,7 +564,211 @@ var OnSchedMount = function () {
             console.log("No Id present, create new resource");
         else
             console.log("Id present, get resource and build UI from response data");
+
+            el.innerHTML = OnSchedTemplates.resourceSetup();
+
+            if (element.params.tzOffset != undefined || element.params.tzOffset.length == 0) {
+     //           console.log("tzOffset="+ element.params.tzOffset);
+                var elTimezoneSelect = document.querySelector(".onsched-wizard.onsched-form select[name=timezoneName");
+                elTimezoneSelect.value = element.params.tzOffset;
+            }
+    
+            var elWizardForm = document.querySelector(".onsched-wizard.onsched-form");
+            elWizardForm.addEventListener("submit", OnSchedWizardHelpers.WizardSubmitHandler);
+            var elPrevButton = document.querySelector(".onsched-wizard-nav-buttons .prevButton");
+            elPrevButton.addEventListener("click", OnSchedWizardHelpers.WizardPrevHandler);
+    
+            console.log("In LocationSetupElement");
+    //        console.log(element.params);
+    
+            var htmlBusinessHours = OnSchedTemplates.businessHoursTable(element.onsched.locale, element.params.businessHours);
+            var elBusinessHours = document.querySelector(".onsched-business-hours");
+            elBusinessHours.innerHTML = htmlBusinessHours;
+            console.log("In LocationSetupElement after business hours initialization");
+    
+            var elBusinessTimezone = document.querySelector(".onsched-wizard.onsched-form select[name=timezoneName]");
+            var elBusinessHoursTz = document.querySelector("h4.onsched-business-hours-tz");
+            elBusinessHoursTz.innerHTML = elBusinessTimezone.options[elBusinessTimezone.selectedIndex].text;;
+            elBusinessTimezone.addEventListener("change", function(event) {
+                var elBusinessTimezone = document.querySelector(".onsched-wizard.onsched-form select[name=timezoneName]");
+                var elBusinessHoursTz = document.querySelector("h3.onsched-business-hours-tz");
+                elBusinessHoursTz.innerHTML = elBusinessTimezone.options[elBusinessTimezone.selectedIndex].text;;
+        
+            }, false);
+    
+            // Consider adding this to OnSchedOnClick
+            elWizardForm.addEventListener("click", function (event) {
+                if (event.target.classList.contains("onsched-dropdown-menu-button")) {
+                    // first clear any displayed dropdown menus
+                    var menus = document.querySelectorAll(".onsched-dropdown-menu");
+                    for (var i = 0; i < menus.length; i++) {
+                        menus[i].style.display = "none";
+                    }
+                    var menu = event.target.nextElementSibling;
+                    if (menu.style.display != "none")
+                        menu.style.display = "none";
+                    else
+                        menu.style.display = "block";
+                    event.preventDefault();
+                }
+                else
+                if (event.target.classList.contains("onsched-dropdown-menu-item")) {
+                    // need to call logic to show hide start/end times info.
+                    var businessHoursDay = event.target.closest(".onsched-business-hours-day");
+                    var day = businessHoursDay.classList[businessHoursDay.classList.length - 1];
+    
+                    var startTimeColClass = ".onsched-business-hours-row.start .onsched-business-hours-time" + "." + day;
+                    var startTimeCol = document.querySelector(startTimeColClass);
+                    OnSchedWizardHelpers.UpdateBusinessHoursTime(startTimeCol, event.target.name);
+    
+                    var endTimeColClass = ".onsched-business-hours-row.end .onsched-business-hours-time" + "." + day;
+                    var endTimeCol = document.querySelector(endTimeColClass);
+                    OnSchedWizardHelpers.UpdateBusinessHoursTime(endTimeCol, event.target.name);
+    
+                    var li = event.target.parentElement;
+                    var menu = li.parentElement;
+                    event.preventDefault();
+                    menu.style.display = "none";
+                }
+                else {
+                    // something else clicked
+                    // make all the drop-down-menu's hidden
+                    var menus = document.querySelectorAll(".onsched-dropdown-menu");
+                    for (var i = 0; i < menus.length; i++) {
+                        menus[i].style.display = "none";
+                    }
+                }
+    
+            }, false);
+    
+            OnSchedWizardHelpers.ShowWizardSection(0);
+    
+            // Call the endpoint to receive all system states
+            // and use data to populate the states options and country options
+    
+            var url = element.onsched.apiBaseUrl + "/customers/states";
+    
+            element.onsched.accessToken.then(x =>
+                OnSchedRest.GetCustomers(x, url, function (response) {
+                    var stateOptionsHtml = OnSchedTemplates.stateSelectOptions(response);
+                    var elStateSelect = document.querySelector(".onsched-wizard.onsched-form select[name=state]");
+                    elStateSelect.innerHTML = stateOptionsHtml;
+                    var countryOptionsHtml = OnSchedTemplates.countrySelectOptions(response);
+                    var elCountrySelect = document.querySelector(".onsched-wizard.onsched-form select[name=country]");
+                    elCountrySelect.innerHTML = countryOptionsHtml;
+     
+                }) // end rest response
+            ); // end promise           
+            
     }
+
+    function ServiceSetupElement(element) {
+        var el = document.getElementById(element.id);
+        // check for presence of id in params
+        // if exists, then make get call and build UI with response data
+        // otherwise
+        // creating a fresh resource, use defaults incoming in params
+        if (element.params.Id == "undefined")
+            console.log("No Id present, create new resource");
+        else
+            console.log("Id present, get resource and build UI from response data");
+
+            el.innerHTML = OnSchedTemplates.serviceSetup();
+
+            if (element.params.tzOffset != undefined || element.params.tzOffset.length == 0) {
+     //           console.log("tzOffset="+ element.params.tzOffset);
+                var elTimezoneSelect = document.querySelector(".onsched-wizard.onsched-form select[name=timezoneName");
+                elTimezoneSelect.value = element.params.tzOffset;
+            }
+    
+            var elWizardForm = document.querySelector(".onsched-wizard.onsched-form");
+            elWizardForm.addEventListener("submit", OnSchedWizardHelpers.WizardSubmitHandler);
+            var elPrevButton = document.querySelector(".onsched-wizard-nav-buttons .prevButton");
+            elPrevButton.addEventListener("click", OnSchedWizardHelpers.WizardPrevHandler);
+    
+            console.log("In LocationSetupElement");
+    //        console.log(element.params);
+    
+            var htmlBusinessHours = OnSchedTemplates.businessHoursTable(element.onsched.locale, element.params.businessHours);
+            var elBusinessHours = document.querySelector(".onsched-business-hours");
+            elBusinessHours.innerHTML = htmlBusinessHours;
+            console.log("In LocationSetupElement after business hours initialization");
+    
+            var elBusinessTimezone = document.querySelector(".onsched-wizard.onsched-form select[name=timezoneName]");
+            var elBusinessHoursTz = document.querySelector("h4.onsched-business-hours-tz");
+            elBusinessHoursTz.innerHTML = elBusinessTimezone.options[elBusinessTimezone.selectedIndex].text;;
+            elBusinessTimezone.addEventListener("change", function(event) {
+                var elBusinessTimezone = document.querySelector(".onsched-wizard.onsched-form select[name=timezoneName]");
+                var elBusinessHoursTz = document.querySelector("h3.onsched-business-hours-tz");
+                elBusinessHoursTz.innerHTML = elBusinessTimezone.options[elBusinessTimezone.selectedIndex].text;;
+        
+            }, false);
+    
+            // Consider adding this to OnSchedOnClick
+            elWizardForm.addEventListener("click", function (event) {
+                if (event.target.classList.contains("onsched-dropdown-menu-button")) {
+                    // first clear any displayed dropdown menus
+                    var menus = document.querySelectorAll(".onsched-dropdown-menu");
+                    for (var i = 0; i < menus.length; i++) {
+                        menus[i].style.display = "none";
+                    }
+                    var menu = event.target.nextElementSibling;
+                    if (menu.style.display != "none")
+                        menu.style.display = "none";
+                    else
+                        menu.style.display = "block";
+                    event.preventDefault();
+                }
+                else
+                if (event.target.classList.contains("onsched-dropdown-menu-item")) {
+                    // need to call logic to show hide start/end times info.
+                    var businessHoursDay = event.target.closest(".onsched-business-hours-day");
+                    var day = businessHoursDay.classList[businessHoursDay.classList.length - 1];
+    
+                    var startTimeColClass = ".onsched-business-hours-row.start .onsched-business-hours-time" + "." + day;
+                    var startTimeCol = document.querySelector(startTimeColClass);
+                    OnSchedWizardHelpers.UpdateBusinessHoursTime(startTimeCol, event.target.name);
+    
+                    var endTimeColClass = ".onsched-business-hours-row.end .onsched-business-hours-time" + "." + day;
+                    var endTimeCol = document.querySelector(endTimeColClass);
+                    OnSchedWizardHelpers.UpdateBusinessHoursTime(endTimeCol, event.target.name);
+    
+                    var li = event.target.parentElement;
+                    var menu = li.parentElement;
+                    event.preventDefault();
+                    menu.style.display = "none";
+                }
+                else {
+                    // something else clicked
+                    // make all the drop-down-menu's hidden
+                    var menus = document.querySelectorAll(".onsched-dropdown-menu");
+                    for (var i = 0; i < menus.length; i++) {
+                        menus[i].style.display = "none";
+                    }
+                }
+    
+            }, false);
+    
+            OnSchedWizardHelpers.ShowWizardSection(0);
+    
+            // Call the endpoint to receive all system states
+            // and use data to populate the states options and country options
+    
+            var url = element.onsched.apiBaseUrl + "/customers/states";
+    
+            element.onsched.accessToken.then(x =>
+                OnSchedRest.GetCustomers(x, url, function (response) {
+                    var stateOptionsHtml = OnSchedTemplates.stateSelectOptions(response);
+                    var elStateSelect = document.querySelector(".onsched-wizard.onsched-form select[name=state]");
+                    elStateSelect.innerHTML = stateOptionsHtml;
+                    var countryOptionsHtml = OnSchedTemplates.countrySelectOptions(response);
+                    var elCountrySelect = document.querySelector(".onsched-wizard.onsched-form select[name=country]");
+                    elCountrySelect.innerHTML = countryOptionsHtml;
+     
+                }) // end rest response
+            ); // end promise    
+    }
+
     return {
         SearchElement: SearchElement,
         LocationsElement: LocationsElement,
@@ -577,7 +782,8 @@ var OnSchedMount = function () {
         ServiceElement: ServiceElement,
         ResourceElement: ResourceElement,
         LocationSetupElement: LocationSetupElement,
-        ResourceSetupElement: ResourceSetupElement
+        ResourceSetupElement: ResourceSetupElement,
+        ServiceSetupElement: ServiceSetupElement
     };
 }(); // End OnSchedMount
 
@@ -2176,6 +2382,257 @@ var OnSchedTemplates = function () {
                 </div>
                 <div class="onsched-form-row">
                     <div class="onsched-form-col">
+                        <label for="businessEmail">Email</label>
+                        <input id="businessEmail" type="email" name="businessEmail" />
+                    </div>
+                    <div class="onsched-form-col">
+                        <label for="businessWebsite">Website</label>
+                        <input id="businessWebsite" type="text" name="businessWebsite" />
+                    </div>
+                </div>
+                <div class="onsched-form-row">
+                    <div class="onsched-form-col">
+                        <label for="businessPhone">Phone</label>
+                        <input id="businessPhone" type="tel" name="businessPhone" />
+                    </div>
+                    <div class="onsched-form-col">
+                        <label for="businessFax">Fax</label>
+                        <input id="businessFax" type="tel" name="businessFax" />
+                    </div>
+                </div>
+            </div>
+
+            <div class="onsched-wizard-section">
+                <h2>Business Address</h2>
+                <div class="onsched-form-row">
+                    <div class="onsched-form-col">
+                        <label for="addressLine1">Address Line 1</label>
+                        <input id="addressLine1" type="text" name="addressLine1" />
+                    </div>
+                </div>
+                <div class="onsched-form-row">
+                    <div class="onsched-form-col">
+                        <label for="addressLine2">Address Line 2</label>
+                        <input id="addressLine2" type="text" name="addressLine2" />
+                    </div>
+                </div>
+                <div class="onsched-form-row">
+                    <div class="onsched-form-col">
+                        <label for="city">City</label>
+                        <input id="city" type="text" name="city" />
+                    </div>
+                    <div class="onsched-form-col">
+                        <label for="state">State / Province</label>
+                        <select id="state" name="state" class="onsched-select"></select>
+                    </div>
+                </div>
+                <div class="onsched-form-row">
+                    <div class="onsched-form-col">
+                        <label for="country">Country</label>
+                        <select id="country" name="country" class="onsched-select">
+                            <option></option>
+                            <option value="CA">Canada</option>
+                            <option value="US">United States</option>
+                        </select>
+                    </div>
+                    <div class="onsched-form-col">
+                        <label for="postalCode">Zip / Postal Code</label>
+                        <input id="postalCode" type="text" name="postalCode" />
+                    </div>
+                </div>
+            </div>
+            <div class="onsched-wizard-section">
+                <div style="display:table;width:100%;">
+                    <div style="display:table-row">
+                        <div style="display:table-cell">
+                            <h2>Business Hours</h2>
+                        </div>
+                        <div style="display:table-cell;text-align:right">
+                        </div>
+                    </div>
+                    </div>
+                    <h4 class="onsched-business-hours-tz">Eastern Timezone</h4>
+                    <div class="onsched-business-hours"></div>
+            </div>
+            <div class="onsched-wizard-nav">
+                <div style="display:table-row">
+                    <div class="onsched-wizard-nav-status">
+                        <!-- Circles which indicates the steps of the form: -->
+                        <span class="step active"></span>
+                        <span class="step"></span>
+                        <span class="step"></span>
+                    </div>
+                    <div class="onsched-wizard-nav-buttons">
+                        <button type="button" id="prevButton" class="prevButton">Previous</button>
+                        <button type="submit" id="nextButton" class="nextButton">Next</button>
+                    </div>
+                </div>
+            </div>
+        </form>
+    </div>
+
+        `;
+
+        return tmplLocationSetup;
+
+    }
+
+    function resourceSetup() {
+        const tmplResourceSetup = `
+        <div class="onsched-container">
+        <form class="onsched-wizard onsched-form">
+            <input type="hidden" name="step" value="0" />
+            <h1>Resource Setup</h1>
+            <div class="onsched-wizard-section">
+                <h2>General Information</h2>
+                <div class="onsched-form-row">
+                    <div class="onsched-form-col">
+                        <label for="resourceName">Resource Name</label>
+                        <input id="resourceName" type="text" name="resourceName" required="required" />
+                    </div>
+                    <div class="onsched-form-col">
+                        <label for="resourceTimezone">Timezone</label>
+                        <select id="resourceTimezone" class="onsched-select" name="timezoneName">${TimezoneSelectOptions(Timezones())}</select>
+                    </div>
+                </div>
+                <div class="onsched-form-row">
+                    <div class="onsched-form-col">
+                        <label for="resourceEmail">Email</label>
+                        <input type="email" name="resourceEmail" />
+                    </div>
+                    <div class="onsched-form-col">
+                        <label for="groupId">Group</label>
+                        <select id="groupId" name="groupId" class="onsched-select"></select>
+                    </div>
+                </div>
+                <div class="onsched-form-row">
+                    <div class="onsched-form-col">
+                    <label for="description">Description</label>
+                    <textarea id="description" name="description" rows="3" placeholder="Enter Resource Description">
+                        </textarea>                    
+                    </div>
+                </div>
+                 <div class="onsched-form-row">
+                    <div class="onsched-form-col">
+                    </div>
+                    <div class="onsched-form-col">
+                    </div>
+                </div>               
+                <div class="onsched-form-row">
+                    <div class="onsched-form-col">
+                        <label>Phone</label>
+                        <input type="tel" name="businessPhone" />
+                    </div>
+                    <div class="onsched-form-col">
+                        <label>Fax</label>
+                        <input type="tel" name="businessFax" />
+                    </div>
+                </div>
+                <div class="onsched-form-row">
+                    <div class="onsched-form-col">
+                        <label for="notificationType">Notification Type</label>
+                        <select class="onsched-select" id="notificationType" name="notificationType" required="required" aria-required="true" aria-invalid="false">
+                            <option value="0"></option>
+                            <option value="1" selected="selected">Email</option><option value="2">SMS</option>
+                            <option value="3">Email and SMS</option>
+                        </select>
+                    </div>
+                    <div class="onsched-form-col">
+                    <label for="bookingNotification">Booking Notification</label>
+                    <select class="form-control" id="bookingNotification" name="bookingNotification" required="required" aria-required="true" aria-invalid="false">
+                        <option value="0" selected="selected">None</option>
+                        <option value="1" selected="selected">Online Bookings</option>
+                        <option value="2">All Bookings &amp; Reminders</option>
+                    </select>
+                    </div>
+                </div>
+            </div>
+
+            <div class="onsched-wizard-section">
+                <h2>Business Address</h2>
+                <div class="onsched-form-row">
+                    <div class="onsched-form-col">
+                        <label for="addressLine1">Address Line 1</label>
+                        <input id="addressLine1" type="text" name="addressLine1" />
+                    </div>
+                </div>
+                <div class="onsched-form-row">
+                    <div class="onsched-form-col">
+                        <label for="addressLine2">Address Line 2</label>
+                        <input id="addressLine2" type="text" name="addressLine2" />
+                    </div>
+                </div>
+                <div class="onsched-form-row">
+                    <div class="onsched-form-col">
+                        <label for="city">City</label>
+                        <input id="city" type="text" name="city" />
+                    </div>
+                    <div class="onsched-form-col">
+                        <label for="state">State / Province</label>
+                        <select id="state" name="state" class="onsched-select"></select>
+                    </div>
+                </div>
+                <div class="onsched-form-row">
+                    <div class="onsched-form-col">
+                        <label for="country">Country</label>
+                        <select id="country" name="country" class="onsched-select">
+                            <option></option>
+                            <option value="CA">Canada</option>
+                            <option value="US">United States</option>
+                        </select>
+                    </div>
+                    <div class="onsched-form-col">
+                        <label for="postalCode">Zip / Postal Code</label>
+                        <input id="postalCode" type="text" name="postalCode" />
+                    </div>
+                </div>
+            </div>
+            <div class="onsched-wizard-section">
+                <h2>Business Hours</h2>
+                <h4 class="onsched-business-hours-tz">Eastern Timezone</h4>
+                <div class="onsched-business-hours"></div>
+            </div>
+            <div class="onsched-wizard-nav">
+                <div style="display:table-row">
+                    <div class="onsched-wizard-nav-status">
+                        <!-- Circles which indicates the steps of the form: -->
+                        <span class="step active"></span>
+                        <span class="step"></span>
+                        <span class="step"></span>
+                    </div>
+                    <div class="onsched-wizard-nav-buttons">
+                        <button type="button" id="prevButton" class="prevButton">Previous</button>
+                        <button type="submit" id="nextButton" class="nextButton">Next</button>
+                    </div>
+                </div>
+            </div>
+        </form>
+    </div>        
+        `;
+
+        return tmplResourceSetup;
+    }
+
+    function serviceSetup() {
+        const tmplServiceSetup = `
+        <div class="onsched-container">
+        <form class="onsched-wizard onsched-form">
+            <input type="hidden" name="step" value="0" />
+            <h1>Service Setup</h1>
+            <div class="onsched-wizard-section">
+                <h2>Name & Contact Information</h2>
+                <div class="onsched-form-row">
+                    <div class="onsched-form-col">
+                        <label for="serviceName">Service Name</label>
+                        <input id="serviceName" type="text" name="serviceName" required="required" />
+                    </div>
+                    <div class="onsched-form-col">
+                        <label for="businessTimezone">Timezone</label>
+                        <select id="businessTimezone" class="onsched-select" name="timezoneName">${TimezoneSelectOptions(Timezones())}</select>
+                    </div>
+                </div>
+                <div class="onsched-form-row">
+                    <div class="onsched-form-col">
                         <label>Email</label>
                         <input type="email" name="businessEmail" />
                     </div>
@@ -2263,19 +2720,10 @@ var OnSchedTemplates = function () {
                 </div>
             </div>
         </form>
-    </div>
-
+    </div>        
         `;
 
-        return tmplLocationSetup;
-
-    }
-
-    function resourceSetup() {
-        const tmplResourceSetup = `
-        `;
-
-        return tmplResourceSetup;
+        return tmplServiceSetup;
     }
 
     function stateSelectOptions(states) {
@@ -2787,6 +3235,7 @@ var OnSchedTemplates = function () {
         resourceSetup: resourceSetup,
         locationsList: locationsList,
         locationSetup: locationSetup,
+        serviceSetup: serviceSetup,
         searchForm: searchForm,
         confirmation: confirmation,
         bookingForm: bookingForm,

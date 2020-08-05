@@ -78,6 +78,7 @@ However, delay the fade out process for 2.5 seconds */
 
 <div id="locationSetup"></div>
 <div id="resourceSetup"></div>
+<div id="serviceSetup"></div>
 
 
 <div class="onsched-container">
@@ -138,30 +139,17 @@ However, delay the fade out process for 2.5 seconds */
 </div>
 
 <div class="btn-group" style="margin-top:20px;">
-  <button id="loadlocations" type="button" class="open-modal">
-    Locations
-  </button>
-  <button id="loadavailability" type="button" class="open-modal">
-    Availability
-  </button>
-  <button id="loadcustomer" type="button" class="open-modal">
-    Customer
-  </button>
-  <button id="loadservices" type="button" class="open-modal">
-    Services
-  </button>
-  <button id="loadresources" type="button" class="open-modal">
-    Resources
-  </button>
+  <button id="loadlocations" type="button" class="open-modal">Locations</button>
+  <button id="loadavailability" type="button" class="open-modal">Availability</button>
+  <button id="loadcustomer" type="button" class="open-modal">Customer</button>
+  <button id="loadservices" type="button" class="open-modal">Services</button>
+  <button id="loadresources" type="button" class="open-modal">Resources</button>
 </div>
 
 <div class="btn-group" style="margin-top:20px;">
-    <button id="loadLocationSetup" type="button" class="open-modal">
-        Location Setup
-    </button>
-    <button id="loadResourceSetup" type="button" class="open-modal">
-        Resource Setup
-    </button>
+    <button id="loadLocationSetup" type="button" class="open-modal">Location Setup</button>
+    <button id="loadResourceSetup" type="button" class="open-modal">Resource Setup</button>
+    <button id="loadServiceSetup" type="button" class="open-modal">Service Setup</button>    
 </div>
 
 <div id="customer"></div>
@@ -521,7 +509,13 @@ However, delay the fade out process for 2.5 seconds */
     resourceSetup.mount("resourceSetup");
      
    }
-// Setup element testing
+   var elServiceSetupButton = document.getElementById("loadServiceSetup");
+   elServiceSetupButton.onclick = function(e) {
+    ShowToast("Loading ServiceSetup...");
+    serviceSetup.mount("serviceSetup");
+     
+   }   
+// Setup element testing /////////////////////////////
   console.log("SETUP ELEMENT TESTING");
   var elLocationSetup = document.getElementById("locationSetup");
   var businessHours = {
@@ -537,15 +531,18 @@ However, delay the fade out process for 2.5 seconds */
   console.log(locationSetupParams);
   var locationSetupOptions = {};
   var locationSetup = elements.create("locationSetup", locationSetupParams, locationSetupOptions);
-  //console.log(locationSetup);
-  //locationSetup.mount("locationSetup");
-
 
   var elResourceSetup = document.getElementById("resourceSetup");
-  var resourceSetupParams = {};
+  var resourceSetupParams = {"id":"33", "tzOffset": tzOffset, "businessHours": businessHours};
   var resourceSetupOptions = {};
   var resourceSetup = elements.create("resourceSetup", resourceSetupParams, resourceSetupOptions);
-  //resourceSetup.mount("resourceSetup");
+
+  var elServiceSetup = document.getElementById("serviceSetup");
+  var serviceSetupParams = {"id":"5", "tzOffset": tzOffset, "businessHours": businessHours};
+  var serviceSetupOptions = {};
+  var serviceSetup = elements.create("serviceSetup", serviceSetupParams, serviceSetupOptions);
+
+  ///////////////////////////////////////////////////
 
   var fieldListItems = [
     {"name": "Item 1", "value":"1"}, 
