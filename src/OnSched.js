@@ -484,7 +484,7 @@ var OnSchedMount = function () {
         elBusinessHoursTz.innerHTML = elBusinessTimezone.options[elBusinessTimezone.selectedIndex].text;;
         elBusinessTimezone.addEventListener("change", function(event) {
             var elBusinessTimezone = document.querySelector(".onsched-wizard.onsched-form select[name=timezoneName]");
-            var elBusinessHoursTz = document.querySelector("h3.onsched-business-hours-tz");
+            var elBusinessHoursTz = document.querySelector("h4.onsched-business-hours-tz");
             elBusinessHoursTz.innerHTML = elBusinessTimezone.options[elBusinessTimezone.selectedIndex].text;;
     
         }, false);
@@ -591,7 +591,7 @@ var OnSchedMount = function () {
             elBusinessHoursTz.innerHTML = elBusinessTimezone.options[elBusinessTimezone.selectedIndex].text;;
             elBusinessTimezone.addEventListener("change", function(event) {
                 var elBusinessTimezone = document.querySelector(".onsched-wizard.onsched-form select[name=timezoneName]");
-                var elBusinessHoursTz = document.querySelector("h3.onsched-business-hours-tz");
+                var elBusinessHoursTz = document.querySelector("h4.onsched-business-hours-tz");
                 elBusinessHoursTz.innerHTML = elBusinessTimezone.options[elBusinessTimezone.selectedIndex].text;;
         
             }, false);
@@ -699,7 +699,7 @@ var OnSchedMount = function () {
             elBusinessHoursTz.innerHTML = elBusinessTimezone.options[elBusinessTimezone.selectedIndex].text;;
             elBusinessTimezone.addEventListener("change", function(event) {
                 var elBusinessTimezone = document.querySelector(".onsched-wizard.onsched-form select[name=timezoneName]");
-                var elBusinessHoursTz = document.querySelector("h3.onsched-business-hours-tz");
+                var elBusinessHoursTz = document.querySelector("h4.onsched-business-hours-tz");
                 elBusinessHoursTz.innerHTML = elBusinessTimezone.options[elBusinessTimezone.selectedIndex].text;;
         
             }, false);
@@ -793,9 +793,25 @@ var OnSchedWizardHelpers = function () {
         var elStep = document.querySelector(".onsched-wizard input[name=step]")
         var step = parseInt(elStep.value);
         var elWizardSections = document.querySelectorAll(".onsched-wizard .onsched-wizard-section");
+
         if (step == elWizardSections.length - 1) {
             console.log("elWizardSections.length=" + elWizardSections.length);
-            GetFormValuesToSubmit();
+            var form = document.querySelector(".onsched-wizard.onsched-form");
+            switch(form.name) {
+                case "locationSetup":
+                    console.log("POST or PUT /locations");
+                    break;
+                case "resourceSetup":
+                    console.log("POST or PUT /resources");
+                    break;
+                case "serviceSetup":
+                    console.log("POST or PUT /services");
+                    break;
+                 default:
+                    console.log("WizardSubmtHandler: unknown form submitted"+ " "+ form.name);         
+            }            
+//            GetFormValuesToSubmit();
+            GetLocationPostData(form.elements);
         }
         else {
             // update the new step value
@@ -807,13 +823,45 @@ var OnSchedWizardHelpers = function () {
         e.preventDefault();
         return false;
     }
+    function GetLocationPostData(formElements) {
+        console.log("In GetLocationPostData");
+        var postData = { address: {}, businessHours: {}, settings: {} };
+        for (var i = 0; i < formElements.length; i++) {
+            var e = formElements[i];
+            switch(e.dataset.post) {
+                case undefined:
+                    // ignore fields without a data-post entry
+                    break;
+                case "root":
+                    // timezoneName requires special handling
+                    postData[e.name] = e.name == "timezoneName" ? encodeURIComponent(e.options[e.selectedIndex].dataset.tz) : e.value;
+                    break;
+                case "address":
+                    postData.address[e.name] = e.value;
+                    break;
+                case "settings":
+                    postData.settings[e.name] = e.value;
+                    break;
+                case "businessHours":
+                    postData.businessHours[e.name] = e.value;
+                    break;
+                default:
+                    console.log(e.name + " unrecognizable post attribute");
+                    break;
+            }
+        }
+        console.log(postData);
+    }
     function GetFormValuesToSubmit() {
         var kvpairs = [];
         var form = document.querySelector(".onsched-wizard.onsched-form");
+
+        console.log(form.name);
         for (var i = 0; i < form.elements.length; i++) {
             var e = form.elements[i];
             if (e.name === undefined || e.name == null || e.name.length <= 0)
                 continue;
+            console.log("name="+e.name+ " "+"value="+e.value+ " post="+e.dataset.post);
             if (e.name == "timezoneName")
                 kvpairs.push(encodeURIComponent(e.name) + "=" + encodeURIComponent(e.options[e.selectedIndex].dataset.tz));
             else
@@ -875,22 +923,33 @@ var OnSchedWizardHelpers = function () {
         else
             elPrevButton.style.display = "inline-block";
     }
-    function UpdateBusinessHoursTime(timeColClass, action) {
-        var labelClosed = timeColClass.getElementsByClassName("closed")[0];
-        if (action === "closed")
-            labelClosed.style.display = "block"
+    function UpdateBusinessHoursTime(timeCol, action) {
+        console.log("UpdateBusinessHoursTime=");
+        console.log(timeCol);
+        var labelClosed = timeCol.getElementsByClassName("closed")[0];
+        var selectTime = timeCol.getElementsByTagName("select")[0];
+        if (action === "closed") {
+            labelClosed.style.display = "block";
+            if (selectTime.name.includes("Start") || selectTime.name.includes("End"))
+                selectTime.value = "0";
+        }
         else
-            labelClosed.style.display = "none"
-        var label24Hrs = timeColClass.getElementsByClassName("hrs24")[0];
-        if (action === "24hrs")
-            label24Hrs.style.display = "block"
+            labelClosed.style.display = "none";
+        var label24Hrs = timeCol.getElementsByClassName("hrs24")[0];
+        if (action === "24hrs") {
+            label24Hrs.style.display = "block";
+            if (selectTime.name.includes("Start"))
+                selectTime.value = "0";        
+            if (selectTime.name.includes("End"))
+                selectTime.value = "2400";        
+        }
         else
-            label24Hrs.style.display = "none"
-        var selectTime = timeColClass.getElementsByClassName("time")[0];
+            label24Hrs.style.display = "none";
+        var selectTime = timeCol.getElementsByClassName("time")[0];
         if (action === "open")
-            selectTime.style.display = "block"
+            selectTime.style.display = "block";
         else
-            selectTime.style.display = "none"
+            selectTime.style.display = "none";
     }
     return {
         WizardSubmitHandler: WizardSubmitHandler,
@@ -2365,7 +2424,7 @@ var OnSchedTemplates = function () {
 
         const tmplLocationSetup = `
         <div class="onsched-container">
-        <form class="onsched-wizard onsched-form">
+        <form class="onsched-wizard onsched-form" name="locationSetup">
             <input type="hidden" name="step" value="0" />
             <h1>Location Setup</h1>
             <div class="onsched-wizard-section">
@@ -2373,31 +2432,31 @@ var OnSchedTemplates = function () {
                 <div class="onsched-form-row">
                     <div class="onsched-form-col">
                         <label for="businessName">Business Name</label>
-                        <input id="businessName" type="text" name="businessName" required="required" />
+                        <input id="businessName" type="text" name="name" required="required" data-post="root"/>
                     </div>
                     <div class="onsched-form-col">
                         <label for="businessTimezone">Timezone</label>
-                        <select id="businessTimezone" class="onsched-select" name="timezoneName">${TimezoneSelectOptions(Timezones())}</select>
+                        <select id="businessTimezone" class="onsched-select" name="timezoneName" data-post="root" data-encode="yes">${TimezoneSelectOptions(Timezones())}</select>
                     </div>
                 </div>
                 <div class="onsched-form-row">
                     <div class="onsched-form-col">
                         <label for="businessEmail">Email</label>
-                        <input id="businessEmail" type="email" name="businessEmail" />
+                        <input id="businessEmail" type="email" name="email" data-post="root" />
                     </div>
                     <div class="onsched-form-col">
                         <label for="businessWebsite">Website</label>
-                        <input id="businessWebsite" type="text" name="businessWebsite" />
+                        <input id="businessWebsite" type="text" name="website" data-post="root" />
                     </div>
                 </div>
                 <div class="onsched-form-row">
                     <div class="onsched-form-col">
                         <label for="businessPhone">Phone</label>
-                        <input id="businessPhone" type="tel" name="businessPhone" />
+                        <input id="businessPhone" type="tel" name="phone" data-post="root" />
                     </div>
                     <div class="onsched-form-col">
                         <label for="businessFax">Fax</label>
-                        <input id="businessFax" type="tel" name="businessFax" />
+                        <input id="businessFax" type="tel" name="fax" data-post="root" />
                     </div>
                 </div>
             </div>
@@ -2407,29 +2466,29 @@ var OnSchedTemplates = function () {
                 <div class="onsched-form-row">
                     <div class="onsched-form-col">
                         <label for="addressLine1">Address Line 1</label>
-                        <input id="addressLine1" type="text" name="addressLine1" />
+                        <input id="addressLine1" type="text" name="addressLine1" data-post="address"/>
                     </div>
                 </div>
                 <div class="onsched-form-row">
                     <div class="onsched-form-col">
                         <label for="addressLine2">Address Line 2</label>
-                        <input id="addressLine2" type="text" name="addressLine2" />
+                        <input id="addressLine2" type="text" name="addressLine2"  data-post="address"/>
                     </div>
                 </div>
                 <div class="onsched-form-row">
                     <div class="onsched-form-col">
                         <label for="city">City</label>
-                        <input id="city" type="text" name="city" />
+                        <input id="city" type="text" name="city"  data-post="address" data-post="address"/>
                     </div>
                     <div class="onsched-form-col">
                         <label for="state">State / Province</label>
-                        <select id="state" name="state" class="onsched-select"></select>
+                        <select id="state" name="state" class="onsched-select" data-post="address"></select>
                     </div>
                 </div>
                 <div class="onsched-form-row">
                     <div class="onsched-form-col">
                         <label for="country">Country</label>
-                        <select id="country" name="country" class="onsched-select">
+                        <select id="country" name="country" class="onsched-select" data-post="address">
                             <option></option>
                             <option value="CA">Canada</option>
                             <option value="US">United States</option>
@@ -2437,7 +2496,7 @@ var OnSchedTemplates = function () {
                     </div>
                     <div class="onsched-form-col">
                         <label for="postalCode">Zip / Postal Code</label>
-                        <input id="postalCode" type="text" name="postalCode" />
+                        <input id="postalCode" type="text" name="postalCode" data-post="address"/>
                     </div>
                 </div>
             </div>
@@ -2480,7 +2539,7 @@ var OnSchedTemplates = function () {
     function resourceSetup() {
         const tmplResourceSetup = `
         <div class="onsched-container">
-        <form class="onsched-wizard onsched-form">
+        <form class="onsched-wizard onsched-form" name="resourceSetup">
             <input type="hidden" name="step" value="0" />
             <h1>Resource Setup</h1>
             <div class="onsched-wizard-section">
@@ -2549,6 +2608,16 @@ var OnSchedTemplates = function () {
             </div>
 
             <div class="onsched-wizard-section">
+                <h2>Contact Information</h2>
+                <div class="onsched-form-row">
+                    <div class="onsched-form-col">
+                    </div>
+                    <div class="onsched-form-col">
+                    </div>
+                </div>
+            </div>
+
+            <div class="onsched-wizard-section">
                 <h2>Business Address</h2>
                 <div class="onsched-form-row">
                     <div class="onsched-form-col">
@@ -2588,15 +2657,29 @@ var OnSchedTemplates = function () {
                 </div>
             </div>
             <div class="onsched-wizard-section">
+                <h2>Avatar Image</h2>
+                <div class="onsched-form-row">
+                    <div class="onsched-form-col">
+                    </div>
+                    <div class="onsched-form-col">
+                    </div>
+                </div>
+            </div>
+            <div class="onsched-wizard-section">
                 <h2>Business Hours</h2>
                 <h4 class="onsched-business-hours-tz">Eastern Timezone</h4>
                 <div class="onsched-business-hours"></div>
             </div>
+
+
+
             <div class="onsched-wizard-nav">
                 <div style="display:table-row">
                     <div class="onsched-wizard-nav-status">
                         <!-- Circles which indicates the steps of the form: -->
                         <span class="step active"></span>
+                        <span class="step"></span>
+                        <span class="step"></span>
                         <span class="step"></span>
                         <span class="step"></span>
                     </div>
@@ -2616,7 +2699,7 @@ var OnSchedTemplates = function () {
     function serviceSetup() {
         const tmplServiceSetup = `
         <div class="onsched-container">
-        <form class="onsched-wizard onsched-form">
+        <form class="onsched-wizard onsched-form" name="serviceSetup">
             <input type="hidden" name="step" value="0" />
             <h1>Service Setup</h1>
             <div class="onsched-wizard-section">
@@ -2897,7 +2980,7 @@ var OnSchedTemplates = function () {
             <div class="onsched-business-hours-time ${date.toLocaleDateString("en-US", { weekday: 'short' }).toLowerCase()}">
                 <label class="closed" style="display:${data[weekDay].startTime == 0 && data[weekDay].endTime == 0 ? "block" : "none"}">Closed</label>
                 <label class="hrs24"  style="display:${data[weekDay].startTime == 0 && data[weekDay].endTime == 2400 ? "block" : "none"}">24 Hours</label>
-                <select class="time" name="${name}" style="${showHideTimeSelect(weekDay, data)}">
+                <select class="time" name="${name}" style="${showHideTimeSelect(weekDay, data)}" data-post="businessHours">
                     ${initTimesSelectOptions(initTimesSelectData(locale), weekDay, startTimeIndicator, data)}
                 </select>
             </div>
@@ -3258,8 +3341,7 @@ var OnSchedRest = function () {
         var headers = new Headers({ 'Content-Type': 'application/json', 'Accept': 'application/json' });
 
         var url = environment == null || environment == "sbox" ?
-            "https://onschedjsproxy-sandbox.azurewebsites.net/auth/initialize" :
-            "https://onschedjsproxy.azurewebsites.net/auth/initialize";
+            "https://sandbox-js.onsched.com/auth/initialize" : "https://js.onsched.com/auth/initialize";
 
         scope = scope == null ? "OnSchedApi" : scope;
 
