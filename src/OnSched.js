@@ -32,7 +32,11 @@ function OnSched(ClientId, Environment, Options) {
     self.apiBaseUrl = self.environment === "live" ?
         "https://api.onsched.com/consumer/v1" :
         "https://sandbox-api.onsched.com/consumer/v1";
-//    self.accessToken = OnSchedRest.GetAccessToken(self.environment);
+    self.setupApiBaseUrl = self.environment === "live" ?
+        "https://api.onsched.com/setup/v1" :
+        "https://sandbox-api.onsched.com/setup/v1";
+
+    //    self.accessToken = OnSchedRest.GetAccessToken(self.environment);
     self.accessToken = OnSchedRest.Authorize(self.clientId, self.environment, self.scope);
 
     // Elements method that creates elements instance
@@ -445,114 +449,65 @@ var OnSchedMount = function () {
                 }
             }) // end rest response
         ); // end promise
-
-
     } 
     function LocationSetupElement(element) {
         var el = document.getElementById(element.id);
         // check for presence of id in params
         // if exists, then make get call and build UI with response data
         // otherwise
-        // creating a fresh location, use defaults incoming in params
-        if (element.params.id == undefined)
+
+        // creating a fresh location, use defaults incoming in params.data or
+        // use the system defaults created here.
+
+        var defaultBusinessHours = {
+            "mon": { "startTime": 900, "endTime": 1700 },
+            "tue": { "startTime": 900, "endTime": 1700 },
+            "wed": { "startTime": 900, "endTime": 1700 },
+            "thu": { "startTime": 900, "endTime": 1700 },
+            "fri": { "startTime": 900, "endTime": 1700 },
+            "sat": { "startTime": 0, "endTime": 0 },
+            "sun": { "startTime": 0, "endTime": 0 },
+        };
+
+        var defaultData = { name:"Test Location", address:{ "state": "ON", "country": "CA" }, businessHours: defaultBusinessHours, settings: {}};
+
+        if (element.params.id == undefined) {
             console.log("No Id present, create new location");
-        else
-            console.log("Id present, get location and build UI from response data");
-        el.innerHTML = OnSchedTemplates.locationSetup();
-
-        if (element.params.tzOffset != undefined || element.params.tzOffset.length == 0) {
- //           console.log("tzOffset="+ element.params.tzOffset);
-            var elTimezoneSelect = document.querySelector(".onsched-wizard.onsched-form select[name=timezoneName");
-            elTimezoneSelect.value = element.params.tzOffset;
-        }
-
-        var elWizardForm = document.querySelector(".onsched-wizard.onsched-form");
-        elWizardForm.addEventListener("submit", OnSchedWizardHelpers.WizardSubmitHandler);
-        var elPrevButton = document.querySelector(".onsched-wizard-nav-buttons .prevButton");
-        elPrevButton.addEventListener("click", OnSchedWizardHelpers.WizardPrevHandler);
-
-        console.log("In LocationSetupElement");
-//        console.log(element.params);
-
-        var htmlBusinessHours = OnSchedTemplates.businessHoursTable(element.onsched.locale, element.params.businessHours);
-        var elBusinessHours = document.querySelector(".onsched-business-hours");
-        elBusinessHours.innerHTML = htmlBusinessHours;
-        console.log("In LocationSetupElement after business hours initialization");
-
-        var elBusinessTimezone = document.querySelector(".onsched-wizard.onsched-form select[name=timezoneName]");
-        var elBusinessHoursTz = document.querySelector("h4.onsched-business-hours-tz");
-        elBusinessHoursTz.innerHTML = elBusinessTimezone.options[elBusinessTimezone.selectedIndex].text;;
-        elBusinessTimezone.addEventListener("change", function(event) {
-            var elBusinessTimezone = document.querySelector(".onsched-wizard.onsched-form select[name=timezoneName]");
-            var elBusinessHoursTz = document.querySelector("h4.onsched-business-hours-tz");
-            elBusinessHoursTz.innerHTML = elBusinessTimezone.options[elBusinessTimezone.selectedIndex].text;;
-    
-        }, false);
-
-        // Consider adding this to OnSchedOnClick
-        elWizardForm.addEventListener("click", function (event) {
-            if (event.target.classList.contains("onsched-dropdown-menu-button")) {
-                // first clear any displayed dropdown menus
-                var menus = document.querySelectorAll(".onsched-dropdown-menu");
-                for (var i = 0; i < menus.length; i++) {
-                    menus[i].style.display = "none";
-                }
-                var menu = event.target.nextElementSibling;
-                if (menu.style.display != "none")
-                    menu.style.display = "none";
-                else
-                    menu.style.display = "block";
-                event.preventDefault();
-            }
-            else
-            if (event.target.classList.contains("onsched-dropdown-menu-item")) {
-                // need to call logic to show hide start/end times info.
-                var businessHoursDay = event.target.closest(".onsched-business-hours-day");
-                var day = businessHoursDay.classList[businessHoursDay.classList.length - 1];
-
-                var startTimeColClass = ".onsched-business-hours-row.start .onsched-business-hours-time" + "." + day;
-                var startTimeCol = document.querySelector(startTimeColClass);
-                OnSchedWizardHelpers.UpdateBusinessHoursTime(startTimeCol, event.target.name);
-
-                var endTimeColClass = ".onsched-business-hours-row.end .onsched-business-hours-time" + "." + day;
-                var endTimeCol = document.querySelector(endTimeColClass);
-                OnSchedWizardHelpers.UpdateBusinessHoursTime(endTimeCol, event.target.name);
-
-                var li = event.target.parentElement;
-                var menu = li.parentElement;
-                event.preventDefault();
-                menu.style.display = "none";
-            }
+            // build the base html template for this wizard
+            if (element.params.data == undefined)
+                el.innerHTML = OnSchedTemplates.locationSetup(element.onsched.locale, defaultData);
             else {
-                // something else clicked
-                // make all the drop-down-menu's hidden
-                var menus = document.querySelectorAll(".onsched-dropdown-menu");
-                for (var i = 0; i < menus.length; i++) {
-                    menus[i].style.display = "none";
-                }
+                // make sure the supplied default data passed in params has busnessHours
+                // if not, we'll use our default businessHours
+                if (data.businessHours == undefined)
+                    data.businessHours = defaultBusinessHours;
+                el.innerHTML = OnSchedTemplates.locationSetup(element.onsched.locale, element.params.data);
             }
+            OnSchedWizardHelpers.InitWizardElementsInDOM(element);
+            OnSchedWizardHelpers.ShowWizardSection(0);
+            // default the timezone for a new location
+            if (element.params.tzOffset != undefined || element.params.tzOffset.length == 0) {
+                var elTimezoneSelect = document.querySelector(".onsched-wizard.onsched-form select[name=timezoneName");
+                elTimezoneSelect.value = element.params.tzOffset;
+            }
+        }
+        else {
+            console.log("Id present, get location and build UI from response data");
 
-        }, false);
+            var urlLocation = element.onsched.apiBaseUrl + "/locations/" + element.params.id;
 
-        OnSchedWizardHelpers.ShowWizardSection(0);
-
-        // Call the endpoint to receive all system states
-        // and use data to populate the states options and country options
-
-        var url = element.onsched.apiBaseUrl + "/customers/states";
-
-        element.onsched.accessToken.then(x =>
-            OnSchedRest.GetCustomers(x, url, function (response) {
-                var stateOptionsHtml = OnSchedTemplates.stateSelectOptions(response);
-                var elStateSelect = document.querySelector(".onsched-wizard.onsched-form select[name=state]");
-                elStateSelect.innerHTML = stateOptionsHtml;
-                var countryOptionsHtml = OnSchedTemplates.countrySelectOptions(response);
-                var elCountrySelect = document.querySelector(".onsched-wizard.onsched-form select[name=country]");
-                elCountrySelect.innerHTML = countryOptionsHtml;
- 
-            }) // end rest response
-        ); // end promise
-
+            OnSchedHelpers.ShowProgress();
+            element.onsched.accessToken.then(x =>
+                OnSchedRest.GetLocations(x, urlLocation, function (response) {
+                    console.log(urlLocation);
+                    console.log(response);
+                    // now render the initial UI from the response data
+                    el.innerHTML = OnSchedTemplates.locationSetup(element.onsched.locale, response);                    
+                    OnSchedWizardHelpers.InitWizardElementsInDOM(element);
+                    OnSchedWizardHelpers.ShowWizardSection(0);
+                }) // end rest response
+            ); // end promise        
+        }
     }
     function ResourceSetupElement(element) {
         var el = document.getElementById(element.id);
@@ -578,13 +533,13 @@ var OnSchedMount = function () {
             var elPrevButton = document.querySelector(".onsched-wizard-nav-buttons .prevButton");
             elPrevButton.addEventListener("click", OnSchedWizardHelpers.WizardPrevHandler);
     
-            console.log("In LocationSetupElement");
+            console.log("In ResourceSetupElement");
     //        console.log(element.params);
     
             var htmlBusinessHours = OnSchedTemplates.businessHoursTable(element.onsched.locale, element.params.businessHours);
             var elBusinessHours = document.querySelector(".onsched-business-hours");
             elBusinessHours.innerHTML = htmlBusinessHours;
-            console.log("In LocationSetupElement after business hours initialization");
+            console.log("In ResourceSetupElement after business hours initialization");
     
             var elBusinessTimezone = document.querySelector(".onsched-wizard.onsched-form select[name=timezoneName]");
             var elBusinessHoursTz = document.querySelector("h4.onsched-business-hours-tz");
@@ -788,18 +743,41 @@ var OnSchedMount = function () {
 }(); // End OnSchedMount
 
 var OnSchedWizardHelpers = function () {
-    function WizardSubmitHandler(e) {
+    function WizardSubmitHandler(event, element) {
         console.log("WizardSubmitHandler");
+        console.log(element);
         var elStep = document.querySelector(".onsched-wizard input[name=step]")
         var step = parseInt(elStep.value);
         var elWizardSections = document.querySelectorAll(".onsched-wizard .onsched-wizard-section");
 
         if (step == elWizardSections.length - 1) {
-            console.log("elWizardSections.length=" + elWizardSections.length);
             var form = document.querySelector(".onsched-wizard.onsched-form");
-            switch(form.name) {
+            switch(form.getAttribute("name")) {
                 case "locationSetup":
                     console.log("POST or PUT /locations");
+                    if (element.params.id == undefined || element.params.id.length == 0) {
+                        var postData = GetLocationPostData(form.elements);
+                        var locationsUrl = element.onsched.setupApiBaseUrl + "/locations";
+                        console.log(locationsUrl);
+                        OnSchedHelpers.ShowProgress();
+                        element.onsched.accessToken.then(x =>
+                            OnSchedRest.PostLocation(x, locationsUrl, postData, function (response) {
+                                OnSchedResponse.PostLocation(element, response);
+                            })
+                        );
+                    }
+                    else {
+                        var putData = GetLocationPutData(form.elements);
+                        var locationsUrl = element.onsched.setupApiBaseUrl + "/locations/"+ element.params.id;
+                        console.log(locationsUrl);
+                        OnSchedHelpers.ShowProgress();
+                        element.onsched.accessToken.then(x =>
+                            OnSchedRest.PutLocation(x, locationsUrl, putData, function (response) {
+                                OnSchedResponse.PutLocation(element, response);
+                            })
+                        );                        
+                    }
+
                     break;
                 case "resourceSetup":
                     console.log("POST or PUT /resources");
@@ -810,7 +788,6 @@ var OnSchedWizardHelpers = function () {
                  default:
                     console.log("WizardSubmtHandler: unknown form submitted"+ " "+ form.name);         
             }            
-//            GetFormValuesToSubmit();
             GetLocationPostData(form.elements);
         }
         else {
@@ -820,12 +797,109 @@ var OnSchedWizardHelpers = function () {
             ShowWizardSection(step);
         }
 
-        e.preventDefault();
+        event.preventDefault();
         return false;
+    }
+    function InitWizardElementsInDOM(element) {
+        // MAY NE NOTHING IN THE DOM YET
+        var elWizardForm = document.querySelector(".onsched-wizard.onsched-form");
+//                    el.addEventListener('click', (event) => event_handler(event, 'An argument'));                   
+//elWizardForm.addEventListener("submit", OnSchedWizardHelpers.WizardSubmitHandler);
+        elWizardForm.addEventListener("submit", (event) => OnSchedWizardHelpers.WizardSubmitHandler(event, element));
+        var elPrevButton = document.querySelector(".onsched-wizard-nav-buttons .prevButton");
+        elPrevButton.addEventListener("click", OnSchedWizardHelpers.WizardPrevHandler);
+
+        console.log("In LocationSetupElement");
+        //        console.log(element.params);
+
+        var elBusinessTimezone = document.querySelector(".onsched-wizard.onsched-form select[name=timezoneName]");
+        var elBusinessHoursTz = document.querySelector("h4.onsched-business-hours-tz");
+        elBusinessHoursTz.innerHTML = elBusinessTimezone.options[elBusinessTimezone.selectedIndex].text;;
+        elBusinessTimezone.addEventListener("change", function(event) {
+            var elBusinessTimezone = document.querySelector(".onsched-wizard.onsched-form select[name=timezoneName]");
+            var elBusinessHoursTz = document.querySelector("h4.onsched-business-hours-tz");
+            elBusinessHoursTz.innerHTML = elBusinessTimezone.options[elBusinessTimezone.selectedIndex].text;;
+
+        }, false);
+
+        // Consider adding this to OnSchedOnClick
+        elWizardForm.addEventListener("click", function (event) {
+            if (event.target.classList.contains("onsched-dropdown-menu-button")) {
+                // first clear any displayed dropdown menus
+                var menus = document.querySelectorAll(".onsched-dropdown-menu");
+                for (var i = 0; i < menus.length; i++) {
+                    menus[i].style.display = "none";
+                }
+                var menu = event.target.nextElementSibling;
+                if (menu.style.display != "none")
+                    menu.style.display = "none";
+                else
+                    menu.style.display = "block";
+                event.preventDefault();
+            }
+            else
+            if (event.target.classList.contains("onsched-dropdown-menu-item")) {
+                // need to call logic to show hide start/end times info.
+                var businessHoursDay = event.target.closest(".onsched-business-hours-day");
+                var day = businessHoursDay.classList[businessHoursDay.classList.length - 1];
+
+                var startTimeColClass = ".onsched-business-hours-row.start .onsched-business-hours-time" + "." + day;
+                var startTimeCol = document.querySelector(startTimeColClass);
+                OnSchedWizardHelpers.UpdateBusinessHoursTime(startTimeCol, event.target.name);
+
+                var endTimeColClass = ".onsched-business-hours-row.end .onsched-business-hours-time" + "." + day;
+                var endTimeCol = document.querySelector(endTimeColClass);
+                OnSchedWizardHelpers.UpdateBusinessHoursTime(endTimeCol, event.target.name);
+
+                var li = event.target.parentElement;
+                var menu = li.parentElement;
+                event.preventDefault();
+                menu.style.display = "none";
+            }
+            else {
+                // something else clicked
+                // make all the drop-down-menu's hidden
+                var menus = document.querySelectorAll(".onsched-dropdown-menu");
+                for (var i = 0; i < menus.length; i++) {
+                    menus[i].style.display = "none";
+                }
+            }
+
+            }, false); // end of onclick processing
+
+            // Call the endpoint to receive all system states
+            // and use data to populate the states options and country options
+
+            var url = element.onsched.apiBaseUrl + "/customers/states";
+
+            element.onsched.accessToken.then(x =>
+                OnSchedRest.GetCustomers(x, url, function (response) {
+                    var stateOptionsHtml = OnSchedTemplates.stateSelectOptions(response);
+                    var elStateSelect = document.querySelector(".onsched-wizard.onsched-form select[name=state]");
+                    console.log("elStateSelect.value="+elStateSelect.value);
+                    console.log("data.address.country"+data.address.country);
+                    elStateSelect.innerHTML = stateOptionsHtml;
+                    elStateSelect.value = data.address.state;
+                    var countryOptionsHtml = OnSchedTemplates.countrySelectOptions(response);
+                    var elCountrySelect = document.querySelector(".onsched-wizard.onsched-form select[name=country]");
+                    elCountrySelect.innerHTML = countryOptionsHtml;
+                    elCountrySelect.value = data.address.country;    
+                }) // end rest response
+            ); // end promise
     }
     function GetLocationPostData(formElements) {
         console.log("In GetLocationPostData");
-        var postData = { address: {}, businessHours: {}, settings: {} };
+        var businessHours = { 
+            sun: { startTime:0, endTime:0 },
+            mon: { startTime:0, endTime:0 },
+            tue: { startTime:0, endTime:0 },
+            wed: { startTime:0, endTime:0 },
+            thu: { startTime:0, endTime:0 },
+            fri: { startTime:0, endTime:0 },
+            sat: { startTime:0, endTime:0 },
+        };
+
+        var postData = { address: {}, businessHours: businessHours, settings: {} };
         for (var i = 0; i < formElements.length; i++) {
             var e = formElements[i];
             switch(e.dataset.post) {
@@ -834,7 +908,7 @@ var OnSchedWizardHelpers = function () {
                     break;
                 case "root":
                     // timezoneName requires special handling
-                    postData[e.name] = e.name == "timezoneName" ? encodeURIComponent(e.options[e.selectedIndex].dataset.tz) : e.value;
+                    postData[e.name] = e.name == "timezoneName" ? e.options[e.selectedIndex].dataset.tz : e.value;
                     break;
                 case "address":
                     postData.address[e.name] = e.value;
@@ -843,6 +917,12 @@ var OnSchedWizardHelpers = function () {
                     postData.settings[e.name] = e.value;
                     break;
                 case "businessHours":
+                    var bhDay = e.name.substr(0, 3);
+                    var bhTime = e.name.substr(3);
+                    if (bhTime.includes("Start"))
+                        postData.businessHours[bhDay].startTime = e.value;
+                    else
+                        postData.businessHours[bhDay].endTime = e.value;
                     postData.businessHours[e.name] = e.value;
                     break;
                 default:
@@ -851,26 +931,53 @@ var OnSchedWizardHelpers = function () {
             }
         }
         console.log(postData);
+        return postData;
     }
-    function GetFormValuesToSubmit() {
-        var kvpairs = [];
-        var form = document.querySelector(".onsched-wizard.onsched-form");
+    function GetLocationPutData(formElements) {
+        console.log("In GetLocationPutData");
+        var businessHours = { 
+            sun: { startTime:0, endTime:0 },
+            mon: { startTime:0, endTime:0 },
+            tue: { startTime:0, endTime:0 },
+            wed: { startTime:0, endTime:0 },
+            thu: { startTime:0, endTime:0 },
+            fri: { startTime:0, endTime:0 },
+            sat: { startTime:0, endTime:0 },
+        };
 
-        console.log(form.name);
-        for (var i = 0; i < form.elements.length; i++) {
-            var e = form.elements[i];
-            if (e.name === undefined || e.name == null || e.name.length <= 0)
-                continue;
-            console.log("name="+e.name+ " "+"value="+e.value+ " post="+e.dataset.post);
-            if (e.name == "timezoneName")
-                kvpairs.push(encodeURIComponent(e.name) + "=" + encodeURIComponent(e.options[e.selectedIndex].dataset.tz));
-            else
-                kvpairs.push(encodeURIComponent(e.name) + "=" + encodeURIComponent(e.value));
+        var putData = { address: {}, businessHours: businessHours, settings: {} };
+        for (var i = 0; i < formElements.length; i++) {
+            var e = formElements[i];
+            switch(e.dataset.post) {
+                case undefined:
+                    // ignore fields without a data-post entry
+                    break;
+                case "root":
+                    // timezoneName requires special handling
+                    putData[e.name] = e.name == "timezoneName" ? e.options[e.selectedIndex].dataset.tz : e.value;
+                    break;
+                case "address":
+                    putData.address[e.name] = e.value;
+                    break;
+                case "settings":
+                    putData.settings[e.name] = e.value;
+                    break;
+                case "businessHours":
+                    var bhDay = e.name.substr(0, 3);
+                    var bhTime = e.name.substr(3);
+                    if (bhTime.includes("Start"))
+                        putData.businessHours[bhDay].startTime = e.value;
+                    else
+                        putData.businessHours[bhDay].endTime = e.value;
+                    putData.businessHours[e.name] = e.value;
+                    break;
+                default:
+                    console.log(e.name + " unrecognizable put attribute");
+                    break;
+            }
         }
-        var queryString = kvpairs.join("&");
-        console.log("GetFormValuesToSubmit");
-        console.log(queryString);
-        return queryString;
+        console.log(putData);
+        return putData;
     }
 
     function WizardPrevHandler(e) {
@@ -953,10 +1060,12 @@ var OnSchedWizardHelpers = function () {
     }
     return {
         WizardSubmitHandler: WizardSubmitHandler,
-        GetFormValuesToSubmit: GetFormValuesToSubmit,
+        GetLocationPostData: GetLocationPostData,
+        GetLocationPutData: GetLocationPutData,
         WizardPrevHandler: WizardPrevHandler,
         ShowWizardSection: ShowWizardSection,
         UpdateBusinessHoursTime: UpdateBusinessHoursTime,
+        InitWizardElementsInDOM: InitWizardElementsInDOM,
     };
 }();
 
@@ -1213,6 +1322,20 @@ var OnSchedResponse = function () {
             elAvailability.dispatchEvent(bookingConfirmationEvent);
         }
     }
+    function PostLocation(element, response) {
+        console.log("OnSchedResponse.PostLocation");
+        console.log(response);
+        var elLocationSetup = document.getElementById(element.id);
+        var confirmationEvent = new CustomEvent("locationSetupConfirmation", { detail: response });
+        elLocationSetup.dispatchEvent(confirmationEvent);    
+    }
+    function PutLocation(element, response) {
+        console.log("OnSchedResponse.PutLocation");
+        console.log(response);
+        var elLocationSetup = document.getElementById(element.id);
+        var confirmationEvent = new CustomEvent("locationSetupConfirmation", { detail: response });
+        elLocationSetup.dispatchEvent(confirmationEvent);    
+    }    
     return {
         GetAvailability: GetAvailability,
         GetLocations: GetLocations,
@@ -1224,6 +1347,8 @@ var OnSchedResponse = function () {
         GetCustomers: GetCustomers,
         PostAppointment: PostAppointment,
         PutAppointmentBook: PutAppointmentBook,
+        PostLocation: PostLocation,
+        PutLocation: PutLocation,
     };
 }(); // End OnSchedResponse
 
@@ -2416,11 +2541,20 @@ var OnSchedTemplates = function () {
         `;
         return tmplConfirmation;
     }
+    function dataOrDefault(value) {
+        if (value == undefined)
+            return "";
+        else
+            return value;
+    }
 
     //
     // SETUP TEMPLATES
     //
-    function locationSetup() {
+    function locationSetup(locale, data) {
+
+        console.log("INSIDE locationSetup()");
+        console.log(data);
 
         const tmplLocationSetup = `
         <div class="onsched-container">
@@ -2432,31 +2566,33 @@ var OnSchedTemplates = function () {
                 <div class="onsched-form-row">
                     <div class="onsched-form-col">
                         <label for="businessName">Business Name</label>
-                        <input id="businessName" type="text" name="name" required="required" data-post="root"/>
+                        <input id="businessName" type="text" name="name" value="${dataOrDefault(data.name)}" required="required" data-post="root"/>
                     </div>
                     <div class="onsched-form-col">
                         <label for="businessTimezone">Timezone</label>
-                        <select id="businessTimezone" class="onsched-select" name="timezoneName" data-post="root" data-encode="yes">${TimezoneSelectOptions(Timezones())}</select>
+                        <select id="businessTimezone" class="onsched-select" name="timezoneName" value="${dataOrDefault(data.timezoneName)}" data-post="root" data-encode="yes">
+                            ${TimezoneSelectOptions(Timezones())}
+                        </select>
                     </div>
                 </div>
                 <div class="onsched-form-row">
                     <div class="onsched-form-col">
                         <label for="businessEmail">Email</label>
-                        <input id="businessEmail" type="email" name="email" data-post="root" />
+                        <input id="businessEmail" type="email" name="email" value="${dataOrDefault(data.email)}" data-post="root" />
                     </div>
                     <div class="onsched-form-col">
                         <label for="businessWebsite">Website</label>
-                        <input id="businessWebsite" type="text" name="website" data-post="root" />
+                        <input id="businessWebsite" type="text" name="website" value="${dataOrDefault(data.website)}" data-post="root" />
                     </div>
                 </div>
                 <div class="onsched-form-row">
                     <div class="onsched-form-col">
                         <label for="businessPhone">Phone</label>
-                        <input id="businessPhone" type="tel" name="phone" data-post="root" />
+                        <input id="businessPhone" type="tel" name="phone" value="${dataOrDefault(data.phone)}" data-post="root" />
                     </div>
                     <div class="onsched-form-col">
                         <label for="businessFax">Fax</label>
-                        <input id="businessFax" type="tel" name="fax" data-post="root" />
+                        <input id="businessFax" type="tel" name="fax" value="${dataOrDefault(data.fax)}" data-post="root" />
                     </div>
                 </div>
             </div>
@@ -2466,29 +2602,29 @@ var OnSchedTemplates = function () {
                 <div class="onsched-form-row">
                     <div class="onsched-form-col">
                         <label for="addressLine1">Address Line 1</label>
-                        <input id="addressLine1" type="text" name="addressLine1" data-post="address"/>
+                        <input id="addressLine1" type="text" name="addressLine1" value="${dataOrDefault(data.address.addressLine1)}" data-post="address"/>
                     </div>
                 </div>
                 <div class="onsched-form-row">
                     <div class="onsched-form-col">
                         <label for="addressLine2">Address Line 2</label>
-                        <input id="addressLine2" type="text" name="addressLine2"  data-post="address"/>
+                        <input id="addressLine2" type="text" name="addressLine2" value="${dataOrDefault(data.address.addressLine1)}"  data-post="address"/>
                     </div>
                 </div>
                 <div class="onsched-form-row">
                     <div class="onsched-form-col">
                         <label for="city">City</label>
-                        <input id="city" type="text" name="city"  data-post="address" data-post="address"/>
+                        <input id="city" type="text" name="city" value="${dataOrDefault(data.address.city)}"  data-post="address" data-post="address"/>
                     </div>
                     <div class="onsched-form-col">
                         <label for="state">State / Province</label>
-                        <select id="state" name="state" class="onsched-select" data-post="address"></select>
+                        <select id="state" name="state" value="${dataOrDefault(data.address.state)}" class="onsched-select" data-post="address"></select>
                     </div>
                 </div>
                 <div class="onsched-form-row">
                     <div class="onsched-form-col">
                         <label for="country">Country</label>
-                        <select id="country" name="country" class="onsched-select" data-post="address">
+                        <select id="country" name="country" value="${dataOrDefault(data.address.country)}" class="onsched-select" data-post="address">
                             <option></option>
                             <option value="CA">Canada</option>
                             <option value="US">United States</option>
@@ -2496,22 +2632,14 @@ var OnSchedTemplates = function () {
                     </div>
                     <div class="onsched-form-col">
                         <label for="postalCode">Zip / Postal Code</label>
-                        <input id="postalCode" type="text" name="postalCode" data-post="address"/>
+                        <input id="postalCode" type="text" name="postalCode" value="${dataOrDefault(data.address.postalCode)}" data-post="address"/>
                     </div>
                 </div>
             </div>
             <div class="onsched-wizard-section">
-                <div style="display:table;width:100%;">
-                    <div style="display:table-row">
-                        <div style="display:table-cell">
-                            <h2>Business Hours</h2>
-                        </div>
-                        <div style="display:table-cell;text-align:right">
-                        </div>
-                    </div>
-                    </div>
-                    <h4 class="onsched-business-hours-tz">Eastern Timezone</h4>
-                    <div class="onsched-business-hours"></div>
+                <h2>Business Hours</h2>
+                <h4 class="onsched-business-hours-tz">Eastern Timezone</h4>
+                <div class="onsched-business-hours">${OnSchedTemplates.businessHoursTable(locale, data.businessHours)}</div>
             </div>
             <div class="onsched-wizard-nav">
                 <div style="display:table-row">
@@ -2520,6 +2648,13 @@ var OnSchedTemplates = function () {
                         <span class="step active"></span>
                         <span class="step"></span>
                         <span class="step"></span>
+                    </div>
+                    <div style="display:table-cell">
+                        <div class="onsched-progress-container">
+                        <div class="onsched-progress">
+                            <div class="indeterminate"></div>
+                            </div>
+                        </div>
                     </div>
                     <div class="onsched-wizard-nav-buttons">
                         <button type="button" id="prevButton" class="prevButton">Previous</button>
@@ -3559,6 +3694,14 @@ var OnSchedRest = function () {
         return Get(token, url, callback);
     }
 
+    // Setup interface rest calls
+
+    function PostLocation(token, url, payload, callback) {
+        return Post(token, url, payload, callback);
+    }
+    function PutLocation(token, url, payload, callback) {
+        return Put(token, url, payload, callback);
+    }
     function ShowProgress() {
         var indicators = document.getElementsByClassName("onsched-progress");
         for (var i = 0; i < indicators.length; i++) {
@@ -3589,6 +3732,8 @@ var OnSchedRest = function () {
         GetServices: GetServices,
         GetResources: GetResources,
         GetCustomers: GetCustomers,
+        PostLocation: PostLocation,
+        PutLocation: PutLocation,
         ShowProgress: ShowProgress,
         HideProgress: HideProgress
     };
