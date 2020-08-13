@@ -409,16 +409,17 @@ However, delay the fade out process for 2.5 seconds */
   });
   //        resource.mount("resource");
 
-  var appointmentParams = { locationId: '', appointmentId: '608348' };
-  var appointmentOptions = {};
+  var appointmentParams = { locationId: '', appointmentId: '383587' };
+  var appointmentOptions = { confirm: true};
   var appointment = elements.create("appointment", appointmentParams, appointmentOptions);
   var elAppointment = document.getElementById("appointment");
   elAppointment.addEventListener("getAppointment", function (e) {
-    var confirmationParams = { appointment: e.detail };
-    var confirmationOptions = {};
-    //            var confirmation = elements.create("confirmation", confirmationParams, confirmationOptions);
-    //            confirmation.mount("confirmation");
-    HideToast();
+    console.log("getAppointment success id="+e.detail.id);   
+    console.log(e.detail);
+  });
+  elAppointment.addEventListener("confirmAppointment", function (e) {
+    console.log("confirmAppointment success id="+e.detail.id);   
+    console.log(e.detail);
   });
   appointment.mount("appointment");
 
