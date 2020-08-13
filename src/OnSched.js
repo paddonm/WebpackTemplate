@@ -1456,7 +1456,7 @@ var OnSchedOnClick = function () {
         var appointmentsUrl = element.onsched.apiBaseUrl + "/appointments";
         if (OnSchedHelpers.IsNotEmpty(element.params.completeBooking) &&
             OnSchedHelpers.IsNotEmpty(element.params.customerId)) {
-            appointmentsUrl = OnSchedHelpers.AddUrlParam(appointmentsUrl, "completeBooking", "BK");
+            appointmentsUrl = OnSchedHelpers.AddUrlParam(appointmentsUrl, "completeBooking", element.params.completeBooking);
         }
 
         // TWO DIFFERENT FLOWS ARE POSSIBLE
