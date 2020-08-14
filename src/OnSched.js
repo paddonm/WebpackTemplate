@@ -474,6 +474,7 @@ var OnSchedMount = function () {
         ); // end promise
     } 
     function LocationSetupElement(element) {
+
         var el = document.getElementById(element.id);
         // check for presence of id in params
         // if exists, then make get call and build UI with response data
@@ -522,11 +523,20 @@ var OnSchedMount = function () {
             OnSchedHelpers.ShowProgress();
             element.onsched.accessToken.then(x =>
                 OnSchedRest.GetLocations(x, urlLocation, function (response) {
+                    if (response.error) {
+                        console.log("Rest error response code=" + response.code);
+                        return;
+                    }
                     console.log(urlLocation);
                     console.log(response);
                     // now render the initial UI from the response data
                     el.innerHTML = OnSchedTemplates.locationSetup(element.onsched.locale, response);                    
                     OnSchedWizardHelpers.InitWizardElementsInDOM(element);
+                    OnSchedWizardHelpers.SelectOptionMatchingData("select[name=timezoneName]", "tz", "America/New_York");
+                    console.log("response raw phone number="+response.phone);
+                    console.log("response raw phone number length="+response.phone.length);
+                    console.log("formatted response phone number=" + OnSchedHelpers.FormatPhoneNumber(response.phone));
+
                     OnSchedWizardHelpers.ShowWizardSection(0);
                 }) // end rest response
             ); // end promise        
@@ -777,8 +787,8 @@ var OnSchedWizardHelpers = function () {
             var form = document.querySelector(".onsched-wizard.onsched-form");
             switch(form.getAttribute("name")) {
                 case "locationSetup":
-                    console.log("POST or PUT /locations");
                     if (element.params.id == undefined || element.params.id.length == 0) {
+                        console.log("POST /locations");
                         var postData = GetLocationPostData(form.elements);
                         var locationsUrl = element.onsched.setupApiBaseUrl + "/locations";
                         console.log(locationsUrl);
@@ -790,7 +800,9 @@ var OnSchedWizardHelpers = function () {
                         );
                     }
                     else {
+                        console.log("PUT /locations");
                         var putData = GetLocationPutData(form.elements);
+                        console.log("IN PUT phone="+ putData.phone);
                         var locationsUrl = element.onsched.setupApiBaseUrl + "/locations/"+ element.params.id;
                         console.log(locationsUrl);
                         OnSchedHelpers.ShowProgress();
@@ -826,14 +838,9 @@ var OnSchedWizardHelpers = function () {
     function InitWizardElementsInDOM(element) {
         // MAY NE NOTHING IN THE DOM YET
         var elWizardForm = document.querySelector(".onsched-wizard.onsched-form");
-//                    el.addEventListener('click', (event) => event_handler(event, 'An argument'));                   
-//elWizardForm.addEventListener("submit", OnSchedWizardHelpers.WizardSubmitHandler);
         elWizardForm.addEventListener("submit", (event) => OnSchedWizardHelpers.WizardSubmitHandler(event, element));
         var elPrevButton = document.querySelector(".onsched-wizard-nav-buttons .prevButton");
         elPrevButton.addEventListener("click", OnSchedWizardHelpers.WizardPrevHandler);
-
-        console.log("In LocationSetupElement");
-        //        console.log(element.params);
 
         var elBusinessTimezone = document.querySelector(".onsched-wizard.onsched-form select[name=timezoneName]");
         var elBusinessHoursTz = document.querySelector("h4.onsched-business-hours-tz");
@@ -932,6 +939,11 @@ var OnSchedWizardHelpers = function () {
                 case "root":
                     // timezoneName requires special handling
                     postData[e.name] = e.name == "timezoneName" ? e.options[e.selectedIndex].dataset.tz : e.value;
+                    postData[e.name] = e.name == "phone" || e.name == "fax" ? OnSchedHelpers.ParsePhoneNumber(e.value) : e.value;
+                    if (e.name == "phone") {
+                        console.log("phone parsed="+ postData[e.name]);
+                        console.log("phone parsed length=" + postData[e.name].length);
+                    }
                     break;
                 case "address":
                     postData.address[e.name] = e.value;
@@ -976,8 +988,18 @@ var OnSchedWizardHelpers = function () {
                     // ignore fields without a data-post entry
                     break;
                 case "root":
-                    // timezoneName requires special handling
-                    putData[e.name] = e.name == "timezoneName" ? e.options[e.selectedIndex].dataset.tz : e.value;
+                    // timezoneName, phone and fax require special handling
+                    if (e.name == "timezoneName") {
+                        putData[e.name] = e.options[e.selectedIndex].dataset.tz;
+                        console.log("timezoneName="+putData[e.name]);
+                    }
+                    else
+                    if (e.name == "phone" || e.name == "fax") {
+                        putData[e.name] = OnSchedHelpers.ParsePhoneNumber(e.value);
+                    }
+                    else {
+                        putData[e.name] = e.value
+                    }
                     break;
                 case "address":
                     putData.address[e.name] = e.value;
@@ -1081,6 +1103,18 @@ var OnSchedWizardHelpers = function () {
         else
             selectTime.style.display = "none";
     }
+    function SelectOptionMatchingData(selector, attr, value) {
+        console.log("FindMatchingOptionDataAttribute");
+        Array.from(document.querySelector(selector).options).forEach(function(option) {
+            if (option.dataset[attr] == value) {
+                console.log("Found matching data attribute");
+                console.log(option);
+                // now select this option
+                option.selected = true;
+            }
+        
+        });
+    }
     return {
         WizardSubmitHandler: WizardSubmitHandler,
         GetLocationPostData: GetLocationPostData,
@@ -1089,6 +1123,7 @@ var OnSchedWizardHelpers = function () {
         ShowWizardSection: ShowWizardSection,
         UpdateBusinessHoursTime: UpdateBusinessHoursTime,
         InitWizardElementsInDOM: InitWizardElementsInDOM,
+        SelectOptionMatchingData: SelectOptionMatchingData,
     };
 }();
 
@@ -1346,6 +1381,10 @@ var OnSchedResponse = function () {
         }
     }
     function PostLocation(element, response) {
+        if (response.error) {
+            console.log("Rest error response code=" + response.code);
+            return;
+        }
         console.log("OnSchedResponse.PostLocation");
         console.log(response);
         var elLocationSetup = document.getElementById(element.id);
@@ -1353,6 +1392,11 @@ var OnSchedResponse = function () {
         elLocationSetup.dispatchEvent(confirmationEvent);    
     }
     function PutLocation(element, response) {
+        if (response.error) {
+            console.log("Rest error response code=" + response.code);
+            console.log(data);
+            return;
+        }
         console.log("OnSchedResponse.PutLocation");
         console.log(response);
         var elLocationSetup = document.getElementById(element.id);
@@ -1887,6 +1931,31 @@ var OnSchedHelpers = function () {
         return token;
     }
 
+    function FormatPhoneNumber(ns) {
+        var formatted = "";
+        if (ns == undefined)
+            return formatted;
+        else
+        if (ns.length == 10)
+            formatted =  "(" + ns.substr(0, 3) + ")" + " " + ns.substr(3, 3) + "-" + ns.substr(6);
+        else
+        if (ns.length > 10)
+            formatted = "+" + ns.substr(0, 2)+ " " + ns.substr(2, 3) + " " + ns.substr(5);
+        else
+            formatted = ns;
+        console.log("formatted="+formatted);
+        return formatted;
+    }
+    function ParsePhoneNumber(strIn) {
+        if (strIn == undefined)
+            return "";
+        strIn = strIn.trim();
+
+        var parsed = strIn.replace(/[^0-9]/g, '');
+                    
+        return parsed.trim();
+    }
+
     return {
         IsEmpty: IsEmpty,
         IsNotEmpty: IsNotEmpty,
@@ -1909,6 +1978,8 @@ var OnSchedHelpers = function () {
         FormatDuration: FormatDuration,
         StartBookingTimer: StartBookingTimer,
         SetToken: SetToken,
+        FormatPhoneNumber:FormatPhoneNumber,
+        ParsePhoneNumber:ParsePhoneNumber,
     };
 
 }(); // End OnSchedHelpers
@@ -2611,11 +2682,11 @@ var OnSchedTemplates = function () {
                 <div class="onsched-form-row">
                     <div class="onsched-form-col">
                         <label for="businessPhone">Phone</label>
-                        <input id="businessPhone" type="tel" name="phone" value="${dataOrDefault(data.phone)}" data-post="root" />
+                        <input id="businessPhone" type="tel" name="phone" value="${dataOrDefault(OnSchedHelpers.FormatPhoneNumber(data.phone))}" data-post="root" />
                     </div>
                     <div class="onsched-form-col">
                         <label for="businessFax">Fax</label>
-                        <input id="businessFax" type="tel" name="fax" value="${dataOrDefault(data.fax)}" data-post="root" />
+                        <input id="businessFax" type="tel" name="fax" value="${dataOrDefault(OnSchedHelpers.FormatPhoneNumber(data.fax))}" data-post="root" />
                     </div>
                 </div>
             </div>
