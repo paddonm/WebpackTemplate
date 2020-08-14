@@ -531,8 +531,8 @@ However, delay the fade out process for 2.5 seconds */
  //           var data = { name:"Test F Location", address:{ "state": "ON", "country": "CA" }, businessHours: businessHours, settings: {}};
   var data = { name:"Test F Location", address:{ "state": "ON", "country": "CA" }, settings: {}};
 
-  var locationSetupParams = { "id":"8e574b6b-0976-4561-b5d1-21e9bb4eddf7", "tzOffset": tzOffset, "data":data};
-//  var locationSetupParams = { "tzOffset": tzOffset, "data":data};
+//  var locationSetupParams = { "id":"8e574b6b-0976-4561-b5d1-21e9bb4eddf7", "tzOffset": tzOffset, "data":data};
+  var locationSetupParams = { "tzOffset": tzOffset, "data":data};
   console.log(locationSetupParams);
   var locationSetupOptions = {};
   var locationSetup = elements.create("locationSetup", locationSetupParams, locationSetupOptions);

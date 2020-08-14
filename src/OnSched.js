@@ -937,12 +937,16 @@ var OnSchedWizardHelpers = function () {
                     // ignore fields without a data-post entry
                     break;
                 case "root":
-                    // timezoneName requires special handling
-                    postData[e.name] = e.name == "timezoneName" ? e.options[e.selectedIndex].dataset.tz : e.value;
-                    postData[e.name] = e.name == "phone" || e.name == "fax" ? OnSchedHelpers.ParsePhoneNumber(e.value) : e.value;
-                    if (e.name == "phone") {
-                        console.log("phone parsed="+ postData[e.name]);
-                        console.log("phone parsed length=" + postData[e.name].length);
+                    // timezoneName, phone and fax require special handling
+                    if (e.name == "timezoneName") {
+                        postData[e.name] = e.options[e.selectedIndex].dataset.tz;
+                    }
+                    else
+                    if (e.name == "phone" || e.name == "fax") {
+                        postData[e.name] = OnSchedHelpers.ParsePhoneNumber(e.value);
+                    }
+                    else {
+                        postData[e.name] = e.value
                     }
                     break;
                 case "address":
