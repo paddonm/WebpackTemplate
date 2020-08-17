@@ -83,45 +83,45 @@
     border-spacing: 0;
 }
 
-    .onsched-table tr {
-        border-bottom: 1px solid rgba(0, 0, 0, 0.12);
-    }
+.onsched-table tr {
+    border-bottom: 1px solid rgba(0, 0, 0, 0.12);
+}
 
-    .onsched-table td, .onsched-table th {
-        padding: 8px 5px;
-        display: table-cell;
-        text-align: left;
-        vertical-align: middle;
-        border-radius: 2px;
-    }
+.onsched-table td, .onsched-table th {
+    padding: 8px 5px;
+    display: table-cell;
+    text-align: left;
+    vertical-align: middle;
+    border-radius: 2px;
+}
 
-    .onsched-table th {
-        font-weight: bold;
-    }
+.onsched-table th {
+    font-weight: bold;
+}
 
-    .onsched-table.striped tr {
-        border-bottom: none;
-    }
+.onsched-table.striped tr {
+    border-bottom: none;
+}
 
-    .onsched-table.striped > tbody > tr:nth-child(odd) {
-        background-color: rgba(242, 242, 242, 0.5);
-    }
+.onsched-table.striped > tbody > tr:nth-child(odd) {
+    background-color: rgba(242, 242, 242, 0.5);
+}
 
-    .onsched-table.striped > tbody > tr > td {
-        border-radius: 0;
-    }
+.onsched-table.striped > tbody > tr > td {
+    border-radius: 0;
+}
 
-    .onsched-table.highlight > tbody > tr {
-        transition: background-color .25s ease;
-    }
+.onsched-table.highlight > tbody > tr {
+    transition: background-color .25s ease;
+}
 
-        .onsched-table.highlight > tbody > tr:hover {
-            background-color: rgba(242, 242, 242, 0.5);
-        }
+.onsched-table.highlight > tbody > tr:hover {
+    background-color: rgba(242, 242, 242, 0.5);
+}
 
-    .onsched-table.centered thead tr th, onsched-table.centered tbody tr td {
-        text-align: center;
-    }
+.onsched-table.centered thead tr th, onsched-table.centered tbody tr td {
+    text-align: center;
+}
 
 .onsched-chip.hoverable {
     transition: box-shadow .25s;
@@ -387,19 +387,19 @@
     cursor:pointer;
     outline:none;
 }
-    .onsched-search-form input[type=text] {
-        background: #fff;
-        padding: 10px;
-        border: 1px solid #e3e3e3;
-        border: 1px solid #bdbdbd;
-        border-radius: 10px 0px 0px 10px;
-        -moz-border-radius: 10px 0px 0px 10px;
-        -webkit-border-radius: 10px 0px 0px 10px;
-        -o-border-radius: 10px 0px 0px 10px;
-        width: 652px;
-        outline: none;
-        box-shadow: none;
-    }
+.onsched-search-form input[type=text] {
+    background: #fff;
+    padding: 10px;
+    border: 1px solid #e3e3e3;
+    border: 1px solid #bdbdbd;
+    border-radius: 10px 0px 0px 10px;
+    -moz-border-radius: 10px 0px 0px 10px;
+    -webkit-border-radius: 10px 0px 0px 10px;
+    -o-border-radius: 10px 0px 0px 10px;
+    width: 652px;
+    outline: none;
+    box-shadow: none;
+}
 .onsched-search-form input[type=text]:focus {
 }
 .onsched-search-wrapper {
@@ -441,10 +441,6 @@
     text-align: center;
     font-family: Roboto;
 }
-
-
-
-
 
 .onsched-close-btn {
     position: absolute;
@@ -691,7 +687,6 @@
 
 }
 
-
 .onsched-select {
     display: block;
     border: 1px solid transparent;
@@ -747,6 +742,26 @@
 .onsched-container *, *:before, *:after {
     -webkit-box-sizing: inherit;
     box-sizing: inherit;
+}
+
+.onsched-wizard button.onsched-file-upload-btn {
+    padding:10px;
+    color:white;
+    background-color: #009578;
+    background-color: #242424;
+    border: 1px solid #000;
+    border-radius:5px;
+    cursor: pointer;
+}
+button.onsched-file-upload-btn:hover {
+    background-color: #00b28f;
+    background-color: #aaa;
+}
+.onsched-file-upload-txt {
+    margin-left:10px;
+    font-family: sans-serif;
+    color:#aaa;
+
 }
 
 

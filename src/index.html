@@ -529,21 +529,23 @@ However, delay the fade out process for 2.5 seconds */
                 "sun": { "startTime": 0, "endTime": 0 },
             };
  //           var data = { name:"Test F Location", address:{ "state": "ON", "country": "CA" }, businessHours: businessHours, settings: {}};
-  var data = { name:"Test F Location", address:{ "state": "ON", "country": "CA" }, settings: {}};
+  var locationData = { name:"Test F Location", address:{ "state": "ON", "country": "CA" }, settings: {}};
 
 //  var locationSetupParams = { "id":"8e574b6b-0976-4561-b5d1-21e9bb4eddf7", "tzOffset": tzOffset, "data":data};
-  var locationSetupParams = { "tzOffset": tzOffset, "data":data};
+  var locationSetupParams = { "tzOffset": tzOffset, "data":locationData};
   console.log(locationSetupParams);
   var locationSetupOptions = {};
   var locationSetup = elements.create("locationSetup", locationSetupParams, locationSetupOptions);
 
+  var resourceData = { name:"Test F Location", address:{ "state": "ON", "country": "CA" }, settings: {}};
+
   var elResourceSetup = document.getElementById("resourceSetup");
-  var resourceSetupParams = {"id":"33", "tzOffset": tzOffset, "businessHours": businessHours};
+  var resourceSetupParams = {"id":"8", "tzOffset": tzOffset, "data": resourceData};
   var resourceSetupOptions = {};
   var resourceSetup = elements.create("resourceSetup", resourceSetupParams, resourceSetupOptions);
 
   var elServiceSetup = document.getElementById("serviceSetup");
-  var serviceSetupParams = {"id":"5", "tzOffset": tzOffset, "businessHours": businessHours};
+  var serviceSetupParams = {"id":"5", "tzOffset": tzOffset, "availability": businessHours};
   var serviceSetupOptions = {};
   var serviceSetup = elements.create("serviceSetup", serviceSetupParams, serviceSetupOptions);
 
