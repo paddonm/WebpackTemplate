@@ -144,7 +144,6 @@ function OnSched(ClientId, Environment, Options) {
             };
 
             element.onChange = function (event) {
-//                console.log(event);
                 if (event.target.classList.contains("onsched-select") && event.target.classList.contains("timezone"))
                     OnSchedOnChange.OnChangeTimezone(event, element);
             };
@@ -226,7 +225,6 @@ var OnSchedMount = function () {
         var el = document.getElementById(element.id);
         el.addEventListener("click", element.onClick);
         var url = element.onsched.apiBaseUrl + "/locations";
-        //                        console.log(element.params);
         url = element.params.units != null ? OnSchedHelpers.AddUrlParam(url, "units", element.params.units) : url;
         url = element.params.offset != null ? OnSchedHelpers.AddUrlParam(url, "offset", element.params.offset) : url;
         url = element.params.limit != null ? OnSchedHelpers.AddUrlParam(url, "limit", element.params.limit) : url;
@@ -248,8 +246,6 @@ var OnSchedMount = function () {
         var now = new Date();
         var tzOffset = -now.getTimezoneOffset();
         element.params.tzOffset = OnSchedHelpers.IsEmpty(element.params.tzOffset) ? tzOffset : element.params.tzOffset;
-
-        console.log("avail locale="+element.onsched.locale);
 
         var html = OnSchedTemplates.availabilityContainer();
         var el = document.getElementById(element.id);
@@ -300,7 +296,6 @@ var OnSchedMount = function () {
         var url = element.onsched.apiBaseUrl + "/customers";
         url = OnSchedHelpers.AddUrlParam(url, "locationId", element.params.locationId);
         url = OnSchedHelpers.AddUrlParam(url, "email", element.params.email);
-        console.log(url);
         element.onsched.accessToken.then(x =>
             OnSchedRest.GetCustomers(x, url, function (response) {
                 OnSchedResponse.GetCustomers(element, response);
@@ -340,7 +335,6 @@ var OnSchedMount = function () {
             OnSchedRest.Get(x, url, function (response) {
                 if (response.error)
                     console.log("Rest error response code=" + response.code);
-                console.log(response);
                 // If not confirming the appointment, then just fire an event with the response
                 if (element.options.confirm == undefined || element.options.confirm == false) {
                     var getAppointmentEvent = new CustomEvent("getAppointment", { detail: response });
@@ -396,7 +390,6 @@ var OnSchedMount = function () {
 
         var url = element.params.locationId != null && element.params.locationId.length > 0 ?
             OnSchedHelpers.AddUrlParam(url, "locationId", element.params.locationId) : url;
-//        console.log(url);
 
         // We build a url so call the endpoint now
         element.onsched.accessToken.then(x =>
@@ -430,7 +423,6 @@ var OnSchedMount = function () {
         if (OnSchedHelpers.IsEmpty(element.params.resourceGroupId) == false)
             url = OnSchedHelpers.AddUrlParam(url, "resourceGroupId", element.params.resourceGroupId);
         var url = element.options.getFirst ? OnSchedHelpers.AddUrlParam(url, "limit", "1") : url;
-        console.log(url);
         element.onsched.accessToken.then(x =>
             OnSchedRest.GetResources(x, url, function (response) {
                 OnSchedResponse.GetResources(element, response);
@@ -496,7 +488,6 @@ var OnSchedMount = function () {
         var defaultData = { name:"Test Location", address:{ "state": "ON", "country": "CA" }, businessHours: defaultBusinessHours, settings: {}};
 
         if (element.params.id == undefined) {
-            console.log("No Id present, create new location");
             // build the base html template for this wizard
             if (element.params.data == undefined)
                 el.innerHTML = OnSchedTemplates.locationSetup(element.onsched.locale, defaultData);
@@ -517,8 +508,6 @@ var OnSchedMount = function () {
             }
         }   
         else {
-            console.log("Id present, get location and build UI from response data");
-
             var urlLocation = element.onsched.apiBaseUrl + "/locations/" + element.params.id;
 
             OnSchedHelpers.ShowProgress();
@@ -563,7 +552,6 @@ var OnSchedMount = function () {
         var defaultData = { name:"Test Resource", address:{ "state": "ON", "country": "CA" }, availability: defaultAvailability, settings: {}};
 
         if (element.params.Id == "undefined") {
-            console.log("No Id present, create new resource");
             if (element.params.data == undefined)
                 el.innerHTML = OnSchedTemplates.resourceSetup(element.onsched.locale, defaultData);
             else {
@@ -583,7 +571,6 @@ var OnSchedMount = function () {
             }
         }
         else {
-            console.log("Id present, get resource and build UI from response data");
             var urlResource = element.onsched.apiBaseUrl + "/resources/" + element.params.id;
             OnSchedHelpers.ShowProgress();
             element.onsched.accessToken.then(x =>
@@ -628,12 +615,9 @@ var OnSchedMount = function () {
             var elPrevButton = document.querySelector(".onsched-wizard-nav-buttons .prevButton");
             elPrevButton.addEventListener("click", OnSchedWizardHelpers.WizardPrevHandler);
     
-            console.log("In LocationSetupElement");
-    
             var htmlBusinessHours = OnSchedTemplates.businessHoursTable(element.onsched.locale, element.params.businessHours);
             var elBusinessHours = document.querySelector(".onsched-business-hours");
             elBusinessHours.innerHTML = htmlBusinessHours;
-            console.log("In LocationSetupElement after business hours initialization");
     
             var elBusinessTimezone = document.querySelector(".onsched-wizard.onsched-form select[name=timezoneName]");
             var elBusinessHoursTz = document.querySelector("h4.onsched-business-hours-tz");
@@ -730,21 +714,19 @@ var OnSchedMount = function () {
 
 var OnSchedWizardHelpers = function () {
     function WizardSubmitHandler(event, element) {
-        console.log("WizardSubmitHandler");
-        console.log(element);
         var elStep = document.querySelector(".onsched-wizard input[name=step]")
         var step = parseInt(elStep.value);
         var elWizardSections = document.querySelectorAll(".onsched-wizard .onsched-wizard-section");
 
         if (step == elWizardSections.length - 1) {
             var form = document.querySelector(".onsched-wizard.onsched-form");
+            console.log("In WizardSubmitHandler form="+form.getAttribute("name"));
             switch(form.getAttribute("name")) {
                 case "locationSetup":
                     if (element.params.id == undefined || element.params.id.length == 0) {
                         console.log("POST /locations");
                         var postData = GetLocationPostData(form.elements);
                         var locationsUrl = element.onsched.setupApiBaseUrl + "/locations";
-                        console.log(locationsUrl);
                         OnSchedHelpers.ShowProgress();
                         element.onsched.accessToken.then(x =>
                             OnSchedRest.PostLocation(x, locationsUrl, postData, function (response) {
@@ -753,11 +735,8 @@ var OnSchedWizardHelpers = function () {
                         );
                     }
                     else {
-                        console.log("PUT /locations");
                         var putData = GetLocationPutData(form.elements);
-                        console.log("IN PUT phone="+ putData.phone);
                         var locationsUrl = element.onsched.setupApiBaseUrl + "/locations/"+ element.params.id;
-                        console.log(locationsUrl);
                         OnSchedHelpers.ShowProgress();
                         element.onsched.accessToken.then(x =>
                             OnSchedRest.PutLocation(x, locationsUrl, putData, function (response) {
@@ -769,36 +748,26 @@ var OnSchedWizardHelpers = function () {
                     break;
                 case "resourceSetup":
                     if (element.params.id == undefined || element.params.id.length == 0) {
-                        if (element.params.id == undefined || element.params.id.length == 0) {
-                            console.log("POST /resources");
-                            var postData = GetResourcePostData(form.elements);
-                            var resourcesUrl = element.onsched.setupApiBaseUrl + "/resources";
-                            console.log(resourcesUrl);
-                            OnSchedHelpers.ShowProgress();
-                            element.onsched.accessToken.then(x =>
-                                OnSchedRest.PostResource(x, resourcesUrl, postData, function (response) {
-                                    OnSchedResponse.PostResource(element, response);
-                                })
-                            );
-                        }
-                        else {
-                            console.log("PUT /resources");
-                            var putData = GetResourcePutData(form.elements);
-                            console.log("IN PUT phone="+ putData.phone);
-                            var resourceUrl = element.onsched.setupApiBaseUrl + "/resources/"+ element.params.id;
-                            console.log(resourceUrl);
-                            OnSchedHelpers.ShowProgress();
-                            element.onsched.accessToken.then(x =>
-                                OnSchedRest.PutResource(x, resourceUrl, putData, function (response) {
-                                    OnSchedResponse.PutResource(element, response);
-                                })
-                            );                        
-                        }                        
+                        var postData = GetResourcePostData(form.elements);
+                        var resourcesUrl = element.onsched.setupApiBaseUrl + "/resources";
+                        OnSchedHelpers.ShowProgress();
+                        element.onsched.accessToken.then(x =>
+                            OnSchedRest.PostResource(x, resourcesUrl, postData, function (response) {
+                                OnSchedResponse.PostResource(element, response);
+                            })
+                        );
                     }
                     else {
-                        console.log("PUT /resources");
-                    }
-                    break;
+                        var putData = GetResourcePutData(form.elements);
+                        var resourceUrl = element.onsched.setupApiBaseUrl + "/resources/"+ element.params.id;
+                        OnSchedHelpers.ShowProgress();
+                        element.onsched.accessToken.then(x =>
+                            OnSchedRest.PutResource(x, resourceUrl, putData, function (response) {
+                                OnSchedResponse.PutResource(element, response);
+                            })
+                        );                        
+                    }                        
+                break;
                 case "serviceSetup":
                     if (element.params.id == undefined || element.params.id.length == 0) {
                         console.log("POST /services");
@@ -810,7 +779,6 @@ var OnSchedWizardHelpers = function () {
                  default:
                     console.log("WizardSubmtHandler: unknown form submitted"+ " "+ form.name);         
             }            
-            GetLocationPostData(form.elements);
         }
         else {
             // update the new step value
@@ -895,8 +863,6 @@ var OnSchedWizardHelpers = function () {
                 OnSchedRest.GetCustomers(x, url, function (response) {
                     var stateOptionsHtml = OnSchedTemplates.stateSelectOptions(response);
                     var elStateSelect = document.querySelector(".onsched-wizard.onsched-form select[name=state]");
-                    console.log("elStateSelect.value="+elStateSelect.value);
-                    console.log("element.params.data.address.country"+element.params.data.address.country);
                     elStateSelect.innerHTML = stateOptionsHtml;
                     elStateSelect.value = element.params.data.address.state;
                     var countryOptionsHtml = OnSchedTemplates.countrySelectOptions(response);
@@ -981,16 +947,18 @@ var OnSchedWizardHelpers = function () {
                         postData.businessHours[bhDay].startTime = e.value;
                     else
                         postData.businessHours[bhDay].endTime = e.value;
-                    postData.businessHours[e.name] = e.value;
+//                    postData.businessHours[e.name] = e.value;
                     break;
                 default:
-                    console.log(e.name + " unrecognizable post attribute");
+                    console.log(e.dataset.post + " " + e.name + " unrecognizable post attribute");
                     break;
             }
         }
         console.log(postData);
         return postData;
-    }
+
+    } // End GetLocationPostData
+
     function GetLocationPutData(formElements) {
         console.log("In GetLocationPutData");
         var businessHours = { 
@@ -1014,7 +982,6 @@ var OnSchedWizardHelpers = function () {
                     // timezoneName, phone and fax require special handling
                     if (e.name == "timezoneName") {
                         putData[e.name] = e.options[e.selectedIndex].dataset.tz;
-                        console.log("timezoneName="+putData[e.name]);
                     }
                     else
                     if (e.name == "phone" || e.name == "fax") {
@@ -1037,126 +1004,151 @@ var OnSchedWizardHelpers = function () {
                         putData.businessHours[bhDay].startTime = e.value;
                     else
                         putData.businessHours[bhDay].endTime = e.value;
-                    putData.businessHours[e.name] = e.value;
+//                    putData.businessHours[e.name] = e.value;
                     break;
                 default:
-                    console.log(e.name + " unrecognizable put attribute");
+                    console.log(e.dataset.post + " " + e.name + " unrecognizable put attribute");
                     break;
             }
         }
         console.log(putData);
         return putData;
-    }
-    function GetResourcePostData(formElements) {
-        console.log("In GetResourcePostData");
-        var businessHours = { 
-            sun: { startTime:0, endTime:0 },
-            mon: { startTime:0, endTime:0 },
-            tue: { startTime:0, endTime:0 },
-            wed: { startTime:0, endTime:0 },
-            thu: { startTime:0, endTime:0 },
-            fri: { startTime:0, endTime:0 },
-            sat: { startTime:0, endTime:0 },
-        };
 
-        var postData = { address: {}, businessHours: businessHours, settings: {} };
-        for (var i = 0; i < formElements.length; i++) {
-            var e = formElements[i];
-            switch(e.dataset.post) {
-                case undefined:
-                    // ignore fields without a data-post entry
-                    break;
-                case "root":
-                    // timezoneName, phone and fax require special handling
-                    if (e.name == "timezoneName") {
-                        postData[e.name] = e.options[e.selectedIndex].dataset.tz;
-                    }
-                    else
-                    if (e.name == "phone" || e.name == "fax") {
-                        postData[e.name] = OnSchedHelpers.ParsePhoneNumber(e.value);
-                    }
-                    else {
-                        postData[e.name] = e.value
-                    }
-                    break;
-                case "address":
-                    postData.address[e.name] = e.value;
-                    break;
-                case "settings":
-                    postData.settings[e.name] = e.value;
-                    break;
-                case "businessHours":
-                    var bhDay = e.name.substr(0, 3);
-                    var bhTime = e.name.substr(3);
-                    if (bhTime.includes("Start"))
-                        postData.businessHours[bhDay].startTime = e.value;
-                    else
-                        postData.businessHours[bhDay].endTime = e.value;
-                    postData.businessHours[e.name] = e.value;
-                    break;
-                default:
-                    console.log(e.name + " unrecognizable post attribute");
-                    break;
+    } // End GetLocationPutData
+
+    function GetResourcePostData(formElements) {
+        try {
+            console.log("In GetResourcePostData");
+            var businessHours = { 
+                sun: { startTime:0, endTime:0 },
+                mon: { startTime:0, endTime:0 },
+                tue: { startTime:0, endTime:0 },
+                wed: { startTime:0, endTime:0 },
+                thu: { startTime:0, endTime:0 },
+                fri: { startTime:0, endTime:0 },
+                sat: { startTime:0, endTime:0 },
+            };
+
+            var postData = { address: {}, contact: {}, availability: businessHours, options: {}, customFields: {} };
+            for (var i = 0; i < formElements.length; i++) {
+                var e = formElements[i];
+                switch(e.dataset.post) {
+                    case undefined:
+                        // ignore fields without a data-post entry
+                        break;
+                    case "root":
+                        // timezoneName, phone and fax require special handling
+                        if (e.name == "timezoneName") {
+                            postData[e.name] = e.options[e.selectedIndex].dataset.tz;
+                        }
+                        else {
+                            postData[e.name] = e.value
+                        }
+                        break;
+                    case "address":
+                        postData.address[e.name] = e.value;
+                        break;
+                    case "contact":
+                        if (e.name == "businessPhone" || e.name == "mobilePhone" || e.name == "homePhone") {
+                            postData[e.contact.name] = OnSchedHelpers.ParsePhoneNumber(e.value);
+                        }
+                        else {
+                            postData.contact[e.name] = e.value;
+                        }                   
+                        break;
+                    case "options":
+                        postData.options[e.name] = e.value;
+                        break;
+                    case "availability":
+                        var bhDay = e.name.substr(0, 3);
+                        var bhTime = e.name.substr(3);
+                        if (bhTime.includes("Start"))
+                            postData.availability[bhDay].startTime = e.value;
+                        else
+                            postData.availability[bhDay].endTime = e.value;
+                        break;
+                    default:
+                        console.log(e.dataset.post + " " + e.name + " unrecognizable post attribute");
+                        break;
+                }
             }
+            console.log(postData);
+            return postData;
+
+        } catch (e) {
+            // TODO - raise error event to the app client
+            console.log("GetResourcePostData failed");
+            console.log(e);
         }
-        console.log(postData);
-        return postData;
+
     }
     function GetResourcePutData(formElements) {
-        console.log("In GetLocationPutData");
-        var businessHours = { 
-            sun: { startTime:0, endTime:0 },
-            mon: { startTime:0, endTime:0 },
-            tue: { startTime:0, endTime:0 },
-            wed: { startTime:0, endTime:0 },
-            thu: { startTime:0, endTime:0 },
-            fri: { startTime:0, endTime:0 },
-            sat: { startTime:0, endTime:0 },
-        };
+        try {
 
-        var putData = { address: {}, businessHours: businessHours, settings: {} };
-        for (var i = 0; i < formElements.length; i++) {
-            var e = formElements[i];
-            switch(e.dataset.post) {
-                case undefined:
-                    // ignore fields without a data-post entry
-                    break;
-                case "root":
-                    // timezoneName, phone and fax require special handling
-                    if (e.name == "timezoneName") {
-                        putData[e.name] = e.options[e.selectedIndex].dataset.tz;
-                        console.log("timezoneName="+putData[e.name]);
-                    }
-                    else
-                    if (e.name == "phone" || e.name == "fax") {
-                        putData[e.name] = OnSchedHelpers.ParsePhoneNumber(e.value);
-                    }
-                    else {
-                        putData[e.name] = e.value
-                    }
-                    break;
-                case "address":
-                    putData.address[e.name] = e.value;
-                    break;
-                case "settings":
-                    putData.settings[e.name] = e.value;
-                    break;
-                case "businessHours":
-                    var bhDay = e.name.substr(0, 3);
-                    var bhTime = e.name.substr(3);
-                    if (bhTime.includes("Start"))
-                        putData.businessHours[bhDay].startTime = e.value;
-                    else
-                        putData.businessHours[bhDay].endTime = e.value;
-                    putData.businessHours[e.name] = e.value;
-                    break;
-                default:
-                    console.log(e.name + " unrecognizable put attribute");
-                    break;
+           console.log("In GetResourcePutData");
+            var availability = { 
+                sun: { startTime:0, endTime:0 },
+                mon: { startTime:0, endTime:0 },
+                tue: { startTime:0, endTime:0 },
+                wed: { startTime:0, endTime:0 },
+                thu: { startTime:0, endTime:0 },
+                fri: { startTime:0, endTime:0 },
+                sat: { startTime:0, endTime:0 },
+            };
+
+            var putData = { address: {}, contact: {}, availability: availability, options: {}, customFields: {} };
+            for (var i = 0; i < formElements.length; i++) {
+                var e = formElements[i];
+//                console.log(e.name);
+                switch(e.dataset.post) {
+                    case undefined:
+                        // ignore fields without a data-post entry
+                        break;
+                    case "root":
+                        // timezoneName, phone and fax require special handling
+                        if (e.name == "timezoneName") {
+                            putData[e.name] = e.options[e.selectedIndex].dataset.tz;
+                            console.log("timezoneName="+putData[e.name]);
+                        }
+                        else {
+                            putData[e.name] = e.value
+                        }
+                        break;
+                    case "address":
+                        putData.address[e.name] = e.value;
+                        break;
+                    case "contact":
+                        if (e.name == "businessPhone" || e.name == "mobilePhone" || e.name == "homePhone") {
+                            putData.contact[e.name] = OnSchedHelpers.ParsePhoneNumber(e.value);
+                        }
+                        else {
+                            console.log("putData.contact["+ e.name + "]");
+                            putData.contact[e.name] = e.value;
+                        }        
+                        break;
+                    case "options":
+                        putData.options[e.name] = e.value;
+                        break;
+                    case "businessHours":
+                        var bhDay = e.name.substr(0, 3);
+                        var bhTime = e.name.substr(3);
+                        if (bhTime.includes("Start"))
+                            putData.availability[bhDay].startTime = e.value;
+                        else
+                            putData.availability[bhDay].endTime = e.value;
+                        break;
+                    default:
+                        console.log(e.dataset.post + " " + e.name + " unrecognizable put attribute");
+                        break;
+                }
             }
+            console.log(putData);
+            return putData;
+        } catch (e) {
+            // TODO - raise error event to the app client
+            console.log("GetResourcePutData failed");
+            console.log(e);
         }
-        console.log(putData);
-        return putData;
     }
     function GetServicePostData(formElements) {
 
@@ -1198,26 +1190,20 @@ var OnSchedWizardHelpers = function () {
             elNextButton.innerHTML = "Next";
         }
 
-        console.log("showWizardSteps " + stepInt);
         elWizardSection.style.display = "block";
         // remove the active step
         var elActiveStep = document.querySelector(".onsched-wizard-nav-status .active")
         elActiveStep.classList.remove("active");
         // set the new step active
         var elStepIndicators = document.querySelectorAll(".onsched-wizard-nav-status span")
-        console.log(elStepIndicators[stepInt]);
         elStepIndicators[stepInt].classList.add("active");
         var elPrevButton = document.querySelector(".onsched-wizard-nav button.prevButton")
-        console.log("elPrevButton");
-        console.log(elPrevButton);
         if (stepInt == 0)
             elPrevButton.style.display = "none";
         else
             elPrevButton.style.display = "inline-block";
     }
     function UpdateBusinessHoursTime(timeCol, action) {
-        console.log("UpdateBusinessHoursTime=");
-        console.log(timeCol);
         var labelClosed = timeCol.getElementsByClassName("closed")[0];
         var selectTime = timeCol.getElementsByTagName("select")[0];
         if (action === "closed") {
@@ -1244,11 +1230,8 @@ var OnSchedWizardHelpers = function () {
             selectTime.style.display = "none";
     }
     function SelectOptionMatchingData(selector, attr, value) {
-        console.log("FindMatchingOptionDataAttribute");
         Array.from(document.querySelector(selector).options).forEach(function(option) {
             if (option.dataset[attr] == value) {
-                console.log("Found matching data attribute");
-                console.log(option);
                 // now select this option
                 option.selected = true;
             }
@@ -1346,7 +1329,6 @@ var OnSchedResponse = function () {
         var eventModel;
         var getLocationsEvent;
         if (response.error || response.count === 0) {
-            //                    console.log(response.code);
             eventModel = { message: 'No locations found matching search input.', searchText: element.params.nearestTo };
             getLocationsEvent = new CustomEvent("notFound", { detail: eventModel });
             var el = document.getElementById(element.id);
@@ -1427,11 +1409,9 @@ var OnSchedResponse = function () {
         if (response.count == 0) {
             // here is where I may need to do a POST to create the customer
             if (element.params.customerIM != null) {
-                console.log(element.params.customerIM);
                 url = element.onsched.apiBaseUrl + "/customers";
                 element.onsched.accessToken.then(x =>
                     OnSchedRest.PostCustomer(x, url, element.params.customerIM, function (response) {
-                        //                                                console.log(response);
                         var createCustomerEvent = new CustomEvent("postCustomer", { detail: response });
                         var elCustomer = document.getElementById(element.id);
                         elCustomer.dispatchEvent(createCustomerEvent);
@@ -1456,7 +1436,6 @@ var OnSchedResponse = function () {
 
         if (OnSchedHelpers.IsEmpty(element.params.completeBooking) || OnSchedHelpers.IsEmpty(element.params.customerId)) {
             // Flow 1 - render the booking flow
-//            console.log("PostAppointment Flow 1");
             // Render the booking form here
             var elBookingFormContainer = document.querySelector(".onsched-booking-form-container");
             elBookingFormContainer.innerHTML = OnSchedTemplates.bookingForm(response, element.options, element.onsched.locale);
@@ -1480,9 +1459,7 @@ var OnSchedResponse = function () {
                     OnSchedOnClick.BookingFormCancel(e, element);
                 }
             });
- //           console.log(elBookingForm);
             elBookingForm.addEventListener("submit", function (e) {
-                console.log("Submit Booking Form");
                 e.preventDefault(); // before the code
                 OnSchedOnClick.BookingFormSubmit(e, element);
             });
@@ -1497,7 +1474,6 @@ var OnSchedResponse = function () {
 
     }
     function PutAppointmentBook(element, response) {
-        //                console.log(response);
         var elCloseBtn = document.querySelector(".onsched-close-btn");
 
         clearInterval(element.timerId);
@@ -1555,15 +1531,37 @@ var OnSchedResponse = function () {
     function PutLocation(element, response) {
         if (response.error) {
             console.log("Rest error response code=" + response.code);
-            console.log(data);
+            console.log(response.data);
             return;
         }
-        console.log("OnSchedResponse.PutLocation");
-        console.log(response);
         var elLocationSetup = document.getElementById(element.id);
         var confirmationEvent = new CustomEvent("locationSetupConfirmation", { detail: response });
         elLocationSetup.dispatchEvent(confirmationEvent);    
     }    
+    function PostResource(element, response) {
+        if (response.error) {
+            console.log("Rest error response code=" + response.code);
+            return;
+        }
+        console.log("OnSchedResponse.PostResource");
+        console.log(response);
+        var elResourceSetup = document.getElementById(element.id);
+        var confirmationEvent = new CustomEvent("resourceSetupConfirmation", { detail: response });
+        elResourceSetup.dispatchEvent(confirmationEvent);    
+    }
+    function PutResource(element, response) {
+        if (response.error) {
+            console.log("Rest error response code=" + response.code);
+            console.log(response.data);
+            return;
+        }
+        console.log("OnSchedResponse.PutResource");
+        console.log(response);        
+        var elResourceSetup = document.getElementById(element.id);
+        var confirmationEvent = new CustomEvent("resourceSetupConfirmation", { detail: response });
+        elResourceSetup.dispatchEvent(confirmationEvent);    
+    }    
+
     return {
         GetAvailability: GetAvailability,
         GetLocations: GetLocations,
@@ -1577,6 +1575,8 @@ var OnSchedResponse = function () {
         PutAppointmentBook: PutAppointmentBook,
         PostLocation: PostLocation,
         PutLocation: PutLocation,
+        PostResource: PostResource,
+        PutResource: PutResource,
     };
 }(); // End OnSchedResponse
 
@@ -1593,7 +1593,6 @@ var OnSchedOnChange = function () {
         var elSelectedDate = document.querySelector(".onsched-calendar .day.selected");
         var selectedDate = OnSchedHelpers.ParseDate(elSelectedDate.dataset.date);
         var url = OnSchedHelpers.CreateAvailabilityUrl(element.onsched.apiBaseUrl, element.params, selectedDate);
-//        console.log(url);
         var elDateSelected = document.querySelector(".onsched-available-times-header .date-selected");
         var dateSelectedTitle = selectedDate.toLocaleDateString(
             element.onsched.locale, { weekday: 'long', month: 'short', day: 'numeric', year: 'numeric' });
@@ -1677,7 +1676,6 @@ var OnSchedOnClick = function () {
         postData.endDateTime = timeClicked.dataset.enddatetime;
         if (OnSchedHelpers.IsEmpty(element.params.customerId) === false)
             postData.customerId = element.params.customerId;
-//        console.log(postData);
 
         OnSchedHelpers.ShowProgress();
         // Invoke POST /appointments endpoint
@@ -1763,9 +1761,6 @@ var OnSchedOnClick = function () {
             appointmentBM.customFields = element.params.appointmentBM.customFields;
         }
 
-//        console.log(appointmentBM);
-//        console.log(appointmentBookingFields);
-//        console.log(customerBookingFields);        
         var id = document.querySelector(".onsched-form.booking-form input[name=id]").value;
         var url = element.onsched.apiBaseUrl + "/appointments/" + id + "/book";
 
@@ -2104,7 +2099,6 @@ var OnSchedHelpers = function () {
             formatted = "+" + ns.substr(0, 2)+ " " + ns.substr(2, 3) + " " + ns.substr(5);
         else
             formatted = ns;
-        console.log("formatted="+formatted);
         return formatted;
     }
     function ParsePhoneNumber(strIn) {
@@ -2229,10 +2223,8 @@ var OnSchedTemplates = function () {
             weekDayDate = AddDaysToDate(weekStartDate, i);
             week.push(weekDayDate);
         }
-        //        console.log(week);
 
         var dayOptions = { weekday: 'short' };
-        //        console.log(date.toLocaleDateString("en-US", dayOptions));
 
         const htmlWeekdaySelector = `
             <div class="onsched-weekday-selector">
@@ -2808,9 +2800,6 @@ var OnSchedTemplates = function () {
     //
     function locationSetup(locale, data) {
 
-        console.log("INSIDE locationSetup()");
-        console.log(data);
-
         const tmplLocationSetup = `
         <div class="onsched-container">
         <form class="onsched-wizard onsched-form" name="locationSetup">
@@ -2927,8 +2916,6 @@ var OnSchedTemplates = function () {
     }
 
     function resourceSetup(locale, data) {
-        console.log("IN resourceSetup");
-        console.log(data);
 
         const tmplResourceSetup = `
         <div class="onsched-container">
@@ -2941,7 +2928,7 @@ var OnSchedTemplates = function () {
                 <div class="onsched-form-row">
                     <div class="onsched-form-col">
                         <label for="resourceName">Resource Name</label>
-                        <input id="resourceName" type="text" name="resourceName" required="required" data-post="root"/>
+                        <input id="resourceName" type="text" name="name" value="${dataOrDefault(data.name)}" required="required" data-post="root"/>
                     </div>
                     <div class="onsched-form-col">
                         <label for="resourceTimezone">Timezone</label>
@@ -2953,17 +2940,17 @@ var OnSchedTemplates = function () {
                 <div class="onsched-form-row">
                     <div class="onsched-form-col">
                         <label for="email">Email</label>
-                        <input type="email" id="email" name="email" data-post="root"/>
+                        <input type="email" id="email" name="email" value="${dataOrDefault(data.email)}" data-post="root"/>
                     </div>
                     <div class="onsched-form-col">
                         <label for="groupId">Group</label>
-                        <select id="groupId" name="groupId" id="groupId" class="onsched-select" data-post="root"></select>
+                        <select id="groupId" name="groupId"  value="${dataOrDefault(data.groupId)}" class="onsched-select" data-post="root"></select>
                     </div>
                 </div>
                 <div class="onsched-form-row">
                     <div class="onsched-form-col">
                     <label for="description">Description</label>
-                    <textarea id="description" name="description" rows="3" placeholder="Enter Resource Description" data-post="root">
+                    <textarea id="description" name="description" value="${dataOrDefault(data.description)}" rows="3" placeholder="Enter Resource Description" data-post="root">
                         </textarea>                    
                     </div>
                 </div>
@@ -2989,22 +2976,22 @@ var OnSchedTemplates = function () {
                 <div class="onsched-form-row">
                     <div class="onsched-form-col">
                         <label for="businessPhone">Business Phone</label>
-                        <input type="tel" id="businessPhone" name="businessPhone" data-post="contact"/>
+                        <input type="tel" id="businessPhone" name="businessPhone" value="${dataOrDefault(OnSchedHelpers.FormatPhoneNumber(data.contact.businessPhone))}" data-post="contact"/>
                     </div>
                     <div class="onsched-form-col">
                         <label for=""mobilePhone>Mobile Phone</label>
-                        <input type="tel" id="mobilePhone" name="mobilePhone" data-post="contact" />
+                        <input type="tel" id="mobilePhone" name="mobilePhone" value="${dataOrDefault(OnSchedHelpers.FormatPhoneNumber(data.contact.mobilePhone))}" data-post="contact" />
                     </div>
 
                 </div>
                 <div class="onsched-form-row">
                     <div class="onsched-form-col">
                         <label for="homePhone">Home Phone</label>
-                        <input type="tel" id="homePhone" name="homePhone" data-post="contact" />
+                        <input type="tel" id="homePhone" name="homePhone" value="${dataOrDefault(OnSchedHelpers.FormatPhoneNumber(data.contact.homePhone))}" data-post="contact" />
                     </div> 
                     <div class="onsched-form-col">
                         <label for="preferredPhoneType">Preferred Contact Phone</label>
-                        <select class="form-control" id="preferredPhoneType" name="preferredPhoneType" data-post="contact">
+                        <select class="form-control" id="preferredPhoneType" name="preferredPhoneType" value="${dataOrDefault(data.contact.preferredPhoneType)}" data-post="contact">
                             <option value="B" selected="selected">Business</option>
                             <option value="M" selected="selected">Mobile</option>
                             <option value="H">Home</option>
@@ -3014,7 +3001,7 @@ var OnSchedTemplates = function () {
                 <div class="onsched-form-row">
                     <div class="onsched-form-col">
                         <label for="notificationType">Notification Type</label>
-                        <select class="onsched-select" id="notificationType" name="notificationType" required="required" aria-required="true" aria-invalid="false" data-post="root">
+                        <select class="onsched-select" id="notificationType" name="notificationType" value="${dataOrDefault(data.notificationType)}" aria-required="true" aria-invalid="false" data-post="root">
                             <option value="0"></option>
                             <option value="1" selected="selected">Email</option><option value="2">SMS</option>
                             <option value="3">Email and SMS</option>
@@ -3022,7 +3009,7 @@ var OnSchedTemplates = function () {
                     </div>
                     <div class="onsched-form-col">
                         <label for="bookingNotification">Booking Notifications</label>
-                        <select class="form-control" id="bookingNotification" name="bookingNotification" required="required" aria-required="true" aria-invalid="false" data-post="root">
+                        <select class="form-control" id="bookingNotification" name="bookingNotification" value="${dataOrDefault(data.bookingNotifications)}" aria-required="true" aria-invalid="false" data-post="root">
                             <option value="0">None</option>
                             <option value="1" selected="selected">Online Bookings</option>
                             <option value="2">All Bookings &amp; Reminders</option>
@@ -3032,7 +3019,7 @@ var OnSchedTemplates = function () {
                 <div class="onsched-form-row">
                     <div class="onsched-form-col">
                         <label for="">Skype Username</label>
-                        <input type="text" id="skypeUsername" name="skypeUsername"  data-post="contact"/>
+                        <input type="text" id="skypeUsername" name="skypeUsername" value="${dataOrDefault(data.contact.skypeUsername)}"  data-post="contact"/>
                     </div>
                     <div class="onsched-form-col">
                     </div>
@@ -3044,29 +3031,29 @@ var OnSchedTemplates = function () {
                 <div class="onsched-form-row">
                     <div class="onsched-form-col">
                         <label for="addressLine1">Address Line 1</label>
-                        <input id="addressLine1" type="text" name="addressLine1" data-post="address"/>
+                        <input id="addressLine1" type="text" name="addressLine1" value="${dataOrDefault(data.address.addressLine1)}" data-post="address"/>
                     </div>
                 </div>
                 <div class="onsched-form-row">
                     <div class="onsched-form-col">
                         <label for="addressLine2">Address Line 2</label>
-                        <input id="addressLine2" type="text" name="addressLine2" data-post="address" />
+                        <input id="addressLine2" type="text" name="addressLine2" value="${dataOrDefault(data.address.addressLine2)}" data-post="address" />
                     </div>
                 </div>
                 <div class="onsched-form-row">
                     <div class="onsched-form-col">
                         <label for="city">City</label>
-                        <input id="city" type="text" name="city" />
+                        <input id="city" type="text" name="city" value="${dataOrDefault(data.address.city)}" />
                     </div>
                     <div class="onsched-form-col">
                         <label for="state">State / Province</label>
-                        <select id="state" name="state" class="onsched-select" data-post="address"></select>
+                        <select id="state" name="state" value="${dataOrDefault(data.address.state)}" class="onsched-select" data-post="address"></select>
                     </div>
                 </div>
                 <div class="onsched-form-row">
                     <div class="onsched-form-col">
                         <label for="country">Country</label>
-                        <select id="country" name="country" class="onsched-select" data-post="address">
+                        <select id="country" name="country" value="${dataOrDefault(data.address.country)}" class="onsched-select" data-post="address">
                             <option></option>
                             <option value="CA">Canada</option>
                             <option value="US">United States</option>
@@ -3074,14 +3061,14 @@ var OnSchedTemplates = function () {
                     </div>
                     <div class="onsched-form-col">
                         <label for="postalCode">Zip / Postal Code</label>
-                        <input id="postalCode" type="text" name="postalCode" data-post="address" />
+                        <input id="postalCode" type="text" name="postalCode" value="${dataOrDefault(data.address.postalCode)}" data-post="address" />
                     </div>
                 </div>
             </div>
             <div class="onsched-wizard-section">
                 <h2>Availability</h2>
                 <h4 class="onsched-business-hours-tz">Eastern Timezone</h4>
-                <div class="onsched-business-hours">${OnSchedTemplates.businessHoursTable(locale, data.hours)}</div>
+                <div class="onsched-business-hours">${OnSchedTemplates.businessHoursTable(locale, data.availability)}</div>
             </div>
 
 
@@ -3355,7 +3342,6 @@ var OnSchedTemplates = function () {
         for (var date = new Date(dtSun); date <= dtSat; date.setDate(date.getDate() + 1)) {
             daysOfWeek.push([new Date(date)]);
         }
-        console.log(daysOfWeek);
 
         const markup = `
             <div class="onsched-business-hours-row">
@@ -4006,6 +3992,12 @@ var OnSchedRest = function () {
     function PutLocation(token, url, payload, callback) {
         return Put(token, url, payload, callback);
     }
+    function PostResource(token, url, payload, callback) {
+        return Post(token, url, payload, callback);
+    }
+    function PutResource(token, url, payload, callback) {
+        return Put(token, url, payload, callback);
+    }    
     function ShowProgress() {
         var indicators = document.getElementsByClassName("onsched-progress");
         for (var i = 0; i < indicators.length; i++) {
@@ -4038,6 +4030,8 @@ var OnSchedRest = function () {
         GetCustomers: GetCustomers,
         PostLocation: PostLocation,
         PutLocation: PutLocation,
+        PostResource: PostResource,
+        PutResource: PutResource,
         ShowProgress: ShowProgress,
         HideProgress: HideProgress
     };

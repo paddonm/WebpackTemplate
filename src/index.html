@@ -414,11 +414,11 @@ However, delay the fade out process for 2.5 seconds */
   var appointment = elements.create("appointment", appointmentParams, appointmentOptions);
   var elAppointment = document.getElementById("appointment");
   elAppointment.addEventListener("getAppointment", function (e) {
-    console.log("getAppointment success id="+e.detail.id);   
+    console.log("index.js getAppointment success id="+e.detail.id);   
     console.log(e.detail);
   });
   elAppointment.addEventListener("confirmAppointment", function (e) {
-    console.log("confirmAppointment success id="+e.detail.id);   
+    console.log("index.js confirmAppointment success id="+e.detail.id);   
     console.log(e.detail);
   });
   appointment.mount("appointment");
