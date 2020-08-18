@@ -9,6 +9,7 @@ import moment from 'moment';
 import momenttimezone from 'moment-timezone';
 
 import './assets/css/index.css';
+import placeholderIcon from './assets/img/image-placeholder.png';
 import { configureScope } from '@sentry/browser';
 
 Sentry.init({
@@ -551,14 +552,17 @@ var OnSchedMount = function () {
 
         var defaultData = { name:"Test Resource", address:{ "state": "ON", "country": "CA" }, availability: defaultAvailability, settings: {}};
 
-        if (element.params.Id == "undefined") {
+        if (element.params.id == "undefined" || element.params.id.length == 0) {
             if (element.params.data == undefined)
                 el.innerHTML = OnSchedTemplates.resourceSetup(element.onsched.locale, defaultData);
             else {
                 // make sure the supplied default data passed in params has availability
-                // if not, we'll use our default businessHours
-                if (data.availability == undefined)
-                    data.availability = defaultAvailability;
+                // if not, we'll use our default availability
+                if (element.params.data.availability == undefined)
+                    element.params.data.availability = defaultAvailability;
+                if (element.params.data.contact == undefined)
+                    element.params.data.contact = {};
+
                 el.innerHTML = OnSchedTemplates.resourceSetup(element.onsched.locale, element.params.data);
             }
             OnSchedWizardHelpers.InitWizardDomElements(element);
@@ -750,6 +754,16 @@ var OnSchedWizardHelpers = function () {
                     if (element.params.id == undefined || element.params.id.length == 0) {
                         var postData = GetResourcePostData(form.elements);
                         var resourcesUrl = element.onsched.setupApiBaseUrl + "/resources";
+                        console.log(resourcesUrl);
+//                        const elSystemFileUploadBtn = document.querySelector(".onsched-wizard.onsched-form input[name=onsched-system-file-upload]");
+//                        uploadedFileName = uploadedFileName.replace(/^\\|\\$/g, ''); // remove leading backslash                        
+//                        const elFileUploadTxt = document.querySelector(".onsched-wizard.onsched-form .onsched-file-upload-txt");
+//                        if (elFileUploadTxt.dataset.uploadedImage) {
+//                            console.log("uploadedImage");
+//                            var uploadedFileName = elSystemFileUploadBtn.value.match( /[\/\\]([\w\d\s\.\-\(\)]+)$/ )[0];
+//                            console.log("uploaded image="+uploadedFileName);
+//                        }
+
                         OnSchedHelpers.ShowProgress();
                         element.onsched.accessToken.then(x =>
                             OnSchedRest.PostResource(x, resourcesUrl, postData, function (response) {
@@ -788,6 +802,7 @@ var OnSchedWizardHelpers = function () {
         }
 
         event.preventDefault();
+        
         return false;
     }
     function InitWizardDomElements(element) {
@@ -879,13 +894,16 @@ var OnSchedWizardHelpers = function () {
 
         const elSystemFileUploadBtn = document.querySelector(".onsched-wizard.onsched-form input[name=onsched-system-file-upload]");
         elSystemFileUploadBtn.addEventListener("change", function(event) {
+            const elFileUploadTxt = document.querySelector(".onsched-wizard.onsched-form .onsched-file-upload-txt");
             if (elSystemFileUploadBtn.value) {
                 var uploadedFileName = elSystemFileUploadBtn.value.match( /[\/\\]([\w\d\s\.\-\(\)]+)$/ )[0];
                 uploadedFileName = uploadedFileName.replace(/^\\|\\$/g, ''); // remove leading backslash
                 elFileUploadTxt.innerHTML = uploadedFileName;
+                elFileUploadTxt.dataset.uploadedImage = true;
             }
             else {
                 elFileUploadTxt.innerHTML = "No file chosen, yet.";
+                elFileUploadTxt.dataset.uploadedImage = false;
             }
             var image = document.getElementById("onsched-image-preview");
             image.src = URL.createObjectURL(event.target.files[0]);
@@ -897,7 +915,6 @@ var OnSchedWizardHelpers = function () {
         elFileUploadBtn.addEventListener("click", function(event) {
             elSystemFileUploadBtn.click();
         });
-        const elFileUploadTxt = document.querySelector(".onsched-wizard.onsched-form .onsched-file-upload-txt");
     }
     function InitServiceSetupDomElements(element) {
         
@@ -1050,7 +1067,7 @@ var OnSchedWizardHelpers = function () {
                         break;
                     case "contact":
                         if (e.name == "businessPhone" || e.name == "mobilePhone" || e.name == "homePhone") {
-                            postData[e.contact.name] = OnSchedHelpers.ParsePhoneNumber(e.value);
+                            postData.contact[e.name] = OnSchedHelpers.ParsePhoneNumber(e.value);
                         }
                         else {
                             postData.contact[e.name] = e.value;
@@ -1059,7 +1076,7 @@ var OnSchedWizardHelpers = function () {
                     case "options":
                         postData.options[e.name] = e.value;
                         break;
-                    case "availability":
+                    case "businessHours":
                         var bhDay = e.name.substr(0, 3);
                         var bhTime = e.name.substr(3);
                         if (bhTime.includes("Start"))
@@ -2788,7 +2805,7 @@ var OnSchedTemplates = function () {
         `;
         return tmplConfirmation;
     }
-    function dataOrDefault(value) {
+    function dataValue(value) {
         if (value == undefined)
             return "";
         else
@@ -2810,11 +2827,11 @@ var OnSchedTemplates = function () {
                 <div class="onsched-form-row">
                     <div class="onsched-form-col">
                         <label for="businessName">Business Name</label>
-                        <input id="businessName" type="text" name="name" value="${dataOrDefault(data.name)}" required="required" data-post="root"/>
+                        <input id="businessName" type="text" name="name" value="${dataValue(data.name)}" required="required" data-post="root"/>
                     </div>
                     <div class="onsched-form-col">
                         <label for="businessTimezone">Timezone</label>
-                        <select id="businessTimezone" class="onsched-select" name="timezoneName" value="${dataOrDefault(data.timezoneName)}" data-post="root">
+                        <select id="businessTimezone" class="onsched-select" name="timezoneName" value="${dataValue(data.timezoneName)}" data-post="root">
                             ${TimezoneSelectOptions(Timezones())}
                         </select>
                     </div>
@@ -2822,21 +2839,21 @@ var OnSchedTemplates = function () {
                 <div class="onsched-form-row">
                     <div class="onsched-form-col">
                         <label for="businessEmail">Email</label>
-                        <input id="businessEmail" type="email" name="email" value="${dataOrDefault(data.email)}" data-post="root" />
+                        <input id="businessEmail" type="email" name="email" value="${dataValue(data.email)}" data-post="root" />
                     </div>
                     <div class="onsched-form-col">
                         <label for="businessWebsite">Website</label>
-                        <input id="businessWebsite" type="text" name="website" value="${dataOrDefault(data.website)}" data-post="root" />
+                        <input id="businessWebsite" type="text" name="website" value="${dataValue(data.website)}" data-post="root" />
                     </div>
                 </div>
                 <div class="onsched-form-row">
                     <div class="onsched-form-col">
                         <label for="businessPhone">Phone</label>
-                        <input id="businessPhone" type="tel" name="phone" value="${dataOrDefault(OnSchedHelpers.FormatPhoneNumber(data.phone))}" data-post="root" />
+                        <input id="businessPhone" type="tel" name="phone" value="${dataValue(OnSchedHelpers.FormatPhoneNumber(data.phone))}" data-post="root" />
                     </div>
                     <div class="onsched-form-col">
                         <label for="businessFax">Fax</label>
-                        <input id="businessFax" type="tel" name="fax" value="${dataOrDefault(OnSchedHelpers.FormatPhoneNumber(data.fax))}" data-post="root" />
+                        <input id="businessFax" type="tel" name="fax" value="${dataValue(OnSchedHelpers.FormatPhoneNumber(data.fax))}" data-post="root" />
                     </div>
                 </div>
             </div>
@@ -2846,29 +2863,29 @@ var OnSchedTemplates = function () {
                 <div class="onsched-form-row">
                     <div class="onsched-form-col">
                         <label for="addressLine1">Address Line 1</label>
-                        <input id="addressLine1" type="text" name="addressLine1" value="${dataOrDefault(data.address.addressLine1)}" data-post="address"/>
+                        <input id="addressLine1" type="text" name="addressLine1" value="${dataValue(data.address.addressLine1)}" data-post="address"/>
                     </div>
                 </div>
                 <div class="onsched-form-row">
                     <div class="onsched-form-col">
                         <label for="addressLine2">Address Line 2</label>
-                        <input id="addressLine2" type="text" name="addressLine2" value="${dataOrDefault(data.address.addressLine1)}"  data-post="address"/>
+                        <input id="addressLine2" type="text" name="addressLine2" value="${dataValue(data.address.addressLine1)}"  data-post="address"/>
                     </div>
                 </div>
                 <div class="onsched-form-row">
                     <div class="onsched-form-col">
                         <label for="city">City</label>
-                        <input id="city" type="text" name="city" value="${dataOrDefault(data.address.city)}"  data-post="address" data-post="address"/>
+                        <input id="city" type="text" name="city" value="${dataValue(data.address.city)}"  data-post="address" data-post="address"/>
                     </div>
                     <div class="onsched-form-col">
                         <label for="state">State / Province</label>
-                        <select id="state" name="state" value="${dataOrDefault(data.address.state)}" class="onsched-select" data-post="address"></select>
+                        <select id="state" name="state" value="${dataValue(data.address.state)}" class="onsched-select" data-post="address"></select>
                     </div>
                 </div>
                 <div class="onsched-form-row">
                     <div class="onsched-form-col">
                         <label for="country">Country</label>
-                        <select id="country" name="country" value="${dataOrDefault(data.address.country)}" class="onsched-select" data-post="address">
+                        <select id="country" name="country" value="${dataValue(data.address.country)}" class="onsched-select" data-post="address">
                             <option></option>
                             <option value="CA">Canada</option>
                             <option value="US">United States</option>
@@ -2876,7 +2893,7 @@ var OnSchedTemplates = function () {
                     </div>
                     <div class="onsched-form-col">
                         <label for="postalCode">Zip / Postal Code</label>
-                        <input id="postalCode" type="text" name="postalCode" value="${dataOrDefault(data.address.postalCode)}" data-post="address"/>
+                        <input id="postalCode" type="text" name="postalCode" value="${dataValue(data.address.postalCode)}" data-post="address"/>
                     </div>
                 </div>
             </div>
@@ -2928,11 +2945,11 @@ var OnSchedTemplates = function () {
                 <div class="onsched-form-row">
                     <div class="onsched-form-col">
                         <label for="resourceName">Resource Name</label>
-                        <input id="resourceName" type="text" name="name" value="${dataOrDefault(data.name)}" required="required" data-post="root"/>
+                        <input id="resourceName" type="text" name="name" value="${dataValue(data.name)}" required="required" data-post="root"/>
                     </div>
                     <div class="onsched-form-col">
                         <label for="resourceTimezone">Timezone</label>
-                        <select id="resourceTimezone" class="onsched-select" name="timezoneName" value="${dataOrDefault(data.timezoneName)}" data-post="root">
+                        <select id="resourceTimezone" class="onsched-select" name="timezoneName" value="${dataValue(data.timezoneName)}" data-post="root">
                             ${TimezoneSelectOptions(Timezones())}
                         </select>
                     </div>
@@ -2940,18 +2957,18 @@ var OnSchedTemplates = function () {
                 <div class="onsched-form-row">
                     <div class="onsched-form-col">
                         <label for="email">Email</label>
-                        <input type="email" id="email" name="email" value="${dataOrDefault(data.email)}" data-post="root"/>
+                        <input type="email" id="email" name="email" value="${dataValue(data.email)}" data-post="root"/>
                     </div>
                     <div class="onsched-form-col">
                         <label for="groupId">Group</label>
-                        <select id="groupId" name="groupId"  value="${dataOrDefault(data.groupId)}" class="onsched-select" data-post="root"></select>
+                        <select id="groupId" name="groupId"  value="${dataValue(data.groupId)}" class="onsched-select" data-post="root"></select>
                     </div>
                 </div>
                 <div class="onsched-form-row">
                     <div class="onsched-form-col">
                     <label for="description">Description</label>
-                    <textarea id="description" name="description" value="${dataOrDefault(data.description)}" rows="3" placeholder="Enter Resource Description" data-post="root">
-                        </textarea>                    
+                    <textarea id="description" name="description" rows="3" placeholder="Enter Resource Description" data-post="root">${dataValue(data.description)}
+                    </textarea>                    
                     </div>
                 </div>
                  <div class="onsched-form-row">
@@ -2976,22 +2993,25 @@ var OnSchedTemplates = function () {
                 <div class="onsched-form-row">
                     <div class="onsched-form-col">
                         <label for="businessPhone">Business Phone</label>
-                        <input type="tel" id="businessPhone" name="businessPhone" value="${dataOrDefault(OnSchedHelpers.FormatPhoneNumber(data.contact.businessPhone))}" data-post="contact"/>
+                        <input type="tel" id="businessPhone" name="businessPhone"
+                            value="${dataValue(OnSchedHelpers.FormatPhoneNumber(data.contact.businessPhone))}" data-post="contact"/>
                     </div>
                     <div class="onsched-form-col">
                         <label for=""mobilePhone>Mobile Phone</label>
-                        <input type="tel" id="mobilePhone" name="mobilePhone" value="${dataOrDefault(OnSchedHelpers.FormatPhoneNumber(data.contact.mobilePhone))}" data-post="contact" />
+                        <input type="tel" id="mobilePhone" name="mobilePhone" 
+                            value="${dataValue(OnSchedHelpers.FormatPhoneNumber(data.contact.mobilePhone))}" data-post="contact" />
                     </div>
 
                 </div>
                 <div class="onsched-form-row">
                     <div class="onsched-form-col">
                         <label for="homePhone">Home Phone</label>
-                        <input type="tel" id="homePhone" name="homePhone" value="${dataOrDefault(OnSchedHelpers.FormatPhoneNumber(data.contact.homePhone))}" data-post="contact" />
+                        <input type="tel" id="homePhone" name="homePhone" 
+                            value="${dataValue(OnSchedHelpers.FormatPhoneNumber(data.contact.homePhone))}" data-post="contact" />
                     </div> 
                     <div class="onsched-form-col">
                         <label for="preferredPhoneType">Preferred Contact Phone</label>
-                        <select class="form-control" id="preferredPhoneType" name="preferredPhoneType" value="${dataOrDefault(data.contact.preferredPhoneType)}" data-post="contact">
+                        <select class="form-control" id="preferredPhoneType" name="preferredPhoneType" value="${dataValue(data.contact.preferredPhoneType)}" data-post="contact">
                             <option value="B" selected="selected">Business</option>
                             <option value="M" selected="selected">Mobile</option>
                             <option value="H">Home</option>
@@ -3001,7 +3021,7 @@ var OnSchedTemplates = function () {
                 <div class="onsched-form-row">
                     <div class="onsched-form-col">
                         <label for="notificationType">Notification Type</label>
-                        <select class="onsched-select" id="notificationType" name="notificationType" value="${dataOrDefault(data.notificationType)}" aria-required="true" aria-invalid="false" data-post="root">
+                        <select class="onsched-select" id="notificationType" name="notificationType" value="${dataValue(data.notificationType)}" aria-required="true" aria-invalid="false" data-post="root">
                             <option value="0"></option>
                             <option value="1" selected="selected">Email</option><option value="2">SMS</option>
                             <option value="3">Email and SMS</option>
@@ -3009,7 +3029,7 @@ var OnSchedTemplates = function () {
                     </div>
                     <div class="onsched-form-col">
                         <label for="bookingNotification">Booking Notifications</label>
-                        <select class="form-control" id="bookingNotification" name="bookingNotification" value="${dataOrDefault(data.bookingNotifications)}" aria-required="true" aria-invalid="false" data-post="root">
+                        <select class="form-control" id="bookingNotification" name="bookingNotification" value="${dataValue(data.bookingNotifications)}" aria-required="true" aria-invalid="false" data-post="root">
                             <option value="0">None</option>
                             <option value="1" selected="selected">Online Bookings</option>
                             <option value="2">All Bookings &amp; Reminders</option>
@@ -3019,7 +3039,7 @@ var OnSchedTemplates = function () {
                 <div class="onsched-form-row">
                     <div class="onsched-form-col">
                         <label for="">Skype Username</label>
-                        <input type="text" id="skypeUsername" name="skypeUsername" value="${dataOrDefault(data.contact.skypeUsername)}"  data-post="contact"/>
+                        <input type="text" id="skypeUsername" name="skypeUsername" value="${dataValue(data.contact.skypeUsername)}"  data-post="contact"/>
                     </div>
                     <div class="onsched-form-col">
                     </div>
@@ -3031,29 +3051,29 @@ var OnSchedTemplates = function () {
                 <div class="onsched-form-row">
                     <div class="onsched-form-col">
                         <label for="addressLine1">Address Line 1</label>
-                        <input id="addressLine1" type="text" name="addressLine1" value="${dataOrDefault(data.address.addressLine1)}" data-post="address"/>
+                        <input id="addressLine1" type="text" name="addressLine1" value="${dataValue(data.address.addressLine1)}" data-post="address"/>
                     </div>
                 </div>
                 <div class="onsched-form-row">
                     <div class="onsched-form-col">
                         <label for="addressLine2">Address Line 2</label>
-                        <input id="addressLine2" type="text" name="addressLine2" value="${dataOrDefault(data.address.addressLine2)}" data-post="address" />
+                        <input id="addressLine2" type="text" name="addressLine2" value="${dataValue(data.address.addressLine2)}" data-post="address" />
                     </div>
                 </div>
                 <div class="onsched-form-row">
                     <div class="onsched-form-col">
                         <label for="city">City</label>
-                        <input id="city" type="text" name="city" value="${dataOrDefault(data.address.city)}" />
+                        <input id="city" type="text" name="city" value="${dataValue(data.address.city)}" data-post="address"/>
                     </div>
                     <div class="onsched-form-col">
                         <label for="state">State / Province</label>
-                        <select id="state" name="state" value="${dataOrDefault(data.address.state)}" class="onsched-select" data-post="address"></select>
+                        <select id="state" name="state" value="${dataValue(data.address.state)}" class="onsched-select" data-post="address"></select>
                     </div>
                 </div>
                 <div class="onsched-form-row">
                     <div class="onsched-form-col">
                         <label for="country">Country</label>
-                        <select id="country" name="country" value="${dataOrDefault(data.address.country)}" class="onsched-select" data-post="address">
+                        <select id="country" name="country" value="${dataValue(data.address.country)}" class="onsched-select" data-post="address">
                             <option></option>
                             <option value="CA">Canada</option>
                             <option value="US">United States</option>
@@ -3061,7 +3081,7 @@ var OnSchedTemplates = function () {
                     </div>
                     <div class="onsched-form-col">
                         <label for="postalCode">Zip / Postal Code</label>
-                        <input id="postalCode" type="text" name="postalCode" value="${dataOrDefault(data.address.postalCode)}" data-post="address" />
+                        <input id="postalCode" type="text" name="postalCode" value="${dataValue(data.address.postalCode)}" data-post="address" />
                     </div>
                 </div>
             </div>
@@ -3226,7 +3246,7 @@ var OnSchedTemplates = function () {
     function previewImage(data) {
         const markup = `
             <img id="onsched-image-preview" 
-                src="${data.id == undefined || data.id.length == 0 || data.imageUrl.length == 0 ?"/assets/img/image-placeholder.png" : data.imageUrl}" 
+                src="${data.id == undefined || data.id.length == 0 || data.imageUrl.length == 0 ? placeholderIcon : data.imageUrl}" 
                 width="50" height="50" data-post="image" />
         `;
 

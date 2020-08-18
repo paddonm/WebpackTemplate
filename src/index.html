@@ -540,7 +540,8 @@ However, delay the fade out process for 2.5 seconds */
   var resourceData = { name:"Test F Location", address:{ "state": "ON", "country": "CA" }, settings: {}};
 
   var elResourceSetup = document.getElementById("resourceSetup");
-  var resourceSetupParams = {"id":"8", "tzOffset": tzOffset, "data": resourceData};
+  //var resourceSetupParams = {"id":"8", "tzOffset": tzOffset, "data": resourceData};
+  var resourceSetupParams = {"id":"", "tzOffset": tzOffset, "data": resourceData};
   var resourceSetupOptions = {};
   var resourceSetup = elements.create("resourceSetup", resourceSetupParams, resourceSetupOptions);
 
