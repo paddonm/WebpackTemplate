@@ -2397,12 +2397,12 @@ var OnSchedTemplates = function () {
         const tmplCalendarWeekDayRow = `
             <div class="onsched-calendar-row onsched-weekdays">
                 <div class="onsched-calendar-col dow" title="Sunday">${weekdayDate.toLocaleDateString(locale,  {weekday: "short"})}</div>
-                <div class="onsched-calendar-col dow" title="Monday">${AddDaysToDate(weekdayDate, 2).toLocaleDateString(locale,  {weekday: "short"})}</div>
-                <div class="onsched-calendar-col dow" title="Tuesday">${AddDaysToDate(weekdayDate, 3).toLocaleDateString(locale,  {weekday: "short"})}</div>
-                <div class="onsched-calendar-col dow" title="Wednesday">${AddDaysToDate(weekdayDate, 4).toLocaleDateString(locale,  {weekday: "short"})}</div>
-                <div class="onsched-calendar-col dow" title="Thursday">${AddDaysToDate(weekdayDate, 5).toLocaleDateString(locale,  {weekday: "short"})}</div>
-                <div class="onsched-calendar-col dow" title="Friday">${AddDaysToDate(weekdayDate, 6).toLocaleDateString(locale,  {weekday: "short"})}</div>
-                <div class="onsched-calendar-col dow" title="Saturday">${AddDaysToDate(weekdayDate, 7).toLocaleDateString(locale,  {weekday: "short"})}</div>
+                <div class="onsched-calendar-col dow" title="Monday">${AddDaysToDate(weekdayDate, 1).toLocaleDateString(locale,  {weekday: "short"})}</div>
+                <div class="onsched-calendar-col dow" title="Tuesday">${AddDaysToDate(weekdayDate, 2).toLocaleDateString(locale,  {weekday: "short"})}</div>
+                <div class="onsched-calendar-col dow" title="Wednesday">${AddDaysToDate(weekdayDate, 3).toLocaleDateString(locale,  {weekday: "short"})}</div>
+                <div class="onsched-calendar-col dow" title="Thursday">${AddDaysToDate(weekdayDate, 4).toLocaleDateString(locale,  {weekday: "short"})}</div>
+                <div class="onsched-calendar-col dow" title="Friday">${AddDaysToDate(weekdayDate, 5).toLocaleDateString(locale,  {weekday: "short"})}</div>
+                <div class="onsched-calendar-col dow" title="Saturday">${AddDaysToDate(weekdayDate, 6).toLocaleDateString(locale,  {weekday: "short"})}</div>
             </div>
         `;
 
@@ -3616,7 +3616,8 @@ var OnSchedTemplates = function () {
     }
     function AddDaysToDate(inputDate, days) {
         var date = new Date(inputDate);
-        date.setTime(date.getTime() + (days * 24 * 60 * 60 * 1000));
+//        date.setTime(date.getTime() + (days * 24 * 60 * 60 * 1000));
+        date.setDate(date.getDate() + days);
         return date;
     }
 
