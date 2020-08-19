@@ -754,16 +754,6 @@ var OnSchedWizardHelpers = function () {
                     if (element.params.id == undefined || element.params.id.length == 0) {
                         var postData = GetResourcePostData(form.elements);
                         var resourcesUrl = element.onsched.setupApiBaseUrl + "/resources";
-                        console.log(resourcesUrl);
-//                        const elSystemFileUploadBtn = document.querySelector(".onsched-wizard.onsched-form input[name=onsched-system-file-upload]");
-//                        uploadedFileName = uploadedFileName.replace(/^\\|\\$/g, ''); // remove leading backslash                        
-//                        const elFileUploadTxt = document.querySelector(".onsched-wizard.onsched-form .onsched-file-upload-txt");
-//                        if (elFileUploadTxt.dataset.uploadedImage) {
-//                            console.log("uploadedImage");
-//                            var uploadedFileName = elSystemFileUploadBtn.value.match( /[\/\\]([\w\d\s\.\-\(\)]+)$/ )[0];
-//                            console.log("uploaded image="+uploadedFileName);
-//                        }
-
                         OnSchedHelpers.ShowProgress();
                         element.onsched.accessToken.then(x =>
                             OnSchedRest.PostResource(x, resourcesUrl, postData, function (response) {
@@ -900,14 +890,18 @@ var OnSchedWizardHelpers = function () {
                 uploadedFileName = uploadedFileName.replace(/^\\|\\$/g, ''); // remove leading backslash
                 elFileUploadTxt.innerHTML = uploadedFileName;
                 elFileUploadTxt.dataset.uploadedImage = true;
+                var image = document.getElementById("onsched-image-preview");
+                image.src = URL.createObjectURL(event.target.files[0]);
+                const base64String = OnSchedWizardHelpers.Base64Encoded(image); 
+                // save the filename and base64 string so we can POST the uploadimage later
+                elSystemFileUploadBtn.dataset.filename = uploadedFileName;
+                elSystemFileUploadBtn.dataset.base64 = base64String;
             }
             else {
                 elFileUploadTxt.innerHTML = "No file chosen, yet.";
                 elFileUploadTxt.dataset.uploadedImage = false;
             }
-            var image = document.getElementById("onsched-image-preview");
-            image.src = URL.createObjectURL(event.target.files[0]);
-            const base64String = OnSchedWizardHelpers.Base64Encoded(image);
+
         });
 
 
@@ -1560,6 +1554,24 @@ var OnSchedResponse = function () {
             console.log("Rest error response code=" + response.code);
             return;
         }
+        // check if we need to upload an image for this resource
+        const elSystemFileUploadBtn = document.querySelector(".onsched-wizard.onsched-form input[name=onsched-system-file-upload]");
+        if (elSystemFileUploadBtn.value) {
+            var postData = { imageFileName:elSystemFileUploadBtn.dataset.filename, imageFileData: elSystemFileUploadBtn.dataset.base64};
+            console.log(postData);
+            const uploadImageUrl = element.onsched.setupApiBaseUrl + "/resources/"+ response.id + "/uploadimage";
+            element.onsched.accessToken.then(x =>
+                OnSchedRest.PostResourceImage(x, uploadImageUrl, postData, function (response) {
+                    if (response.error) {
+                        console.log("PostResourceImgae Rest error response code=" + response.code);
+                        return;
+                    }
+                    console.log("PostResourceImgage SUCCESS");
+                    console.log(response);
+                })
+            );        
+        }
+
         console.log("OnSchedResponse.PostResource");
         console.log(response);
         var elResourceSetup = document.getElementById(element.id);
@@ -1572,6 +1584,24 @@ var OnSchedResponse = function () {
             console.log(response.data);
             return;
         }
+        // check if we need to upload an image for this resource
+        const elSystemFileUploadBtn = document.querySelector(".onsched-wizard.onsched-form input[name=onsched-system-file-upload]");
+        if (elSystemFileUploadBtn.value) {
+            var postData = { imageFileName:elSystemFileUploadBtn.dataset.filename, imageFileData: elSystemFileUploadBtn.dataset.base64};
+            console.log(postData);
+            const uploadImageUrl = element.onsched.setupApiBaseUrl + "/resources/"+ response.id + "/uploadimage";
+            element.onsched.accessToken.then(x =>
+                OnSchedRest.PostResourceImage(x, uploadImageUrl, postData, function (response) {
+                    if (response.error) {
+                        console.log("PostResourceImgae Rest error response code=" + response.code);
+                        return;
+                    }
+                    console.log("PostResourceImgage SUCCESS");
+                    console.log(response);                
+                })
+            );                 
+        }
+        
         console.log("OnSchedResponse.PutResource");
         console.log(response);        
         var elResourceSetup = document.getElementById(element.id);
@@ -4019,6 +4049,9 @@ var OnSchedRest = function () {
     function PutResource(token, url, payload, callback) {
         return Put(token, url, payload, callback);
     }    
+    function PostResourceImage(token, url, payload, callback) {
+        return Post(token, url, payload, callback);
+    }
     function ShowProgress() {
         var indicators = document.getElementsByClassName("onsched-progress");
         for (var i = 0; i < indicators.length; i++) {
@@ -4053,6 +4086,7 @@ var OnSchedRest = function () {
         PutLocation: PutLocation,
         PostResource: PostResource,
         PutResource: PutResource,
+        PostResourceImage:PostResourceImage,
         ShowProgress: ShowProgress,
         HideProgress: HideProgress
     };
