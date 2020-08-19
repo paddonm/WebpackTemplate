@@ -748,12 +748,13 @@ var OnSchedWizardHelpers = function () {
                             })
                         );                        
                     }
-
                     break;
                 case "resourceSetup":
                     if (element.params.id == undefined || element.params.id.length == 0) {
-                        var postData = GetResourcePostData(form.elements);
+                        var postData = GetResourcePostData(form.elements, element);
                         var resourcesUrl = element.onsched.setupApiBaseUrl + "/resources";
+                        resourcesUrl = OnSchedHelpers.AddUrlParam(resourcesUrl, "googleAuthReturnUrl", element.params.googleAuthReturnUrl);
+                        resourcesUrl = OnSchedHelpers.AddUrlParam(resourcesUrl, "outlookAuthReturnUrl", element.params.googleAuthReturnUrl);
                         OnSchedHelpers.ShowProgress();
                         element.onsched.accessToken.then(x =>
                             OnSchedRest.PostResource(x, resourcesUrl, postData, function (response) {
@@ -762,8 +763,10 @@ var OnSchedWizardHelpers = function () {
                         );
                     }
                     else {
-                        var putData = GetResourcePutData(form.elements);
+                        var putData = GetResourcePutData(form.elements, element);
                         var resourceUrl = element.onsched.setupApiBaseUrl + "/resources/"+ element.params.id;
+                        resourcesUrl = OnSchedHelpers.AddUrlParam(resourcesUrl, "googleAuthReturnUrl", element.params.googleAuthReturnUrl);
+                        resourcesUrl = OnSchedHelpers.AddUrlParam(resourcesUrl, "outlookAuthReturnUrl", element.params.googleAuthReturnUrl);
                         OnSchedHelpers.ShowProgress();
                         element.onsched.accessToken.then(x =>
                             OnSchedRest.PutResource(x, resourceUrl, putData, function (response) {
@@ -882,6 +885,8 @@ var OnSchedWizardHelpers = function () {
     }
     function InitResourceDomElements(element) {
 
+        // wire up events for the file upload button
+
         const elSystemFileUploadBtn = document.querySelector(".onsched-wizard.onsched-form input[name=onsched-system-file-upload]");
         elSystemFileUploadBtn.addEventListener("change", function(event) {
             const elFileUploadTxt = document.querySelector(".onsched-wizard.onsched-form .onsched-file-upload-txt");
@@ -901,14 +906,31 @@ var OnSchedWizardHelpers = function () {
                 elFileUploadTxt.innerHTML = "No file chosen, yet.";
                 elFileUploadTxt.dataset.uploadedImage = false;
             }
-
         });
-
 
         const elFileUploadBtn = document.querySelector(".onsched-wizard.onsched-form .onsched-file-upload-btn");
         elFileUploadBtn.addEventListener("click", function(event) {
             elSystemFileUploadBtn.click();
         });
+
+        // make a rest call to populate the resourceGroup select on the form
+        var locationId = element.params.locationId == undefined ? "" : locationId; 
+        var urlResourceGroups = element.onsched.setupApiBaseUrl + "/resourcegroups";
+        urlResourceGroups = OnSchedHelpers.AddUrlParam(urlResourceGroups, "locationId", locationId);
+
+        element.onsched.accessToken.then(x =>
+            OnSchedRest.GetResourceGroups(x, urlResourceGroups, function (response) {
+                if (response.error) {
+                    console.log("Rest error response code=" + response.code);
+                }
+                else {
+                    console.log(response);
+                    var elResourceGroups = document.querySelector(".onsched-wizard.onsched-form select[name=groupId]");
+                    elResourceGroups.innerHTML = OnSchedTemplates.resourceGroupOptions(response.data);
+                    // template the resourcegroup select
+                }
+            }) // end rest response
+        ); // end promise            
     }
     function InitServiceSetupDomElements(element) {
         
@@ -1027,7 +1049,7 @@ var OnSchedWizardHelpers = function () {
 
     } // End GetLocationPutData
 
-    function GetResourcePostData(formElements) {
+    function GetResourcePostData(formElements, element) {
         try {
             console.log("In GetResourcePostData");
             var businessHours = { 
@@ -1040,7 +1062,9 @@ var OnSchedWizardHelpers = function () {
                 sat: { startTime:0, endTime:0 },
             };
 
-            var postData = { address: {}, contact: {}, availability: businessHours, options: {}, customFields: {} };
+            var locationId = element.params.locationId == undefined ? "" : element.params.locationId;
+
+            var postData = { locationId: locationId, address: {}, contact: {}, availability: businessHours, options: {}, customFields: {} };
             for (var i = 0; i < formElements.length; i++) {
                 var e = formElements[i];
                 switch(e.dataset.post) {
@@ -1093,7 +1117,7 @@ var OnSchedWizardHelpers = function () {
         }
 
     }
-    function GetResourcePutData(formElements) {
+    function GetResourcePutData(formElements, element) {
         try {
 
            console.log("In GetResourcePutData");
@@ -1975,7 +1999,7 @@ var OnSchedHelpers = function () {
         return url;
     }
     function AddUrlParam(url, name, value) {
-        if (value == null)
+        if (value == undefined)
             return url;
         if (url.indexOf("?") !== -1)
             url += "&" + name + "=" + value;
@@ -2422,17 +2446,31 @@ var OnSchedTemplates = function () {
             </div>
         `;
 
-        var weekdayDate = new Date(1960, 10-1, 30, 0, 0, 0); // my birtgday was on a sunday
+        var weekdayDate = new Date(2020, 3-1, 1, 0, 0, 0); 
 
         const tmplCalendarWeekDayRow = `
             <div class="onsched-calendar-row onsched-weekdays">
-                <div class="onsched-calendar-col dow" title="Sunday">${weekdayDate.toLocaleDateString(locale,  {weekday: "short"})}</div>
-                <div class="onsched-calendar-col dow" title="Monday">${AddDaysToDate(weekdayDate, 1).toLocaleDateString(locale,  {weekday: "short"})}</div>
-                <div class="onsched-calendar-col dow" title="Tuesday">${AddDaysToDate(weekdayDate, 2).toLocaleDateString(locale,  {weekday: "short"})}</div>
-                <div class="onsched-calendar-col dow" title="Wednesday">${AddDaysToDate(weekdayDate, 3).toLocaleDateString(locale,  {weekday: "short"})}</div>
-                <div class="onsched-calendar-col dow" title="Thursday">${AddDaysToDate(weekdayDate, 4).toLocaleDateString(locale,  {weekday: "short"})}</div>
-                <div class="onsched-calendar-col dow" title="Friday">${AddDaysToDate(weekdayDate, 5).toLocaleDateString(locale,  {weekday: "short"})}</div>
-                <div class="onsched-calendar-col dow" title="Saturday">${AddDaysToDate(weekdayDate, 6).toLocaleDateString(locale,  {weekday: "short"})}</div>
+                <div class="onsched-calendar-col dow" title="${weekdayDate.toLocaleDateString(locale,  {weekday: "long"})}">
+                    ${weekdayDate.toLocaleDateString(locale,  {weekday: "short"})}
+                </div>
+                <div class="onsched-calendar-col dow" title="${AddDaysToDate(weekdayDate, 1).toLocaleDateString(locale,  {weekday: "long"})}">
+                    ${AddDaysToDate(weekdayDate, 1).toLocaleDateString(locale,  {weekday: "short"})}
+                </div>
+                <div class="onsched-calendar-col dow" title="${AddDaysToDate(weekdayDate, 2).toLocaleDateString(locale,  {weekday: "long"})}">
+                    ${AddDaysToDate(weekdayDate, 2).toLocaleDateString(locale,  {weekday: "short"})}
+                </div>
+                <div class="onsched-calendar-col dow" title="${AddDaysToDate(weekdayDate, 3).toLocaleDateString(locale,  {weekday: "long"})}">
+                    ${AddDaysToDate(weekdayDate, 3).toLocaleDateString(locale,  {weekday: "short"})}
+                </div>
+                <div class="onsched-calendar-col dow" title="${AddDaysToDate(weekdayDate, 4).toLocaleDateString(locale,  {weekday: "long"})}">
+                    ${AddDaysToDate(weekdayDate, 4).toLocaleDateString(locale,  {weekday: "short"})}
+                </div>
+                <div class="onsched-calendar-col dow" title="${AddDaysToDate(weekdayDate, 5).toLocaleDateString(locale,  {weekday: "long"})}">
+                    ${AddDaysToDate(weekdayDate, 5).toLocaleDateString(locale,  {weekday: "short"})}
+                </div>
+                <div class="onsched-calendar-col dow" title="${AddDaysToDate(weekdayDate, 6).toLocaleDateString(locale,  {weekday: "long"})}">
+                    ${AddDaysToDate(weekdayDate, 6).toLocaleDateString(locale,  {weekday: "short"})}
+                </div>
             </div>
         `;
 
@@ -3332,6 +3370,18 @@ var OnSchedTemplates = function () {
             return markup;
     }
 
+    function resourceGroupOptions(groups) {
+        const markup = `
+            <option>None</option>
+            ${groups.map((group, index) =>
+                `
+                <option value="${group.id}">${group.name}</option>
+                `
+            ).join("")}
+        `;
+        return markup;
+    }
+
     function countryStateOptions(states) {
         const markup = `
             ${states.map((state, index) =>
@@ -3646,7 +3696,6 @@ var OnSchedTemplates = function () {
     }
     function AddDaysToDate(inputDate, days) {
         var date = new Date(inputDate);
-//        date.setTime(date.getTime() + (days * 24 * 60 * 60 * 1000));
         date.setDate(date.getDate() + days);
         return date;
     }
@@ -3801,6 +3850,7 @@ var OnSchedTemplates = function () {
         errorBox: errorBox,
         selectField: selectField,
         inputField: inputField,
+        resourceGroupOptions: resourceGroupOptions,
         stateSelectOptions: stateSelectOptions,
         countrySelectOptions: countrySelectOptions,
         businessHoursTable: businessHoursTable,
@@ -4034,7 +4084,9 @@ var OnSchedRest = function () {
     function GetResources(token, url, callback) {
         return Get(token, url, callback);
     }
-
+    function GetResourceGroups(token, url, callback) {
+        return Get(token, url, callback);
+    }
     // Setup interface rest calls
 
     function PostLocation(token, url, payload, callback) {
@@ -4081,6 +4133,7 @@ var OnSchedRest = function () {
         GetServiceGroups: GetServiceGroups,
         GetServices: GetServices,
         GetResources: GetResources,
+        GetResourceGroups: GetResourceGroups,
         GetCustomers: GetCustomers,
         PostLocation: PostLocation,
         PutLocation: PutLocation,
