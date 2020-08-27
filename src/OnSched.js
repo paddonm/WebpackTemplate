@@ -442,7 +442,7 @@ var OnSchedMount = function () {
             url = element.params.getFirst ? OnSchedHelpers.AddUrlParam(url, "limit", "1") : url;
         }
         else
-                return;
+            return;
 
         var url = element.params.locationId != null && element.params.locationId.length > 0 ?
             OnSchedHelpers.AddUrlParam(url, "locationId", element.params.locationId) : url;
@@ -522,7 +522,7 @@ var OnSchedMount = function () {
                     el.innerHTML = OnSchedTemplates.locationSetup(element.onsched.locale, response);                    
                     OnSchedWizardHelpers.InitWizardDomElements(element);
                     OnSchedWizardHelpers.InitLocationDomElements(element);
-                    OnSchedWizardHelpers.SelectOptionMatchingData("select[name=timezoneName]", "tz", "America/New_York");
+                    OnSchedWizardHelpers.SelectOptionMatchingData("select[name=timezoneName]", "tz", response.timezoneIana);
 
                     OnSchedWizardHelpers.ShowWizardSection(0);
                 }) // end rest response
@@ -566,12 +566,13 @@ var OnSchedMount = function () {
                 el.innerHTML = OnSchedTemplates.resourceSetup(element.onsched.locale, element.params.data);
             }
             OnSchedWizardHelpers.InitWizardDomElements(element);
-            OnSchedWizardHelpers.InitResourceDomElements();
+            OnSchedWizardHelpers.InitResourceDomElements(element);
             OnSchedWizardHelpers.ShowWizardSection(0);
-            // default the timezone for a new location
+            // default the timezone for a new resource
             if (element.params.tzOffset != undefined || element.params.tzOffset.length == 0) {
                 var elTimezoneSelect = document.querySelector(".onsched-wizard.onsched-form select[name=timezoneName");
-                elTimezoneSelect.value = element.params.tzOffset;
+//                elTimezoneSelect.value = element.params.tzOffset;
+                elTimezoneSelect.value = "";
             }
         }
         else {
@@ -583,11 +584,12 @@ var OnSchedMount = function () {
                         console.log("Rest error response code=" + response.code);
                         return;
                     }
+                    console.log(response);
                     // now render the initial UI from the response data
                     el.innerHTML = OnSchedTemplates.resourceSetup(element.onsched.locale, response);                    
                     OnSchedWizardHelpers.InitWizardDomElements(element);
                     OnSchedWizardHelpers.InitResourceDomElements(element);
-                    OnSchedWizardHelpers.SelectOptionMatchingData("select[name=timezoneName]", "tz", "America/New_York");
+                    OnSchedWizardHelpers.SelectOptionMatchingData("select[name=timezoneName]", "tz", response.timezoneIana);
 
                     OnSchedWizardHelpers.ShowWizardSection(0);
                 }) // end rest response
@@ -1102,8 +1104,11 @@ var OnSchedWizardHelpers = function () {
                         else
                             postData.availability[bhDay].endTime = e.value;
                         break;
-                    default:
-                        console.log(e.dataset.post + " " + e.name + " unrecognizable post attribute");
+                        case "customFields":
+                            postData.options[e.name] = e.value;
+                            break;
+                        default:
+                            console.log(e.dataset.post + " " + e.name + " unrecognizable post attribute");
                         break;
                 }
             }
@@ -1148,6 +1153,9 @@ var OnSchedWizardHelpers = function () {
                         else {
                             putData[e.name] = e.value
                         }
+                        if (e.name == "groupId")
+                            putData[e.name] = e.value == 0 ? "" : e.value;
+
                         break;
                     case "address":
                         putData.address[e.name] = e.value;
@@ -1171,6 +1179,9 @@ var OnSchedWizardHelpers = function () {
                             putData.availability[bhDay].startTime = e.value;
                         else
                             putData.availability[bhDay].endTime = e.value;
+                        break;
+                    case "customFields":
+                        putData.customFields[e.name] = e.value;
                         break;
                     default:
                         console.log(e.dataset.post + " " + e.name + " unrecognizable put attribute");
@@ -3018,7 +3029,7 @@ var OnSchedTemplates = function () {
                     <div class="onsched-form-col">
                         <label for="resourceTimezone">Timezone</label>
                         <select id="resourceTimezone" class="onsched-select" name="timezoneName" value="${dataValue(data.timezoneName)}" data-post="root">
-                            ${TimezoneSelectOptions(Timezones())}
+                            ${TimezoneSelectOptions(Timezones(), true)}
                         </select>
                     </div>
                 </div>
@@ -3158,7 +3169,58 @@ var OnSchedTemplates = function () {
                 <h4 class="onsched-business-hours-tz">Eastern Timezone</h4>
                 <div class="onsched-business-hours">${OnSchedTemplates.businessHoursTable(locale, data.availability)}</div>
             </div>
-
+            <div class="onsched-wizard-section">
+                <h2>Custom Fields</h2>
+                <div class="onsched-form-row">
+                    <div class="onsched-form-col">
+                        <label for="customField1">Custom Field 1</label>
+                        <input type="text" id="customField1" name="field1" value="${dataValue(data.customFields.field1)}" data-post="customFields" />
+                    </div>
+                    <div class="onsched-form-col">
+                        <label for="customField2">Custom Field 2</label>
+                        <input type="text" id="customField2" name="field2" value="${dataValue(data.customFields.field2)}" data-post="customFields" />
+                    </div>                    
+                </div>
+                <div class="onsched-form-row">
+                    <div class="onsched-form-col">
+                        <label for="customField3">Custom Field 3</label>
+                        <input type="text" id="customField3" name="field3" value="${dataValue(data.customFields.field3)}" data-post="customFields" />                    </div>
+                    <div class="onsched-form-col">
+                        <label for="customField4">Custom Field 4</label>
+                        <input type="text" id="customField4" name="field4" value="${dataValue(data.customFields.field4)}" data-post="customFields" />
+                    </div>                    
+                </div>
+                <div class="onsched-form-row">
+                    <div class="onsched-form-col">
+                        <label for="customField5">Custom Field 5</label>
+                        <input type="text" id="customField5" name="field5" value="${dataValue(data.customFields.field5)}" data-post="customFields" />
+                    </div>
+                    <div class="onsched-form-col">
+                        <label for="customField6">Custom Field 6</label>
+                        <input type="text" id="customField6" name="field6" value="${dataValue(data.customFields.field6)}" data-post="customFields" />                    
+                    </div>                    
+                </div>
+                <div class="onsched-form-row">
+                    <div class="onsched-form-col">
+                        <label for="customField7">Custom Field 7</label>
+                        <input type="text" id="customField7" name="field7" value="${dataValue(data.customFields.field7)}" data-post="customFields" />  
+                    </div>
+                    <div class="onsched-form-col">
+                        <label for="customField8">Custom Field 8</label>
+                        <input type="text" id="customField8" name="field8" value="${dataValue(data.customFields.field8)}" data-post="customFields" />                      
+                    </div>                    
+                </div>
+                <div class="onsched-form-row">
+                    <div class="onsched-form-col">
+                        <label for="customField9">Custom Field 9</label>
+                        <input type="text" id="customField9" name="field9" value="${dataValue(data.customFields.field9)}" data-post="customFields" />                       
+                    </div>
+                    <div class="onsched-form-col">
+                        <label for="customField10">Custom Field 10</label>
+                        <input type="text" id="customField10" name="field10" value="${dataValue(data.customFields.field10)}" data-post="customFields" />                       
+                    </div>                    
+                </div>                                                                
+            </div>
 
 
             <div class="onsched-wizard-nav">
@@ -3166,6 +3228,7 @@ var OnSchedTemplates = function () {
                     <div class="onsched-wizard-nav-status">
                         <!-- Circles which indicates the steps of the form: -->
                         <span class="step active"></span>
+                        <span class="step"></span>
                         <span class="step"></span>
                         <span class="step"></span>
                         <span class="step"></span>
@@ -3372,7 +3435,7 @@ var OnSchedTemplates = function () {
 
     function resourceGroupOptions(groups) {
         const markup = `
-            <option>None</option>
+            <option value="">None</option>
             ${groups.map((group, index) =>
                 `
                 <option value="${group.id}">${group.name}</option>
@@ -3728,14 +3791,27 @@ var OnSchedTemplates = function () {
 
     // Timezone select functions
 
-    function TimezoneSelectOptions(tzRegionData) {
+    function TimezoneSelectOptions(tzRegionData, businessTzOption) {
         // need to do this template style in onschedjs
         const markup = `
+            ${BusinessTzOption(businessTzOption)}
             ${tzRegionData.map((tzRegion, index) =>
                 `${TimezoneOptionGroups(tzRegion.name, tzRegion.timezones)}`
             ).join("")}
         `;
         return markup;
+    }
+
+    function BusinessTzOption(value) {
+        if (value == undefined) {
+            return "";
+        }
+        else {
+            const markup = `
+                <option value="">Business Location Timezone</option>
+            `;
+            return markup;
+        }
     }
 
     function TimezoneOptionGroups(name, timezones) {
