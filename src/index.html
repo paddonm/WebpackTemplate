@@ -540,9 +540,14 @@ However, delay the fade out process for 2.5 seconds */
   var resourceData = { name:"Test F Location", address:{ "state": "ON", "country": "CA" }, settings: {}};
 
   var elResourceSetup = document.getElementById("resourceSetup");
+  elResourceSetup.addEventListener("resourceSetupComplete", function (e) {
+    console.log(e.detail);
+    ShowToast("resourceSetupComplete event fired with response in e.detail");
+  });
   //var resourceSetupParams = {"id":"8", "tzOffset": tzOffset, "data": resourceData};
   var resourceSetupParams = {"id":"33", locationId: "", "tzOffset": tzOffset, "data": resourceData};
-  var resourceSetupOptions = {};
+  var resourceCustomFields = { field1: { required: true, label: "Insurance Code"}};
+  var resourceSetupOptions = { customFields: resourceCustomFields};
   var resourceSetup = elements.create("resourceSetup", resourceSetupParams, resourceSetupOptions);
 
   var elServiceSetup = document.getElementById("serviceSetup");

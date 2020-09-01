@@ -427,10 +427,14 @@
     margin: 0 auto;
 }
 
+.onsched-image-icon img {
+    border-radius: 50%;
+}
+
 .onsched-circle-icon {
-    width: 30px;
-    height: 30px;
-    line-height: 30px;
+    width: 50px;
+    height: 50px;
+    line-height: 50px;
     background-color: darkgray;
     background-color: #9e6600;
     background-color: var(--blue);

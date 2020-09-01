@@ -554,10 +554,9 @@ var OnSchedMount = function () {
         };
 
         var defaultData = { name:"Test Resource", address:{ "state": "ON", "country": "CA" }, availability: defaultAvailability, settings: {}};
-
         if (element.params.id == "undefined" || element.params.id.length == 0) {
             if (element.params.data == undefined)
-                el.innerHTML = OnSchedTemplates.resourceSetup(element.onsched.locale, defaultData);
+                el.innerHTML = OnSchedTemplates.resourceSetup(element.onsched.locale, defaultData, element.options.customFields);
             else {
                 // make sure the supplied default data passed in params has availability
                 // if not, we'll use our default availability
@@ -566,7 +565,7 @@ var OnSchedMount = function () {
                 if (element.params.data.contact == undefined)
                     element.params.data.contact = {};
 
-                el.innerHTML = OnSchedTemplates.resourceSetup(element.onsched.locale, element.params.data);
+                el.innerHTML = OnSchedTemplates.resourceSetup(element.onsched.locale, element.params.data, element.options.customFields);
             }
             OnSchedWizardHelpers.InitWizardDomElements(element);
             OnSchedWizardHelpers.InitResourceDomElements(element);
@@ -589,7 +588,7 @@ var OnSchedMount = function () {
                     }
                     console.log(response);
                     // now render the initial UI from the response data
-                    el.innerHTML = OnSchedTemplates.resourceSetup(element.onsched.locale, response);                    
+                    el.innerHTML = OnSchedTemplates.resourceSetup(element.onsched.locale, response, element.options.customFields);                    
                     OnSchedWizardHelpers.InitWizardDomElements(element);
                     OnSchedWizardHelpers.InitResourceDomElements(element);
                     OnSchedWizardHelpers.SelectOptionMatchingData("select[name=timezoneName]", "tz", response.timezoneIana);
@@ -804,12 +803,29 @@ var OnSchedWizardHelpers = function () {
         return false;
     }
     function InitWizardDomElements(element) {
-        // MAY BE NOTHING IN THE DOM YET
+
+        // Initialize DOM elements now that we have loaded the template
+
+        // Initialize the steps from looking at DOM Sections loaded
+        var elWizardSections = document.querySelectorAll(".onsched-wizard-section");
+        var elWizardNavStatus = document.querySelector(".onsched-wizard-nav-status");
+        console.log("elWizardSections.length="+elWizardSections.length);
+        var wizardSections = [];
+        for (var i=0; i < elWizardSections.length; i++) {
+            var elWizardSection = elWizardSections[i];
+            var sectionStyle = window.getComputedStyle(elWizardSection)
+            console.log("display="+sectionStyle.display);
+            wizardSections.push(sectionStyle.display);
+        }
+        elWizardNavStatus.innerHTML = OnSchedTemplates.wizardSteps(wizardSections);
+
         var elWizardForm = document.querySelector(".onsched-wizard.onsched-form");
         elWizardForm.addEventListener("submit", (event) => OnSchedWizardHelpers.WizardSubmitHandler(event, element));
         var elPrevButton = document.querySelector(".onsched-wizard-nav-buttons .prevButton");
         elPrevButton.addEventListener("click", OnSchedWizardHelpers.WizardPrevHandler);
 
+
+        // Business Hours and Timezone dropdown options
         var elBusinessTimezone = document.querySelector(".onsched-wizard.onsched-form select[name=timezoneName]");
         var elBusinessHoursTz = document.querySelector("h4.onsched-business-hours-tz");
         elBusinessHoursTz.innerHTML = elBusinessTimezone.options[elBusinessTimezone.selectedIndex].text;;
@@ -1177,6 +1193,9 @@ var OnSchedWizardHelpers = function () {
                     case "businessHours":
                         var bhDay = e.name.substr(0, 3);
                         var bhTime = e.name.substr(3);
+                        console.log("bhDay="+bhDay);
+                        console.log("bhTime="+bhTime);
+                        console.log("e.value="+e.value);
                         if (bhTime.includes("Start"))
                             putData.availability[bhDay].startTime = e.value;
                         else
@@ -1576,8 +1595,9 @@ var OnSchedResponse = function () {
         console.log("OnSchedResponse.PostLocation");
         console.log(response);
         var elLocationSetup = document.getElementById(element.id);
-        var confirmationEvent = new CustomEvent("locationSetupConfirmation", { detail: response });
+        var confirmationEvent = new CustomEvent("locationSetupComplete", { detail: response });
         elLocationSetup.dispatchEvent(confirmationEvent);    
+        elLocationSetup.innerHTML = "";    
     }
     function PutLocation(element, response) {
         if (response.error) {
@@ -1586,8 +1606,9 @@ var OnSchedResponse = function () {
             return;
         }
         var elLocationSetup = document.getElementById(element.id);
-        var confirmationEvent = new CustomEvent("locationSetupConfirmation", { detail: response });
-        elLocationSetup.dispatchEvent(confirmationEvent);    
+        var confirmationEvent = new CustomEvent("locationSetupComplete", { detail: response });
+        elLocationSetup.dispatchEvent(confirmationEvent);
+        elLocationSetup.innerHTML = "";    
     }    
     function PostResource(element, response) {
         if (response.error) {
@@ -1620,7 +1641,7 @@ var OnSchedResponse = function () {
         console.log("OnSchedResponse.PostResource");
         console.log(response);
         var elResourceSetup = document.getElementById(element.id);
-        var confirmationEvent = new CustomEvent("resourceSetupConfirmation", { detail: response });
+        var confirmationEvent = new CustomEvent("resourceSetupComplete", { detail: response });
         elResourceSetup.dispatchEvent(confirmationEvent);    
     }
     function PutResource(element, response) {
@@ -1643,8 +1664,6 @@ var OnSchedResponse = function () {
                         console.log("PostResourceImgae Rest error response code=" + response.code);
                         return;
                     }
-                    console.log("PostResourceImgage SUCCESS");
-                    console.log(response);                
                 })
             );                 
         }
@@ -1652,8 +1671,9 @@ var OnSchedResponse = function () {
         console.log("OnSchedResponse.PutResource");
         console.log(response);        
         var elResourceSetup = document.getElementById(element.id);
-        var confirmationEvent = new CustomEvent("resourceSetupConfirmation", { detail: response });
-        elResourceSetup.dispatchEvent(confirmationEvent);    
+        var confirmationEvent = new CustomEvent("resourceSetupComplete", { detail: response });
+        elResourceSetup.dispatchEvent(confirmationEvent); 
+        elResourceSetup.innerHTML = "";   
     }    
 
     return {
@@ -2525,6 +2545,24 @@ var OnSchedTemplates = function () {
         return tmplCalendar;
     }
 
+    function listImage(url) {
+        const tmplImage =  `
+            <div class="onsched-image-icon">
+                <img src="${url}" width="58" height="58" />
+            </div>
+        `;
+        return tmplImage;
+    }
+
+    function circleIcon(name) {
+        const tmplCircleIcon =  `
+            <div class="onsched-circle-icon">
+                ${getLettersForIcon(name)}
+            </div>
+        `;
+        return tmplCircleIcon;       
+    }
+
     function locationsList(response) {
         const tmplLocations = `
             <div class="onsched-container">
@@ -2533,9 +2571,11 @@ var OnSchedTemplates = function () {
                         <div class="onsched-list">
                             <div class="onsched-table">
                                 ${response.data.map((location, index) =>
-                `<div class="row">
+                                    `<div class="row">
                                         <div class="icon-col">
-                                            <div class="onsched-circle-icon">${getLettersForIcon(location.name)}</div>
+                                            ${ location.imageUrl == undefined || location.imageUrl.length == 0 ?
+                                                circleIcon(location.name) : listImage(location.imageUrl)
+                                            }
                                         </div>
                                         <div class="info-col">
                                             <a href="#" class="list-item name" data-id=${location.id} data-element="locations" 
@@ -2566,9 +2606,11 @@ var OnSchedTemplates = function () {
                         <div class="onsched-list">
                             <div class="onsched-table">
                                 ${response.data.map((service, index) =>
-                `<div class="row">
+                                    `<div class="row">
                                         <div class="icon-col">
-                                            <div class="onsched-circle-icon">${getLettersForIcon(service.name)}</div>
+                                        ${ service.imageUrl == undefined || service.imageUrl.length == 0 ?
+                                            circleIcon(service.name) : listImage(service.imageUrl)
+                                        }
                                         </div>
                                         <div class="info-col">
                                             <a href="#" class="list-item name" data-id=${service.id} data-element="services" 
@@ -2595,9 +2637,11 @@ var OnSchedTemplates = function () {
                         <div class="onsched-list">
                             <div class="onsched-table">
                                 ${response.data.map((resource, index) =>
-                `<div class="row">
+                                    `<div class="row">
                                         <div class="icon-col">
-                                            <div class="onsched-circle-icon">${getLettersForIcon(resource.name)}</div>
+                                        ${ resource.imageUrl == undefined || resource.imageUrl.length == 0 ?
+                                            circleIcon(resource.name) : listImage(resource.imageUrl)
+                                        }
                                         </div>
                                         <div class="info-col">
                                             <a href="#" class="list-item name" data-id=${resource.id} data-element="resources" 
@@ -2896,16 +2940,27 @@ var OnSchedTemplates = function () {
         `;
         return tmplConfirmation;
     }
+
+
+    //
+    // SETUP TEMPLATES
+    //
+
     function dataValue(value) {
         if (value == undefined)
             return "";
         else
             return value;
     }
+    function wizardSteps(wizardSections) {
+        const tmplWizardSteps = `
+        ${ wizardSections.map((wizardSection, index) =>
+            ` <span class="step ${index > 0 ? "" : "active"}"></span>`        
+        ).join("")}
+        `;
+        return tmplWizardSteps;
+    }
 
-    //
-    // SETUP TEMPLATES
-    //
     function locationSetup(locale, data) {
 
         const tmplLocationSetup = `
@@ -3023,7 +3078,7 @@ var OnSchedTemplates = function () {
 
     }
 
-    function resourceSetup(locale, data) {
+    function resourceSetup(locale, data, customFields) {
 
         const tmplResourceSetup = `
         <div class="onsched-container">
@@ -3185,8 +3240,12 @@ var OnSchedTemplates = function () {
                 <h2>Custom Fields</h2>
                 <div class="onsched-form-row">
                     <div class="onsched-form-col">
-                        <label for="customField1">Custom Field 1</label>
-                        <input type="text" id="customField1" name="field1" value="${dataValue(data.customFields.field1)}" data-post="customFields" />
+                        <label for="customField1">
+                            ${customFields != undefined && customFields.field1 != undefined ? customFields.field1.label : "Custom Field 1" }
+                        </label>
+                        <input type="text" id="customField1" name="field1" 
+                            value="${dataValue(data.customFields.field1)}" 
+                            data-post="customFields" />
                     </div>
                     <div class="onsched-form-col">
                         <label for="customField2">Custom Field 2</label>
@@ -3239,11 +3298,7 @@ var OnSchedTemplates = function () {
                 <div style="display:table-row">
                     <div class="onsched-wizard-nav-status">
                         <!-- Circles which indicates the steps of the form: -->
-                        <span class="step active"></span>
-                        <span class="step"></span>
-                        <span class="step"></span>
-                        <span class="step"></span>
-                        <span class="step"></span>
+
                     </div>
                     <div class="onsched-wizard-nav-buttons">
                         <button type="button" id="prevButton" class="prevButton">Previous</button>
@@ -3943,6 +3998,7 @@ var OnSchedTemplates = function () {
         countrySelectOptions: countrySelectOptions,
         businessHoursTable: businessHoursTable,
         wizardTitle:wizardTitle,
+        wizardSteps:wizardSteps,
         previewImage:previewImage,
     };
 }();
