@@ -268,6 +268,9 @@ var OnSchedMount = function () {
             OnSchedHelpers.CreateDateString(OnSchedHelpers.GetFirstCalendarDate(element.params.date)));
         url = OnSchedHelpers.AddUrlParam(url, "dayAvailability", 100);
         url = OnSchedHelpers.AddUrlParam(url, "firstDayAvailable", "true");
+        // add additional parameters
+        if (element.params.duration) url = OnSchedHelpers.AddUrlParam(url, "duration", element.params.duration);
+        if (element.params.interval) url = OnSchedHelpers.AddUrlParam(url, "interval", element.params.interval);
 
         var elDateSelected = document.querySelector(".onsched-available-times-header .date-selected");
         var dateSelectedTitle = element.params.date.toLocaleDateString(
