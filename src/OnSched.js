@@ -900,9 +900,8 @@ var OnSchedWizardHelpers = function () {
                 var image = document.getElementById("onsched-image-preview");
                 image.src = URL.createObjectURL(event.target.files[0]);
                 const base64String = OnSchedWizardHelpers.Base64Encoded(image); 
-                // save the filename and base64 string so we can POST the uploadimage later
+                // save the filename so we can POST the uploadimage later
                 elSystemFileUploadBtn.dataset.filename = uploadedFileName;
-                elSystemFileUploadBtn.dataset.base64 = base64String;
             }
             else {
                 elFileUploadTxt.innerHTML = "No file chosen, yet.";
@@ -1285,14 +1284,17 @@ var OnSchedWizardHelpers = function () {
         });
     }
     function Base64Encoded(img) {
+        console.log("base64Encoded="+ img.width + " " + img.height);
         // Create canvas
         const canvas = document.createElement('canvas');
-        const ctx = canvas.getContext('2d');
         // Set width and height
         canvas.width = img.width;
         canvas.height = img.height;
+
+        const ctx = canvas.getContext('2d');
+
         // Draw the image
-        ctx.drawImage(img, 0, 0);
+        ctx.drawImage(img, 0, 0, img.width, img.height);
         var dataUrl = canvas.toDataURL();
         var n = dataUrl.indexOf("base64,");
         if (n > 0)
@@ -1592,7 +1594,12 @@ var OnSchedResponse = function () {
         // check if we need to upload an image for this resource
         const elSystemFileUploadBtn = document.querySelector(".onsched-wizard.onsched-form input[name=onsched-system-file-upload]");
         if (elSystemFileUploadBtn.value) {
-            var postData = { imageFileName:elSystemFileUploadBtn.dataset.filename, imageFileData: elSystemFileUploadBtn.dataset.base64};
+
+            var image = document.getElementById("onsched-image-preview");
+            const base64String = OnSchedWizardHelpers.Base64Encoded(image); 
+            console.log(base64String);
+
+            var postData = { imageFileName:elSystemFileUploadBtn.dataset.filename, imageFileData: base64String};
             console.log(postData);
             const uploadImageUrl = element.onsched.setupApiBaseUrl + "/resources/"+ response.id + "/uploadimage";
             element.onsched.accessToken.then(x =>
@@ -1622,7 +1629,9 @@ var OnSchedResponse = function () {
         // check if we need to upload an image for this resource
         const elSystemFileUploadBtn = document.querySelector(".onsched-wizard.onsched-form input[name=onsched-system-file-upload]");
         if (elSystemFileUploadBtn.value) {
-            var postData = { imageFileName:elSystemFileUploadBtn.dataset.filename, imageFileData: elSystemFileUploadBtn.dataset.base64};
+            var image = document.getElementById("onsched-image-preview");
+            const base64String = OnSchedWizardHelpers.Base64Encoded(image); 
+            var postData = { imageFileName:elSystemFileUploadBtn.dataset.filename, imageFileData: base64String};
             console.log(postData);
             const uploadImageUrl = element.onsched.setupApiBaseUrl + "/resources/"+ response.id + "/uploadimage";
             element.onsched.accessToken.then(x =>
