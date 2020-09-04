@@ -1479,7 +1479,7 @@ var OnSchedResponse = function () {
         if (response.count == 0) {
             // here is where I may need to do a POST to create the customer
             if (element.params.customerIM != null) {
-                url = element.onsched.apiBaseUrl + "/customers";
+                var url = element.onsched.apiBaseUrl + "/customers";
                 element.onsched.accessToken.then(x =>
                     OnSchedRest.PostCustomer(x, url, element.params.customerIM, function (response) {
                         var createCustomerEvent = new CustomEvent("postCustomer", { detail: response });
