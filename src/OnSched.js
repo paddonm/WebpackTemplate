@@ -616,7 +616,7 @@ var OnSchedMount = function () {
             "sat": { "startTime": 0, "endTime": 0 },
             "sun": { "startTime": 0, "endTime": 0 },
         };
-        var defaultData = { address:{ "state": "ON", "country": "CA" }, availability: defaultAvailability, settings: {}, options: {}, fees: {}};
+        var defaultData = { showOnline: true, duration: 30, availability: defaultAvailability, settings: {}, options: {}, fees: {}};
 
         if (element.params.id == undefined || element.params.id.length == 0) {
             console.log("No Id present, create new resource");
@@ -1298,28 +1298,22 @@ var OnSchedWizardHelpers = function () {
             var postData = { locationId: locationId, availability: businessHours, settings: {}, options: {} };
 
             for (var i = 0; i < formElements.length; i++) {
+
+                // we must decorate the html elements with data-post attribute to populate input model of API
                 var e = formElements[i];
+
                 switch(e.dataset.post) {
                     case undefined:
                         // ignore fields without a data-post entry
                         break;
                     case "root":
-                        console.log(e.name+" type="+e.dataset.type+" value="+e.value);
-                        postData[e.name] = e.dataset.type == "int" ? parseInt(e.value) : e.value;
+                        postData[e.name] = OnSchedHelpers.GetFormElementDataValue(e);
                         break;
                     case "settings":
-                        console.log(e.name+" type="+e.dataset.type);
-                        postData.settings[e.name] = e.value;
+                        postData.settings[e.name] = OnSchedHelpers.GetFormElementDataValue(e);
                         break;
                     case "options":
-                        console.log(e.name+" type="+e.dataset.type);
-                        if (e.name == "durationSelect") 
-                            postData.options[e.name] = e.dataset.checked == "true" ? true : false;
-                        else
-                        if (e.dataset.type == "int")
-                            postData.options[e.name] = parseInt(e.value);
-                        else
-                        postData.options[e.name] = e.value;
+                        postData.options[e.name] = OnSchedHelpers.GetFormElementDataValue(e);
                         break;
                     case "businessHours":
                         var bhDay = e.name.substr(0, 3);
@@ -1363,16 +1357,16 @@ var OnSchedWizardHelpers = function () {
                         // ignore fields without a data-post entry
                         break;
                     case "root":
-                        putData[e.name] = e.value;
+                        putData[e.name] = e.dataset.type == "int" ? OnSchedHelpers.parseInt(e.value) : e.value;
+                        putData[e.name] = e.dataset.type == "bool" ? e.checked : e.value;
                         break;
                     case "settings":
-                        putData.settings[e.name] = e.value;
+                        putData.settings[e.name] = e.dataset.type == "int" ? OnSchedHelpers.ParseInt(e.value) : e.value;
+                        putData.settings[e.name] = e.dataset.type == "bool" ? e.checked : e.value;
                         break;
                     case "options":
-                        if (e.name == "durationSelect") 
-                            putData.options[e.name] = e.dataset.checked == "true" ? true : false;
-                        else
-                            putData.options[e.name] = e.value;
+                        putData.options[e.name] = e.dataset.type == "int" ? OnSchedHelpers.ParseInt(e.value) : e.value;
+                        putData.options[e.name] = e.dataset.type == "bool" ? e.checked : e.value;                               
                         break;
                     case "businessHours":
                         var bhDay = e.name.substr(0, 3);
@@ -2307,6 +2301,24 @@ var OnSchedHelpers = function () {
         var date = new Date(utcDate.getUTCFullYear(), utcDate.getUTCMonth(), utcDate.getUTCDate());
         return date;
     }
+    function ParseInt(intString) {
+        if (intString == undefined || intString.length == 0)
+            return 0;
+        else
+        if (isNaN(intString))
+            return 0;
+        else
+            return parseInt(intString);
+    }
+    function GetFormElementDataValue(e) {
+        if (e.dataset.type == "int")
+            return OnSchedHelpers.ParseInt(e.value);
+        else
+        if (e.dataset.type == "bool")
+            return e.checked;
+        else
+            return e.value;
+    }
     function CreateDateString(date) {
         var dateString = date.getFullYear() + "-" + ("0" + (date.getMonth() + 1)).slice(-2) + "-" + ("0" + date.getDate()).slice(-2);
         return dateString;
@@ -2486,6 +2498,8 @@ var OnSchedHelpers = function () {
         CreateAvailabilityUrl: CreateAvailabilityUrl,
         AddUrlParam: AddUrlParam,
         ParseDate: ParseDate,
+        ParseInt: ParseInt,
+        GetFormElementDataValue: GetFormElementDataValue,
         CreateDateString: CreateDateString,
         GetFirstCalendarDate: GetFirstCalendarDate,
         GetCalendarDays: GetCalendarDays,
@@ -3612,8 +3626,7 @@ var OnSchedTemplates = function () {
                 <div class="onsched-form-row">
                     <div class="onsched-form-col">
                         <label for="description">Description</label>
-                        <textarea id="description" name="description" rows="3" placeholder="Enter Service Description" data-post="root">${dataValue(data.description)}
-                        </textarea>                    
+                        <textarea id="description" name="description" rows="3" placeholder="Enter Service Description" data-post="root" required="requited">${dataValue(data.description)}</textarea>                    
                     </div>
                 </div>                
                 <div class="onsched-form-row">
@@ -3694,7 +3707,7 @@ var OnSchedTemplates = function () {
                 <div class="onsched-form-row">
                     <div class="onsched-form-col">
                         <label for="durationSelect">
-                            <input id="durationSelect" type="checkbox" name="durationSelect" ${checkboxChecked(dataValue(data.durationSelect))} data-post="options" />
+                            <input id="durationSelect" type="checkbox" name="durationSelect" ${checkboxChecked(dataValue(data.durationSelect))} data-post="options" data-type="bool"/>
                             Duration Selection
                         </label>
                         <label style="margin-bottom:16px">
@@ -3715,7 +3728,21 @@ var OnSchedTemplates = function () {
                             </select>
                         </div>                        
                     </div>
-                </div>                
+                </div> 
+                <div class="onsched-form-row">
+                    <div class="onsched-form-col">
+                        <label for="public">
+                            <input id="public" type="checkbox" name="public" ${checkboxChecked(dataValue(data.showOnline))} data-post="root" data-type="bool" />
+                            Consumer booking enabled
+                        </label>
+                    </div>
+                    <div class="onsched-form-col">
+                        <label for="defaultService">
+                            <input id="defaultService" type="checkbox" name="defaultService" ${checkboxChecked(dataValue(data.defaultService))} data-post="options" data-type="bool" />
+                            Use as the default service
+                        </label>
+                    </div>
+                </div>               
             </div>
 
             <div class="onsched-wizard-section">
