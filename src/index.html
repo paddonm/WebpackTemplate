@@ -551,10 +551,19 @@ However, delay the fade out process for 2.5 seconds */
   var resourceSetup = elements.create("resourceSetup", resourceSetupParams, resourceSetupOptions);
 
   var elServiceSetup = document.getElementById("serviceSetup");
-  var serviceSetupParams = {"id":"5", "tzOffset": tzOffset, "availability": businessHours};
+  // var serviceSetupParams = {"id":"5", "availability": businessHours};
+  var serviceSetupParams = {"availability": businessHours};
   var serviceSetupOptions = {};
   var serviceSetup = elements.create("serviceSetup", serviceSetupParams, serviceSetupOptions);
-
+  var elServiceSetup = document.getElementById("serviceSetup");
+  elServiceSetup.addEventListener("serviceSetupComplete", function (e) {
+    console.log(e.detail);
+    ShowToast("serviceSetupComplete event fired with response in e.detail");
+  });
+  elServiceSetup.addEventListener("serviceSetupError", function (e) {
+    console.log(e.detail);
+    ShowToast("serviceSetupError event fired with response in e.detail");
+  });
   ///////////////////////////////////////////////////
 
   var fieldListItems = [

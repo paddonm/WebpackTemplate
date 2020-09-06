@@ -1018,6 +1018,10 @@ button.onsched-file-upload-btn:hover {
     flex: 1;
     margin: 0 auto;
 }
+.onsched-form-col.multi {
+    flex-direction: row;
+    justify-content: space-between;
+}
 
 .onsched-form-row input[type=checkbox] {
     margin-right:6px;
