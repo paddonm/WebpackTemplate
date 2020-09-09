@@ -339,6 +339,24 @@ var OnSchedMount = function () {
             OnSchedRest.Get(x, url, function (response) {
                 if (response.error)
                     console.log("Rest error response code=" + response.code);
+                // If updating the appointment to BOOKED call the PUT /appointments/{id}/book
+                if (element.options.book) {
+                    // book option is set to we call the PUT /appointments/{id}/book
+                    var confirmUrl = element.onsched.apiBaseUrl + "/appointments/" + element.params.appointmentId + "/book";
+                    var payload = {};
+                    element.onsched.accessToken.then(x => 
+                        OnSchedRest.Put(x, confirmUrl, payload, function(response) {
+                            if (response.error) {
+                                console.log("Rest error response code=" + response.code);
+                            }
+                            else {
+                                var bookingConfirmationEvent = new CustomEvent("bookingConfirmation", { detail: response });
+                                el.dispatchEvent(bookingConfirmationEvent);
+                            }
+                            
+                        }) // end rest response
+                    ); // end promise
+                }
                 // If not confirming the appointment, then just fire an event with the response
                 if (element.options.confirm == undefined || element.options.confirm == false) {
                     var getAppointmentEvent = new CustomEvent("getAppointment", { detail: response });
@@ -1701,9 +1719,9 @@ var OnSchedResponse = function () {
                 OnSchedOnClick.BookingFormSubmit(e, element);
             });
         }
-        else {
+        else if (element.params.completeBooking !== "IN") {
             // Flow 2 - completed booking with information supplied
-            // Fire event to the element to notify of booking complete
+            // Fire event to the element to notify of booking complete if status is not INITIAL
             var elAvailability = document.getElementById(element.id);
             var bookingConfirmationEvent = new CustomEvent("bookingConfirmation", { detail: response });
             elAvailability.dispatchEvent(bookingConfirmationEvent);
