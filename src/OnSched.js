@@ -1711,9 +1711,9 @@ var OnSchedResponse = function () {
                 OnSchedOnClick.BookingFormSubmit(e, element);
             });
         }
-        else if (element.params.completeBooking !== "IN") {
+        else {
             // Flow 2 - completed booking with information supplied
-            // Fire event to the element to notify of booking complete if status is not INITIAL
+            // Fire event to the element to notify of booking complete
             var elAvailability = document.getElementById(element.id);
             var bookingConfirmationEvent = new CustomEvent("bookingConfirmation", { detail: response });
             elAvailability.dispatchEvent(bookingConfirmationEvent);
