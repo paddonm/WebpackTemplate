@@ -277,7 +277,7 @@ However, delay the fade out process for 2.5 seconds */
   var tzOffset = -now.getTimezoneOffset();
   var availabilityParams = {
     //            locationId: 'burlingtonmedical', serviceId: 5, resourceId: 13, customerId: 17780, tzOffset: tzOffset, completeBooking: "BK"
-    locationId: 'burlingtonmedical', serviceId: "5", resourceId: "33", tzOffset: tzOffset,
+    locationId: 'burlingtonmedical', serviceId: "5", resourceId: "33", tzOffset: tzOffset, completeBooking: "IN", customerId: '414',
       appointmentBM: { customFields: {field1: "Some test data from onschedjs"}}
   };
   var availabilityOptions = 
@@ -409,8 +409,8 @@ However, delay the fade out process for 2.5 seconds */
   });
   //        resource.mount("resource");
 
-  var appointmentParams = { locationId: '', appointmentId: '383587' };
-  var appointmentOptions = { confirm: true};
+  var appointmentParams = { locationId: '', appointmentId: '394112' };
+  var appointmentOptions = { book: true};
   var appointment = elements.create("appointment", appointmentParams, appointmentOptions);
   var elAppointment = document.getElementById("appointment");
   elAppointment.addEventListener("getAppointment", function (e) {

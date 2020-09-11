@@ -334,54 +334,46 @@ var OnSchedMount = function () {
             return;
         }
 
-        // We built the url so call the endpoint now
-        element.onsched.accessToken.then(x =>
-            OnSchedRest.Get(x, url, function (response) {
-                if (response.error)
-                    console.log("Rest error response code=" + response.code);
-                // If updating the appointment to BOOKED call the PUT /appointments/{id}/book
-                if (element.options.book) {
-                    // book option is set to we call the PUT /appointments/{id}/book
-                    var confirmUrl = element.onsched.apiBaseUrl + "/appointments/" + element.params.appointmentId + "/book";
-                    var payload = {};
-                    element.onsched.accessToken.then(x => 
-                        OnSchedRest.Put(x, confirmUrl, payload, function(response) {
-                            if (response.error) {
-                                console.log("Rest error response code=" + response.code);
-                            }
-                            else {
-                                var bookingConfirmationEvent = new CustomEvent("bookingConfirmation", { detail: response });
-                                el.dispatchEvent(bookingConfirmationEvent);
-                            }
-                            
-                        }) // end rest response
-                    ); // end promise
-                }
-                // If not confirming the appointment, then just fire an event with the response
-                if (element.options.confirm == undefined || element.options.confirm == false) {
-                    var getAppointmentEvent = new CustomEvent("getAppointment", { detail: response });
-                    el.dispatchEvent(getAppointmentEvent);
-                }
-                else {
-                    // confirm option is set to we call the PUT /appointments/{id}/confirm
-                    var confirmUrl = element.onsched.apiBaseUrl + "/appointments/" + element.params.appointmentId + "/confirm";
-                    var payload = {};
-                    element.onsched.accessToken.then(x => 
-                        OnSchedRest.Put(x, confirmUrl, payload, function(response) {
-                            if (response.error) {
-                                console.log("Rest error response code=" + response.code);
-                            }
-                            else {
-                                var confirmAppointmentEvent = new CustomEvent("confirmAppointment", { detail: response });
-                                el.dispatchEvent(confirmAppointmentEvent);  
-                            }
-                          
-                        }) // end rest response
-                    ); // end promise
-                }
-
-            }) // end rest response
-        ); // end promise
+        // If updating the appointment to BOOKED call the PUT /appointments/{id}/book
+        if (element.options.book) {
+            // book option is set to we call the PUT /appointments/{id}/book
+            var bookUrl = element.onsched.apiBaseUrl + "/appointments/" + element.params.appointmentId + "/book";
+            var payload = {};
+            element.onsched.accessToken.then(x => 
+                OnSchedRest.Put(x, bookUrl, payload, function(response) {
+                    if (response.error) {
+                        console.log("Rest error response code=" + response.code);
+                    }
+                    else {
+                        var bookingConfirmationEvent = new CustomEvent("bookingConfirmation", { detail: response });
+                        el.dispatchEvent(bookingConfirmationEvent);
+                    }
+                    
+                }) // end rest response
+            ); // end promise
+        }
+        // If not confirming the appointment, then just fire an event with the response
+        if (element.options.confirm == undefined || element.options.confirm == false) {
+            var getAppointmentEvent = new CustomEvent("getAppointment", { detail: response });
+            el.dispatchEvent(getAppointmentEvent);
+        }
+        else {
+            // confirm option is set to we call the PUT /appointments/{id}/confirm
+            var confirmUrl = element.onsched.apiBaseUrl + "/appointments/" + element.params.appointmentId + "/confirm";
+            var payload = {};
+            element.onsched.accessToken.then(x => 
+                OnSchedRest.Put(x, confirmUrl, payload, function(response) {
+                    if (response.error) {
+                        console.log("Rest error response code=" + response.code);
+                    }
+                    else {
+                        var confirmAppointmentEvent = new CustomEvent("confirmAppointment", { detail: response });
+                        el.dispatchEvent(confirmAppointmentEvent);  
+                    }
+                    
+                }) // end rest response
+            ); // end promise
+        }
         return;
     }
 
