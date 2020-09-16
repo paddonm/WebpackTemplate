@@ -339,6 +339,11 @@ var OnSchedMount = function () {
             // book option is set to we call the PUT /appointments/{id}/book
             var bookUrl = element.onsched.apiBaseUrl + "/appointments/" + element.params.appointmentId + "/book";
             var payload = {};
+            // Check if appointmentBM object is passed in for payload
+            if (element.params.appointmentBM) {
+                payload = element.params.appointmentBM;
+            }
+
             element.onsched.accessToken.then(x => 
                 OnSchedRest.Put(x, bookUrl, payload, function(response) {
                     if (response.error) {
