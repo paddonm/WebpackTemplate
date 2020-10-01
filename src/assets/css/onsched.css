@@ -93,6 +93,7 @@
     text-align: left;
     vertical-align: middle;
     border-radius: 2px;
+    cursor: default;
 }
 
 .onsched-table th {
@@ -421,6 +422,34 @@
     pointer-events: none;
 }
 
+.onsched-filter-form {
+    display: flex;
+    flex-wrap: wrap;
+    max-width: 719px;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 10px;
+}
+
+.onsched-filter-wrapper {
+    min-width: 150px;
+    margin: 10px 5px;
+}
+.onsched-filter-wrapper label {
+    display: block;
+    margin-bottom: 5px;
+}
+.onsched-filter-wrapper input,
+.onsched-filter-wrapper select {
+    background: #fff;
+    padding: 10px;
+    border: 1px solid #bdbdbd;
+    border-radius: 10px;
+    -moz-border-radius: 10px;
+    -webkit-border-radius: 10px;
+    -o-border-radius: 10px;
+    outline: none;
+}
 
 .onsched-list {
     width: 60%;
