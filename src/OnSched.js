@@ -9,7 +9,6 @@ import moment from 'moment';
 import momenttimezone from 'moment-timezone';
 
 import './assets/css/index.css';
-import placeholderIcon from './assets/img/image-placeholder.png';
 import { configureScope } from '@sentry/browser';
 
 Sentry.init({
@@ -115,6 +114,12 @@ function OnSched(ClientId, Environment, Options) {
                         case "serviceSetup":
                             OnSchedMount.ServiceSetupElement(this);
                             break;
+                        case "appointments":
+                            OnSchedMount.AppointmentsElement(this);
+                            break;
+                        case "appointmentSearch":
+                            OnSchedMount.AppointmentSearchElement(this);
+                            break;
                             default:
                             // TODO - raise App error event
                             console.log("Unsupported element " + element.type);
@@ -205,6 +210,43 @@ var OnSchedMount = function () {
         });
     }
 
+    function AppointmentSearchElement(element) {
+        var el = document.getElementById(element.id);
+        OnSchedHelpers.HideProgress();
+        
+        var url = element.onsched.apiBaseUrl + "/resources";
+        url = element.options.getFirst ? OnSchedHelpers.AddUrlParam(url, "limit", "1") : url;
+        url = element.params.locationId !== null ? OnSchedHelpers.AddUrlParam(url, "locationId", element.params.locationId) : url;
+        
+        let resources = elements.create("resources", {}, {})
+        resources.onsched.accessToken.then(x =>
+            OnSchedRest.GetResources(x, url, function (response) {
+                element.params.resources = response.data;
+                el.innerHTML = OnSchedTemplates.appointmentSearchForm(element.params);
+                
+                var elSearchForm = document.querySelector(".onsched-search-form");
+                
+                elSearchForm.addEventListener("submit", function (e) {
+                    e.preventDefault(); // before the code
+                    elAppointments.innerHTML = '';
+                    var elFormInputs = document.querySelectorAll(".onsched-filter-form input");
+                    var elFormSelects = document.querySelectorAll(".onsched-filter-form select");
+                    
+                    let allInputValues = Array.prototype.slice.call(elFormInputs).map(input => ({name: input.name, value: input.value, paramName: input.id}))
+                    let allSelectValues = Array.prototype.slice.call(elFormSelects).map(input => ({name: input.name, value: input.value, paramName: input.id}))
+                    let allValues = allInputValues.concat(allSelectValues)
+                    
+                    var elSearchText = document.querySelector(".onsched-search-form input[type=text]");
+        
+                    var eventModel = { formValues: allValues, searchText: elSearchText.value.toLowerCase()};
+                    var clickSearchEvent = new CustomEvent("clicked", { detail: eventModel });
+                    el.dispatchEvent(clickSearchEvent);
+                });
+            })
+        );
+        
+    }
+    
     function ServicesElement(element) {
         var el = document.getElementById(element.id);
         el.addEventListener("click", element.onClick);
@@ -234,6 +276,47 @@ var OnSchedMount = function () {
         element.onsched.accessToken.then(x =>
             OnSchedRest.GetLocations(x, url, function (response) {
                 OnSchedResponse.GetLocations(element, response);
+            })
+        ).catch(e => console.log(e));
+    }
+
+    function AppointmentsElement(element) {
+        // are there any params or just options for appointments?
+        // need to support lookup by postalCode. API changes.
+
+        var el = document.getElementById(element.id);
+        var url = element.onsched.apiBaseUrl + "/appointments";
+        url = element.params.offset != null && element.params.offset.length ? OnSchedHelpers.AddUrlParam(url, "offset", element.params.offset) : url;
+        url = element.params.limit != null && element.params.limit.length ? OnSchedHelpers.AddUrlParam(url, "limit", element.params.limit) : url;
+        url = element.params.locationId != null && element.params.locationId.length ? OnSchedHelpers.AddUrlParam(url, "locationId", element.params.locationId) : url;
+        
+        if (element.params.searchText != null) {
+            if (element.params.searchText.length) {
+                if (element.params.searchText.includes('@'))
+                    url = OnSchedHelpers.AddUrlParam(url, "email", element.params.searchText);
+                else
+                    url = OnSchedHelpers.AddUrlParam(url, "lastName", element.params.searchText);
+            }
+        }
+        
+        element.params.formValues.map(formInput => {
+            if (formInput && formInput.value && formInput.value.length) {
+                url = OnSchedHelpers.AddUrlParam(url, formInput.paramName, formInput.value);
+            }
+        });
+        
+        //url = element.params.status != null && element.params.status.length ? OnSchedHelpers.AddUrlParam(url, "status", element.params.status) : url;
+        //url = element.params.resourceId != null && element.params.resourceId.length ? OnSchedHelpers.AddUrlParam(url, "resourceId", element.params.resourceId) : url;
+        //url = element.params.startDate != null && element.params.startDate.length ? OnSchedHelpers.AddUrlParam(url, "startDate", element.params.startDate) : url;
+        //url = element.params.endDate != null && element.params.endDate.length ? OnSchedHelpers.AddUrlParam(url, "endDate", element.params.endDate) : url;
+        OnSchedHelpers.ShowProgress();
+        element.onsched.accessToken.then(x =>
+            OnSchedRest.GetAppointments(x, url, function (response) {
+                OnSchedResponse.GetAppointments(element, response);
+                
+                var clickSearchEvent = new CustomEvent("getAppointments", { detail: response });
+                el.dispatchEvent(clickSearchEvent);
+                el.addEventListener("click", () => {});
             })
         ).catch(e => console.log(e));
     }
@@ -687,7 +770,9 @@ var OnSchedMount = function () {
         ResourceElement: ResourceElement,
         LocationSetupElement: LocationSetupElement,
         ResourceSetupElement: ResourceSetupElement,
-        ServiceSetupElement: ServiceSetupElement
+        ServiceSetupElement: ServiceSetupElement,
+        AppointmentsElement: AppointmentsElement,
+        AppointmentSearchElement: AppointmentSearchElement,
     };
 }(); // End OnSchedMount
 
@@ -1596,6 +1681,25 @@ var OnSchedResponse = function () {
         el.dispatchEvent(getLocationsEvent);
     }
 
+    function GetAppointments(element, response) {
+        var eventModel;
+        var getAppointmentsEvent;
+        if (response.error || response.count === 0) {
+            eventModel = { message: 'No appointments found matching search input.' };
+            getAppointmentsEvent = new CustomEvent("notFound", { detail: eventModel });
+            var el = document.getElementById(element.id);
+            el.dispatchEvent(getAppointmentsEvent);
+            return;
+        }
+        var htmlAppointments = OnSchedTemplates.appointmentsList(response);
+        var el = document.getElementById(element.id);
+        el.innerHTML = htmlAppointments;
+        // fire a custom event here
+        eventModel = { 'object': response.object, 'hasMore': response.hasMore, 'count': response.count, 'total': response.total, 'data': response.data };
+        getAppointmentsEvent = new CustomEvent("getAppointments", { detail: eventModel });
+        el.dispatchEvent(getAppointmentsEvent);
+    }
+
     function GetLocation(element, response) {
 
     }
@@ -1933,6 +2037,7 @@ var OnSchedResponse = function () {
     return {
         GetAvailability: GetAvailability,
         GetLocations: GetLocations,
+        GetAppointments: GetAppointments,
         GetLocation: GetLocation,
         GetServices: GetServices,
         GetService: GetService,
@@ -2880,6 +2985,61 @@ var OnSchedTemplates = function () {
         return tmplLocations;
     }
 
+    function appointmentsList(response) {
+        const statusTypes = [
+            { resp: 'BK', friendly: 'Booked' },
+            { resp: 'RS', friendly: 'Reserved' },
+            { resp: 'CN', friendly: 'Cancelled' },
+            { resp: 'RE', friendly: 'Rescheduled' },
+            { resp: 'NS', friendly: 'No show' },
+            { resp: 'IN', friendly: 'Initial' },
+        ]
+        
+        const tmplAppointments = `
+            <div class="onsched-container">
+                <div class="onsched-row">
+                    <div class="onsched-col">
+                        <div class="onsched-list">
+                            <table class="onsched-table">
+                                <tr>
+                                    <th>Resource</th>
+                                    <th>Name</th>
+                                    <th>Phone</th>
+                                    <th>Email</th>
+                                    <th>Appointment</th>
+                                    <th>Status</th>
+                                </tr>
+                                ${response.data.map((appointment, index) =>        
+                                    `<tr key="${index} class="list-item name">
+                                        <td>
+                                            ${appointment.resourceName}
+                                        </td>
+                                        <td>
+                                            ${appointment.name}
+                                        </td>
+                                        <td>
+                                            ${appointment.phone}
+                                        </td>
+                                        <td>
+                                            ${appointment.email}
+                                        </td>
+                                        <td>
+                                            ${appointment.serviceName} ${moment(appointment.startDateTime).format('llll')}
+                                        </td>
+                                        <td>
+                                            ${statusTypes.filter(status => status.resp === appointment.status)[0].friendly}
+                                        </td>
+                                     </tr>`
+                                ).join("")}
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        `;
+        return tmplAppointments;
+    }
+
     function servicesList(response) {
         const tmplServices = `
             <div class="onsched-container">
@@ -2967,6 +3127,97 @@ var OnSchedTemplates = function () {
             </div>
         `;
         return tmplSearchForm;
+    }
+
+    function appointmentSearchForm(params) {
+        let resources = params.resources ? params.resources : [];
+
+        const filters = [
+            {
+                name: 'Status',
+                paramName: 'status',
+                component: 'select',
+                type: 'select',
+                options: [
+                    {label: 'Booked', value: 'BK'}, 
+                    {label: 'Cancelled', value: 'CN'}, 
+                    {label: 'Reserved', value: 'RS'}, 
+                    {label: 'Rescheduled', value: 'RE' }, 
+                    {label: 'No show', value: 'NS'}, 
+                    {label: 'Initial', value: 'IN'}
+                ]            
+            },
+            // {
+            //     name: 'Calendar',
+            //     paramName: 'status',
+            //     component: 'select',
+            //     type: 'select',
+            //     options: params.calendars && [params.calendars.map(calendar => ({name: calendar.name, value: calendar.id}))]
+            // },
+            {
+                name: 'Resource',
+                paramName: 'resourceId',
+                component: 'select',
+                type: 'select',
+                options: resources.map(resource => (
+                    { label: resource.name, value: resource.id }
+                ))
+            },
+            {
+                name: 'From',
+                paramName: 'startDate',
+                component: 'input',
+                type: 'date',
+            },
+            {
+                name: 'To',
+                paramName: 'endDate',
+                component: 'input',
+                type: 'date',
+            },
+        ]
+        
+        const tmplAppointmentSearchForm = `
+            <div class="onsched-container">
+                <div class="onsched-row">
+                    <div class="onsched-col">
+                        <form class="onsched-search-form" method="get">
+                            <div class="onsched-filter-form">
+                                ${filters.map(filter => 
+                                    `
+                                        <div class="onsched-filter-wrapper">
+                                            <label for="${filter.name}">${filter.name}</label>
+                                            <${filter.component} id="${filter.paramName}" name="searchFilter-${filter.name}" type="${filter.type}" ${filter.component === 'input' ? '/>' : 
+                                            `
+                                                >
+                                                    <option value="">Any ${filter.name}</option>
+                                                    ${filter.options && filter.options.map((option, i) => `
+                                                        <option value="${option.value}" key="${i}">${option.label}</option>
+                                                    `)}
+                                                </${filter.component}>
+                                            `}
+                                        </div>    
+                                    `
+                                ).join("")}
+                            </div>
+                            <div class="onsched-search-wrapper">
+                                <input name="searchText" value="${params.searchText}" size="50" type="text" placeholder="${params.placeholder ? params.placeholder : 'Search by lastname or email'}" />
+                                <input type="submit" value=" " title="Click to search" />
+                            </div>
+                            <p>${params.message}</p>
+                            <div>
+                                <div class="onsched-progress-container" style=width:100%;height:8px;">
+                                    <div class="onsched-progress">
+                                        <div class="indeterminate"></div>
+                                    </div>
+                                </div>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        `;
+        return tmplAppointmentSearchForm;
     }
 
     function errorBox(params) {
@@ -3802,6 +4053,8 @@ var OnSchedTemplates = function () {
     }
 
     function previewImage(data) {
+        const placeholderIcon = 'https://onsched.com/assets/icons/image-placeholder.png';
+        
         const markup = `
             <img id="onsched-image-preview" 
                 src="${data.id == undefined || data.id.length == 0 || data.imageUrl.length == 0 ? placeholderIcon : data.imageUrl}" 
@@ -4398,7 +4651,9 @@ var OnSchedTemplates = function () {
         wizardTitle:wizardTitle,
         wizardSteps:wizardSteps,
         previewImage:previewImage,
-        timeIntervals:timeIntervals
+        timeIntervals:timeIntervals,
+        appointmentsList: appointmentsList,
+        appointmentSearchForm: appointmentSearchForm
     };
 }();
 
@@ -4614,6 +4869,10 @@ var OnSchedRest = function () {
         return Get(token, url, callback);
     }
 
+    function GetAppointments(token, url, callback) {
+        return Get(token, url, callback);
+    }
+
     function GetServiceGroups(token, url, callback) {
         return Get(token, url, callback);
     }
@@ -4683,6 +4942,7 @@ var OnSchedRest = function () {
         PutAppointmentBook: PutAppointmentBook,
         DeleteAppointment: DeleteAppointment,
         GetLocations: GetLocations,
+        GetAppointments: GetAppointments,
         GetServiceGroups: GetServiceGroups,
         GetServices: GetServices,
         GetResources: GetResources,
