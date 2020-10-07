@@ -927,6 +927,35 @@ button.onsched-file-upload-btn:hover {
     font-weight:700;
 }
 
+.onsched-appointment-table {
+    border-spacing: 15px;
+    text-align: left;
+    margin-bottom: 15px;
+}
+#appointments-modal h3 {
+    margin: 15px 15px 5px !important;
+    border-top: 2px solid #ddd;
+    padding-top: 15px;
+}
+#appointments-modal .onsched-popup-footer {
+    padding: 15px;
+    text-align: right;
+}
+#appointments-modal .onsched-popup-footer a {
+    margin: 0 15px;
+    cursor: pointer;
+}
+#appointments-modal .onsched-popup-footer a.disabled {
+    opacity: .4;
+    color: default !important;
+}
+
+@media(min-width: 992px) {
+    .onsched-appointment-table {
+        min-width: 700px;
+    }
+}
+
 /* POPUP ANIMATIONS
 –––––––––––––––––––––––––––––––––––––––––––––––––– */
 [data-animation] .onsched-popup {
