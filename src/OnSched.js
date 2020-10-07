@@ -289,10 +289,16 @@ var OnSchedMount = function () {
         url = element.params.offset != null && element.params.offset.length ? OnSchedHelpers.AddUrlParam(url, "offset", element.params.offset) : url;
         url = element.params.limit != null && element.params.limit.length ? OnSchedHelpers.AddUrlParam(url, "limit", element.params.limit) : url;
         url = element.params.locationId != null && element.params.locationId.length ? OnSchedHelpers.AddUrlParam(url, "locationId", element.params.locationId) : url;
-        
+
         if (element.params.searchText != null) {
             if (element.params.searchText.length) {
-                if (element.params.searchText.includes('@'))
+                if (!isNaN(element.params.searchText)) {
+                    if (element.params.searchText.length < 7)
+                        url = OnSchedHelpers.AddUrlParam(url, "customerId", element.params.searchText);
+                    else
+                        url = OnSchedHelpers.AddUrlParam(url, "phone", element.params.searchText);
+                }
+                else if (element.params.searchText.includes('@'))
                     url = OnSchedHelpers.AddUrlParam(url, "email", element.params.searchText);
                 else
                     url = OnSchedHelpers.AddUrlParam(url, "lastName", element.params.searchText);
@@ -316,7 +322,11 @@ var OnSchedMount = function () {
                 
                 var clickSearchEvent = new CustomEvent("getAppointments", { detail: response });
                 el.dispatchEvent(clickSearchEvent);
-                el.addEventListener("click", () => {});
+                
+                var appointmentsList = document.querySelectorAll('[data-appointmentId]');
+                Array.prototype.map.call(appointmentsList, appt => {
+                    appt.onclick = e => OnSchedOnClick.SearchedAppointment(element, appt.dataset.appointmentid);
+                })
             })
         ).catch(e => console.log(e));
     }
@@ -2210,6 +2220,23 @@ var OnSchedOnClick = function () {
         );
     }
 
+
+    function SearchedAppointment(element, apptId) {
+        OnSchedHelpers.ShowProgress();
+
+        var appointmentsUrl = element.onsched.apiBaseUrl + "/appointments/" + apptId;
+
+        element.onsched.accessToken.then(x =>
+            OnSchedRest.GetAppointment(x, appointmentsUrl, function (response) {
+                var getAppointmentEvent = new CustomEvent("getAppointment", { detail: response });
+                var elAppointments = document.getElementById('appointments');
+                elAppointments.dispatchEvent(getAppointmentEvent);
+                OnSchedHelpers.OpenAppointmentsModal(response, element);
+            })
+        );
+
+    }
+
     function BookingFormCancel(event, element) {
         document.querySelector(".onsched-popup-shadow").classList.remove("is-visible");
         var id = document.querySelector(".onsched-form.booking-form input[name=id]").value;
@@ -2395,7 +2422,8 @@ var OnSchedOnClick = function () {
         AvailableTime: AvailableTime,
         MonthPrev: MonthPrev,
         MonthNext: MonthNext,
-        ListItem: ListItem
+        ListItem: ListItem,
+        SearchedAppointment: SearchedAppointment
     };
 }();
 
@@ -2647,6 +2675,133 @@ var OnSchedHelpers = function () {
         return parsed.trim();
     }
 
+    function OpenAppointmentsModal(response, element) {
+        var tableFields = [
+            {
+                label: 'Name',
+                value: response.name
+            },
+            {
+                label: 'Date/Time',
+                value: moment(response.startDateTime).format('llll')
+            },
+            {
+                label: 'Service/Duration',
+                value: response.serviceName + ' ' + response.duration + ' min'
+            },
+            {
+                label: 'Resource',
+                value: response.resourceName
+            },
+            {
+                label: 'Phone',
+                value: response.phone
+            },
+            {
+                label: 'Location',
+                value: response.location
+            },
+            {
+                label: 'Notes',
+                value: response.notes ? response.notes : ''
+            },
+            {
+                label: 'Customer message',
+                value: response.customerMessage
+            },
+            {
+                label: 'Status',
+                value: response.status
+            },
+            {
+                label: 'Confirmed',
+                value: `${response.confirmed}/${response.confirmationNumber}`
+            },
+            {
+                label: 'Booked by',
+                value: `${response.bookedBy}`
+            },
+            {
+                label: 'Email',
+                value: `${response.email}`
+            },
+            {
+                label: 'Booked on',
+                value: `${moment(response.createDate).format('llll')}`
+            },
+        ]
+
+        var elModal = document.getElementById('appointments-modal');
+        elModal.innerHTML = OnSchedTemplates.appointementsModal(response.name, tableFields, response.auditTrail);
+        
+        var elPopup = document.querySelector('#appointments-modal .onsched-popup-shadow');
+        elPopup.classList.add('is-visible');
+        
+        var elShadow = document.querySelector(".onsched-popup-shadow.is-visible");
+
+        elShadow.addEventListener("click", e => {
+            console.log('tagName', e.target.tagName)
+            if (e.target.tagName === 'DIV') {
+                elShadow.classList.remove('is-visible');
+                elModal.innerHTML = '';
+            }       
+        });
+
+        var url = element.onsched.apiBaseUrl + "/appointments/" + response.id + "/cancel";
+        
+        var elAppointments = document.getElementById(`appointments`)
+        var footerLinks = document.querySelectorAll('#appointments-modal .onsched-popup-footer a');
+
+        if (response.status !== 'CN') {
+            footerLinks[0].onclick = null;
+            footerLinks[0].onclick = () => {
+                elShadow.classList.remove('is-visible');
+                elModal.innerHTML = '';
+                OnSchedHelpers.ShowProgress();
+                element.onsched.accessToken.then(x =>
+                    OnSchedRest.PutAppointmentCancel(x, url, {}, detail => {
+                        OnSchedHelpers.HideProgress();
+                        var cancelAppointmentEvent = new CustomEvent("cancelAppointment", { detail });
+                        elAppointments.dispatchEvent(cancelAppointmentEvent);
+                    })
+                );
+            };
+            if (!response.confirmed) {
+                footerLinks[1].onclick = () => {
+                    var confirmUrl = element.onsched.apiBaseUrl + "/appointments/" + response.id + "/confirm"
+                    elShadow.classList.remove('is-visible');
+                    elModal.innerHTML = '';
+                    OnSchedHelpers.ShowProgress();
+    
+                    element.onsched.accessToken.then(x => 
+                        OnSchedRest.Put(x, confirmUrl, {}, detail => {
+                            if (detail.error) {
+                                console.log("Rest error response code=" + detail.code);
+                            }
+                            else {
+                                OnSchedHelpers.HideProgress();
+                                var confirmAppointmentEvent = new CustomEvent("confirmAppointment", { detail });
+                                elAppointments.dispatchEvent(confirmAppointmentEvent);  
+                            }
+                            
+                        }) // end rest response
+                    ); // end promise
+                };
+            }
+            else {
+                footerLinks[1].className = 'disabled';
+                footerLinks[1].disabled = true;
+            }
+        }
+        else {
+            footerLinks[0].className = 'disabled';
+            footerLinks[0].disabled = true;
+            footerLinks[1].className = 'disabled';
+            footerLinks[1].disabled = true;
+        }
+
+    }
+
     return {
         SundayDate: SundayDate,
         IsEmpty: IsEmpty,
@@ -2674,6 +2829,7 @@ var OnSchedHelpers = function () {
         SetToken: SetToken,
         FormatPhoneNumber:FormatPhoneNumber,
         ParsePhoneNumber:ParsePhoneNumber,
+        OpenAppointmentsModal: OpenAppointmentsModal
     };
 
 }(); // End OnSchedHelpers
@@ -3048,7 +3204,7 @@ var OnSchedTemplates = function () {
                                     <th>Status</th>
                                 </tr>
                                 ${response.data.map((appointment, index) =>        
-                                    `<tr key="${index} class="list-item name">
+                                    `<tr key="${index}" data-appointmentId="${appointment.id}" class="list-item name">
                                         <td>
                                             ${appointment.resourceName}
                                         </td>
@@ -3073,6 +3229,7 @@ var OnSchedTemplates = function () {
                         </div>
                     </div>
                 </div>
+                <div id="appointments-modal"></div>
             </div>
         `;
         return tmplAppointments;
@@ -3239,7 +3396,7 @@ var OnSchedTemplates = function () {
                                 ).join("")}
                             </div>
                             <div class="onsched-search-wrapper">
-                                <input name="searchText" value="${params.searchText}" size="50" type="text" placeholder="${params.placeholder ? params.placeholder : 'Search by lastname or email'}" />
+                                <input name="searchText" value="${params.searchText}" size="50" type="text" placeholder="${params.placeholder ? params.placeholder : 'Search by lastname, email, or customer ID'}" />
                                 <input type="submit" value=" " title="Click to search" />
                             </div>
                             <p>${params.message}</p>
@@ -3467,6 +3624,59 @@ var OnSchedTemplates = function () {
 
         `;
         return tmplBookingForm;
+    }
+    function appointementsModal(name, tableFields, auditTrailFields) {
+        const tmplAppointmentsModal = `
+    <div class="onsched-popup-shadow" data-animation="zoomInOut">
+        <div class="onsched-popup">
+            <header class="onsched-popup-header">
+                <h1>Booking - ${name}</h1>
+                <div class="onsched-close-btn"></div>
+            </header>
+            <section>
+                <table class="onsched-appointment-table">
+                    <tbody>
+                        ${tableFields.map(field =>
+                        `<tr>
+                            <th>${field.label}</th>
+                            <td>${field.value}</td>
+                        </tr>`
+                        ).join("")}
+                    </tbody>
+                </table>
+            </section>
+
+            <section>
+            ${auditTrailFields.length ? `
+                <h3>Audit Trail</h3>
+                <table class="onsched-appointment-table">
+                    <tbody>
+                        <tr>
+                            <th>User</th>
+                            <th>Modified on</th>
+                            <th>Modification</th>
+                        </tr>
+                        ${auditTrailFields.map(field =>
+                            `<tr>
+                                <td>${field.modifiedBy}</td>
+                                <td>${field.modifiedOn}</td>
+                                <td>${field.modificationType}</td>
+                            </tr>`
+                        ).join("")}
+                    </tbody>
+                </table>
+            ` : ''}
+            </section>
+            <footer class="onsched-popup-footer">
+                <a data-appointment-action="cancel">Cancel</a>
+                <a data-appointment-action="confirm">Confirm</a>
+            </footer>
+
+        </div>
+    </div>
+
+        `;
+        return tmplAppointmentsModal;
     }
     function bookingTimer(params) {
         const tmplBookingTimer = `
@@ -4660,7 +4870,8 @@ var OnSchedTemplates = function () {
         previewImage:previewImage,
         timeIntervals:timeIntervals,
         appointmentsList: appointmentsList,
-        appointmentSearchForm: appointmentSearchForm
+        appointmentSearchForm: appointmentSearchForm,
+        appointementsModal: appointementsModal
     };
 }();
 
@@ -4861,9 +5072,10 @@ var OnSchedRest = function () {
     }
 
     function PutAppointmentBook(token, url, payload, callback) {
-
         return Put(token, url, payload, callback);
-
+    }
+    function PutAppointmentCancel(token, url, payload, callback) {
+        return Put(token, url, payload, callback);
     }
     function DeleteAppointment(token, url, callback) {
         return Delete(token, url, callback);
@@ -4877,6 +5089,10 @@ var OnSchedRest = function () {
     }
 
     function GetAppointments(token, url, callback) {
+        return Get(token, url, callback);
+    }
+
+    function GetAppointment(token, url, callback) {
         return Get(token, url, callback);
     }
 
@@ -4950,9 +5166,11 @@ var OnSchedRest = function () {
         PostAppointment: PostAppointment,
         PostCustomer: PostCustomer,
         PutAppointmentBook: PutAppointmentBook,
+        PutAppointmentCancel: PutAppointmentCancel,
         DeleteAppointment: DeleteAppointment,
         GetLocations: GetLocations,
         GetAppointments: GetAppointments,
+        GetAppointment: GetAppointment,
         GetServiceGroups: GetServiceGroups,
         GetServices: GetServices,
         GetResources: GetResources,
