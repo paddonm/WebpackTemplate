@@ -863,6 +863,21 @@ var OnSchedWizardHelpers = function () {
                         element.onsched.accessToken.then(x =>
                             OnSchedRest.PostService(x, servicesUrl, postData, function (response) {
                                 OnSchedResponse.PostService(element, response);
+                                let calendarId = response.calendarId;
+                                if (element.params.calendarId) {
+                                    calendarId = element.params.calendarId;
+                                }
+
+                                let calData = {
+                                    calendarId, 
+                                    locationId: response.locationId, 
+                                    serviceId: response.id
+                                }
+                                
+                                let linkedServiceUrl = element.onsched.setupApiBaseUrl + "/services/calendar"
+                                element.onsched.accessToken.then(x =>
+                                    OnSchedRest.PostLinkedService(x, linkedServiceUrl, calData, function (linkedResponse) {})
+                                );
                             })
                         );
                     }
@@ -3643,7 +3658,7 @@ var OnSchedTemplates = function () {
 
     function resourceSetup(locale, data, customFields) {
         // Convert Object to Array
-        let customFieldsArray = Object.values(customFields)
+        let customFieldsArray = customFields ? Object.values(customFields) : []
 
         const tmplResourceSetup = `
         <div class="onsched-container">
@@ -4881,6 +4896,9 @@ var OnSchedRest = function () {
     function GetResourceGroups(token, url, callback) {
         return Get(token, url, callback);
     }
+    function PostLinkedService(token, url, payload, callback) {
+        return Post(token, url, payload, callback);
+    }
     // Setup interface rest calls
 
     function PostLocation(token, url, payload, callback) {
@@ -4940,6 +4958,7 @@ var OnSchedRest = function () {
         GetResources: GetResources,
         GetResourceGroups: GetResourceGroups,
         GetCustomers: GetCustomers,
+        PostLinkedService: PostLinkedService,
         PostLocation: PostLocation,
         PutLocation: PutLocation,
         PostResource: PostResource,
