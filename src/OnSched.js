@@ -4025,29 +4025,36 @@ var OnSchedTemplates = function () {
                 <h4 class="onsched-business-hours-tz">Eastern Timezone</h4>
                 <div class="onsched-business-hours">${OnSchedTemplates.businessHoursTable(locale, data.availability)}</div>
             </div>
-            <div class="onsched-wizard-section">
-                <h2>Custom Fields</h2>
-
-                    ${customFieldsArray && customFieldsArray.map((field, i) => {
-                        let newRow = !(i % 2)
-
-                        return (
-                            `
-                            ${newRow ? '<div class="onsched-form-row">' : ''}
-                                            <div class="onsched-form-col">
-                                                <label for="customField${i}">
-                                                    ${dataValue(field.label)}
-                                                </label>
-                                                <input type="text" id="customField${i}" name="field${i}" 
-                                                    value="${dataValue(field.value)}" 
-                                                    data-post="customFields" />
-                                            </div>
-                            ${newRow ? '</div>' : ''}
-                            `
-                        )
-                    })}
-                                                         
-            </div>
+            ${
+                customFieldsArray && customFieldsArray.length
+                 ? 
+                `
+                    <div class="onsched-wizard-section">
+                        <h2>Custom Fields</h2>
+        
+                            ${customFieldsArray && customFieldsArray.map((field, i) => {
+                                let newRow = !(i % 2)
+        
+                                return (
+                                    `
+                                    ${newRow ? '<div class="onsched-form-row">' : ''}
+                                                    <div class="onsched-form-col">
+                                                        <label for="customField${i}">
+                                                            ${dataValue(field.label)}
+                                                        </label>
+                                                        <input type="text" id="customField${i}" name="field${i}" 
+                                                            value="${dataValue(field.value)}" 
+                                                            data-post="customFields" />
+                                                    </div>
+                                    ${newRow ? '</div>' : ''}
+                                    `
+                                )
+                            })}                                  
+                    </div>
+                `
+                 : 
+                ``
+            }
 
 
             <div class="onsched-wizard-nav">
