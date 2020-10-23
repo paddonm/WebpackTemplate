@@ -117,6 +117,12 @@ function OnSched(ClientId, Environment, Options) {
                         case "serviceSetup":
                             OnSchedMount.ServiceSetupElement(this);
                             break;
+                        case "appointments":
+                            OnSchedMount.AppointmentsElement(this);
+                            break;
+                        case "appointmentSearch":
+                            OnSchedMount.AppointmentSearchElement(this);
+                            break;
                             default:
                             // TODO - raise App error event
                             console.log("Unsupported element " + element.type);
@@ -207,6 +213,43 @@ var OnSchedMount = function () {
         });
     }
 
+    function AppointmentSearchElement(element) {
+        var el = document.getElementById(element.id);
+        OnSchedHelpers.HideProgress();
+        
+        var url = element.onsched.apiBaseUrl + "/resources";
+        url = element.options.getFirst ? OnSchedHelpers.AddUrlParam(url, "limit", "1") : url;
+        url = element.params.locationId !== null ? OnSchedHelpers.AddUrlParam(url, "locationId", element.params.locationId) : url;
+        
+        let resources = elements.create("resources", {}, {})
+        resources.onsched.accessToken.then(x =>
+            OnSchedRest.GetResources(x, url, function (response) {
+                element.params.resources = response.data;
+                el.innerHTML = OnSchedTemplates.appointmentSearchForm(element.params);
+                
+                var elSearchForm = document.querySelector(".onsched-search-form");
+                
+                elSearchForm.addEventListener("submit", function (e) {
+                    e.preventDefault(); // before the code
+                    elAppointments.innerHTML = '';
+                    var elFormInputs = document.querySelectorAll(".onsched-filter-form input");
+                    var elFormSelects = document.querySelectorAll(".onsched-filter-form select");
+                    
+                    let allInputValues = Array.prototype.slice.call(elFormInputs).map(input => ({name: input.name, value: input.value, paramName: input.id}))
+                    let allSelectValues = Array.prototype.slice.call(elFormSelects).map(input => ({name: input.name, value: input.value, paramName: input.id}))
+                    let allValues = allInputValues.concat(allSelectValues)
+                    
+                    var elSearchText = document.querySelector(".onsched-search-form input[type=text]");
+        
+                    var eventModel = { formValues: allValues, searchText: elSearchText.value.toLowerCase()};
+                    var clickSearchEvent = new CustomEvent("clicked", { detail: eventModel });
+                    el.dispatchEvent(clickSearchEvent);
+                });
+            })
+        );
+        
+    }
+    
     function ServicesElement(element) {
         var el = document.getElementById(element.id);
         el.addEventListener("click", element.onClick);
@@ -236,6 +279,57 @@ var OnSchedMount = function () {
         element.onsched.accessToken.then(x =>
             OnSchedRest.GetLocations(x, url, function (response) {
                 OnSchedResponse.GetLocations(element, response);
+            })
+        ).catch(e => console.log(e));
+    }
+
+    function AppointmentsElement(element) {
+        // are there any params or just options for appointments?
+        // need to support lookup by postalCode. API changes.
+
+        var el = document.getElementById(element.id);
+        var url = element.onsched.apiBaseUrl + "/appointments";
+        url = element.params.offset != null && element.params.offset.length ? OnSchedHelpers.AddUrlParam(url, "offset", element.params.offset) : url;
+        url = element.params.limit != null && element.params.limit.length ? OnSchedHelpers.AddUrlParam(url, "limit", element.params.limit) : url;
+        url = element.params.locationId != null && element.params.locationId.length ? OnSchedHelpers.AddUrlParam(url, "locationId", element.params.locationId) : url;
+
+        if (element.params.searchText != null) {
+            if (element.params.searchText.length) {
+                if (!isNaN(element.params.searchText)) {
+                    if (element.params.searchText.length < 7)
+                        url = OnSchedHelpers.AddUrlParam(url, "customerId", element.params.searchText);
+                    else
+                        url = OnSchedHelpers.AddUrlParam(url, "phone", element.params.searchText);
+                }
+                else if (element.params.searchText.includes('@'))
+                    url = OnSchedHelpers.AddUrlParam(url, "email", element.params.searchText);
+                else
+                    url = OnSchedHelpers.AddUrlParam(url, "lastName", element.params.searchText);
+            }
+        }
+        
+        element.params.formValues.map(formInput => {
+            if (formInput && formInput.value && formInput.value.length) {
+                url = OnSchedHelpers.AddUrlParam(url, formInput.paramName, formInput.value);
+            }
+        });
+        
+        //url = element.params.status != null && element.params.status.length ? OnSchedHelpers.AddUrlParam(url, "status", element.params.status) : url;
+        //url = element.params.resourceId != null && element.params.resourceId.length ? OnSchedHelpers.AddUrlParam(url, "resourceId", element.params.resourceId) : url;
+        //url = element.params.startDate != null && element.params.startDate.length ? OnSchedHelpers.AddUrlParam(url, "startDate", element.params.startDate) : url;
+        //url = element.params.endDate != null && element.params.endDate.length ? OnSchedHelpers.AddUrlParam(url, "endDate", element.params.endDate) : url;
+        OnSchedHelpers.ShowProgress();
+        element.onsched.accessToken.then(x =>
+            OnSchedRest.GetAppointments(x, url, function (response) {
+                OnSchedResponse.GetAppointments(element, response);
+                
+                var clickSearchEvent = new CustomEvent("getAppointments", { detail: response });
+                el.dispatchEvent(clickSearchEvent);
+                
+                var appointmentsList = document.querySelectorAll('[data-appointmentId]');
+                Array.prototype.map.call(appointmentsList, appt => {
+                    appt.onclick = e => OnSchedOnClick.SearchedAppointment(element, appt.dataset.appointmentid);
+                })
             })
         ).catch(e => console.log(e));
     }
@@ -336,36 +430,51 @@ var OnSchedMount = function () {
             return;
         }
 
-        // We built the url so call the endpoint now
-        element.onsched.accessToken.then(x =>
-            OnSchedRest.Get(x, url, function (response) {
-                if (response.error)
-                    console.log("Rest error response code=" + response.code);
-                // If not confirming the appointment, then just fire an event with the response
-                if (element.options.confirm == undefined || element.options.confirm == false) {
-                    var getAppointmentEvent = new CustomEvent("getAppointment", { detail: response });
-                    el.dispatchEvent(getAppointmentEvent);
-                }
-                else {
-                    // confirm option is set to we call the PUT /appointments/{id}/confirm
-                    var confirmUrl = element.onsched.apiBaseUrl + "/appointments/" + element.params.appointmentId + "/confirm";
-                    var payload = {};
-                    element.onsched.accessToken.then(x => 
-                        OnSchedRest.Put(x, confirmUrl, payload, function(response) {
-                            if (response.error) {
-                                console.log("Rest error response code=" + response.code);
-                            }
-                            else {
-                                var confirmAppointmentEvent = new CustomEvent("confirmAppointment", { detail: response });
-                                el.dispatchEvent(confirmAppointmentEvent);  
-                            }
-                          
-                        }) // end rest response
-                    ); // end promise
-                }
+        // If updating the appointment to BOOKED call the PUT /appointments/{id}/book
+        if (element.options.book) {
+            // book option is set to we call the PUT /appointments/{id}/book
+            var bookUrl = element.onsched.apiBaseUrl + "/appointments/" + element.params.appointmentId + "/book";
+            var payload = {};
+            // Check if appointmentBM object is passed in for payload
+            if (element.params.appointmentBM) {
+                payload = element.params.appointmentBM;
+            }
 
-            }) // end rest response
-        ); // end promise
+            element.onsched.accessToken.then(x => 
+                OnSchedRest.Put(x, bookUrl, payload, function(response) {
+                    if (response.error) {
+                        console.log("Rest error response code=" + response.code);
+                    }
+                    else {
+                        var bookingConfirmationEvent = new CustomEvent("bookingConfirmation", { detail: response });
+                        el.dispatchEvent(bookingConfirmationEvent);
+                    }
+                    
+                }) // end rest response
+            ); // end promise
+        }
+        // If not confirming the appointment, then just fire an event with the response
+        if (element.options.confirm == undefined || element.options.confirm == false) {
+            var getAppointmentEvent = new CustomEvent("getAppointment", { detail: response });
+            el.dispatchEvent(getAppointmentEvent);
+        }
+        else {
+            // confirm option is set to we call the PUT /appointments/{id}/confirm
+            var confirmUrl = element.onsched.apiBaseUrl + "/appointments/" + element.params.appointmentId + "/confirm";
+            var payload = {};
+            element.onsched.accessToken.then(x => 
+                OnSchedRest.Put(x, confirmUrl, payload, function(response) {
+                    if (response.error) {
+                        console.log("Rest error response code=" + response.code);
+                    }
+                    else {
+                        var confirmAppointmentEvent = new CustomEvent("confirmAppointment", { detail: response });
+                        el.dispatchEvent(confirmAppointmentEvent);  
+                    }
+                    
+                }) // end rest response
+            ); // end promise
+        }
         return;
     }
 
@@ -556,7 +665,27 @@ var OnSchedMount = function () {
             "sun": { "startTime": 0, "endTime": 0 },
         };
 
-        var defaultData = { name:"Test Resource", address:{ "state": "ON", "country": "CA" }, availability: defaultAvailability, settings: {}};
+        var defaultData = { 
+            name:"Test Resource", 
+            address: { 
+                city: "", 
+                postalCode : "", 
+                state: "ON", 
+                country: "CA", 
+                addressLine1: "", 
+                addressLine2: "" 
+            }, 
+            timezoneName: "America/Toronto", 
+            contact: {
+                businessPhone: "", 
+                mobilePhone: "", 
+                homePhone: "", 
+                preferredPhoneType: ""
+            }, 
+            availability: defaultAvailability, 
+            settings: {}
+        };
+        
         if (element.params.id == undefined || element.params.id.length == 0) {
             if (element.params.data == undefined)
                 el.innerHTML = OnSchedTemplates.resourceSetup(element, defaultData, element.options.customFields);
@@ -676,7 +805,9 @@ var OnSchedMount = function () {
         ResourceElement: ResourceElement,
         LocationSetupElement: LocationSetupElement,
         ResourceSetupElement: ResourceSetupElement,
-        ServiceSetupElement: ServiceSetupElement
+        ServiceSetupElement: ServiceSetupElement,
+        AppointmentsElement: AppointmentsElement,
+        AppointmentSearchElement: AppointmentSearchElement,
     };
 }(); // End OnSchedMount
 
@@ -747,6 +878,21 @@ var OnSchedWizardHelpers = function () {
                         element.onsched.accessToken.then(x =>
                             OnSchedRest.PostService(x, servicesUrl, postData, function (response) {
                                 OnSchedResponse.PostService(element, response);
+                                let calendarId = response.calendarId;
+                                if (element.params.calendarId) {
+                                    calendarId = element.params.calendarId;
+                                }
+
+                                let calData = {
+                                    calendarId, 
+                                    locationId: response.locationId, 
+                                    serviceId: response.id
+                                }
+                                
+                                let linkedServiceUrl = element.onsched.setupApiBaseUrl + "/services/calendar"
+                                element.onsched.accessToken.then(x =>
+                                    OnSchedRest.PostLinkedService(x, linkedServiceUrl, calData, function (linkedResponse) {})
+                                );
                             })
                         );
                     }
@@ -947,11 +1093,14 @@ var OnSchedWizardHelpers = function () {
                 var stateOptionsHtml = OnSchedTemplates.stateSelectOptions(response);
                 var elStateSelect = document.querySelector(".onsched-wizard.onsched-form select[name=state]");
                 elStateSelect.innerHTML = stateOptionsHtml;
-                elStateSelect.value = element.params.data.address.state;
                 var countryOptionsHtml = OnSchedTemplates.countrySelectOptions(response);
                 var elCountrySelect = document.querySelector(".onsched-wizard.onsched-form select[name=country]");
                 elCountrySelect.innerHTML = countryOptionsHtml;
-                elCountrySelect.value = element.params.data.address.country;    
+                
+                if (element.params.data) {
+                    elStateSelect.value = element.params.data.address.state;
+                    elCountrySelect.value = element.params.data.address.country;    
+                }
             }) // end rest response
         ); // end promise       
 
@@ -1585,6 +1734,25 @@ var OnSchedResponse = function () {
         el.dispatchEvent(getLocationsEvent);
     }
 
+    function GetAppointments(element, response) {
+        var eventModel;
+        var getAppointmentsEvent;
+        if (response.error || response.count === 0) {
+            eventModel = { message: 'No appointments found matching search input.' };
+            getAppointmentsEvent = new CustomEvent("notFound", { detail: eventModel });
+            var el = document.getElementById(element.id);
+            el.dispatchEvent(getAppointmentsEvent);
+            return;
+        }
+        var htmlAppointments = OnSchedTemplates.appointmentsList(response);
+        var el = document.getElementById(element.id);
+        el.innerHTML = htmlAppointments;
+        // fire a custom event here
+        eventModel = { 'object': response.object, 'hasMore': response.hasMore, 'count': response.count, 'total': response.total, 'data': response.data };
+        getAppointmentsEvent = new CustomEvent("getAppointments", { detail: eventModel });
+        el.dispatchEvent(getAppointmentsEvent);
+    }
+
     function GetLocation(element, response) {
 
     }
@@ -1922,6 +2090,7 @@ var OnSchedResponse = function () {
     return {
         GetAvailability: GetAvailability,
         GetLocations: GetLocations,
+        GetAppointments: GetAppointments,
         GetLocation: GetLocation,
         GetServices: GetServices,
         GetService: GetService,
@@ -2054,6 +2223,23 @@ var OnSchedOnClick = function () {
                 OnSchedResponse.PostAppointment(element, response);
             })
         );
+    }
+
+
+    function SearchedAppointment(element, apptId) {
+        OnSchedHelpers.ShowProgress();
+
+        var appointmentsUrl = element.onsched.apiBaseUrl + "/appointments/" + apptId;
+
+        element.onsched.accessToken.then(x =>
+            OnSchedRest.GetAppointment(x, appointmentsUrl, function (response) {
+                var getAppointmentEvent = new CustomEvent("getAppointment", { detail: response });
+                var elAppointments = document.getElementById('appointments');
+                elAppointments.dispatchEvent(getAppointmentEvent);
+                OnSchedHelpers.OpenAppointmentsModal(response, element);
+            })
+        );
+
     }
 
     function BookingFormCancel(event, element) {
@@ -2241,7 +2427,8 @@ var OnSchedOnClick = function () {
         AvailableTime: AvailableTime,
         MonthPrev: MonthPrev,
         MonthNext: MonthNext,
-        ListItem: ListItem
+        ListItem: ListItem,
+        SearchedAppointment: SearchedAppointment
     };
 }();
 
@@ -2493,6 +2680,133 @@ var OnSchedHelpers = function () {
         return parsed.trim();
     }
 
+    function OpenAppointmentsModal(response, element) {
+        var tableFields = [
+            {
+                label: 'Name',
+                value: response.name
+            },
+            {
+                label: 'Date/Time',
+                value: moment(response.startDateTime).format('llll')
+            },
+            {
+                label: 'Service/Duration',
+                value: response.serviceName + ' ' + response.duration + ' min'
+            },
+            {
+                label: 'Resource',
+                value: response.resourceName
+            },
+            {
+                label: 'Phone',
+                value: response.phone
+            },
+            {
+                label: 'Location',
+                value: response.location
+            },
+            {
+                label: 'Notes',
+                value: response.notes ? response.notes : ''
+            },
+            {
+                label: 'Customer message',
+                value: response.customerMessage
+            },
+            {
+                label: 'Status',
+                value: response.status
+            },
+            {
+                label: 'Confirmed',
+                value: `${response.confirmed}/${response.confirmationNumber}`
+            },
+            {
+                label: 'Booked by',
+                value: `${response.bookedBy}`
+            },
+            {
+                label: 'Email',
+                value: `${response.email}`
+            },
+            {
+                label: 'Booked on',
+                value: `${moment(response.createDate).format('llll')}`
+            },
+        ]
+
+        var elModal = document.getElementById('appointments-modal');
+        elModal.innerHTML = OnSchedTemplates.appointementsModal(response.name, tableFields, response.auditTrail);
+        
+        var elPopup = document.querySelector('#appointments-modal .onsched-popup-shadow');
+        elPopup.classList.add('is-visible');
+        
+        var elShadow = document.querySelector(".onsched-popup-shadow.is-visible");
+
+        elShadow.addEventListener("click", e => {
+            console.log('tagName', e.target.tagName)
+            if (e.target.tagName === 'DIV') {
+                elShadow.classList.remove('is-visible');
+                elModal.innerHTML = '';
+            }       
+        });
+
+        var url = element.onsched.apiBaseUrl + "/appointments/" + response.id + "/cancel";
+        
+        var elAppointments = document.getElementById(`appointments`)
+        var footerLinks = document.querySelectorAll('#appointments-modal .onsched-popup-footer a');
+
+        if (response.status !== 'CN') {
+            footerLinks[0].onclick = null;
+            footerLinks[0].onclick = () => {
+                elShadow.classList.remove('is-visible');
+                elModal.innerHTML = '';
+                OnSchedHelpers.ShowProgress();
+                element.onsched.accessToken.then(x =>
+                    OnSchedRest.PutAppointmentCancel(x, url, {}, detail => {
+                        OnSchedHelpers.HideProgress();
+                        var cancelAppointmentEvent = new CustomEvent("cancelAppointment", { detail });
+                        elAppointments.dispatchEvent(cancelAppointmentEvent);
+                    })
+                );
+            };
+            if (!response.confirmed) {
+                footerLinks[1].onclick = () => {
+                    var confirmUrl = element.onsched.apiBaseUrl + "/appointments/" + response.id + "/confirm"
+                    elShadow.classList.remove('is-visible');
+                    elModal.innerHTML = '';
+                    OnSchedHelpers.ShowProgress();
+    
+                    element.onsched.accessToken.then(x => 
+                        OnSchedRest.Put(x, confirmUrl, {}, detail => {
+                            if (detail.error) {
+                                console.log("Rest error response code=" + detail.code);
+                            }
+                            else {
+                                OnSchedHelpers.HideProgress();
+                                var confirmAppointmentEvent = new CustomEvent("confirmAppointment", { detail });
+                                elAppointments.dispatchEvent(confirmAppointmentEvent);  
+                            }
+                            
+                        }) // end rest response
+                    ); // end promise
+                };
+            }
+            else {
+                footerLinks[1].className = 'disabled';
+                footerLinks[1].disabled = true;
+            }
+        }
+        else {
+            footerLinks[0].className = 'disabled';
+            footerLinks[0].disabled = true;
+            footerLinks[1].className = 'disabled';
+            footerLinks[1].disabled = true;
+        }
+
+    }
+
     return {
         SundayDate: SundayDate,
         IsEmpty: IsEmpty,
@@ -2520,6 +2834,7 @@ var OnSchedHelpers = function () {
         SetToken: SetToken,
         FormatPhoneNumber:FormatPhoneNumber,
         ParsePhoneNumber:ParsePhoneNumber,
+        OpenAppointmentsModal: OpenAppointmentsModal
     };
 
 }(); // End OnSchedHelpers
@@ -2869,6 +3184,62 @@ var OnSchedTemplates = function () {
         return tmplLocations;
     }
 
+    function appointmentsList(response) {
+        const statusTypes = [
+            { resp: 'BK', friendly: 'Booked' },
+            { resp: 'RS', friendly: 'Reserved' },
+            { resp: 'CN', friendly: 'Cancelled' },
+            { resp: 'RE', friendly: 'Rescheduled' },
+            { resp: 'NS', friendly: 'No show' },
+            { resp: 'IN', friendly: 'Initial' },
+        ]
+        
+        const tmplAppointments = `
+            <div class="onsched-container">
+                <div class="onsched-row">
+                    <div class="onsched-col">
+                        <div class="onsched-list">
+                            <table class="onsched-table">
+                                <tr>
+                                    <th>Resource</th>
+                                    <th>Name</th>
+                                    <th>Phone</th>
+                                    <th>Email</th>
+                                    <th>Appointment</th>
+                                    <th>Status</th>
+                                </tr>
+                                ${response.data.map((appointment, index) =>        
+                                    `<tr key="${index}" data-appointmentId="${appointment.id}" class="list-item name">
+                                        <td>
+                                            ${appointment.resourceName}
+                                        </td>
+                                        <td>
+                                            ${appointment.name}
+                                        </td>
+                                        <td>
+                                            ${appointment.phone}
+                                        </td>
+                                        <td>
+                                            ${appointment.email}
+                                        </td>
+                                        <td>
+                                            ${appointment.serviceName} ${moment(appointment.startDateTime).format('llll')}
+                                        </td>
+                                        <td>
+                                            ${statusTypes.filter(status => status.resp === appointment.status)[0].friendly}
+                                        </td>
+                                     </tr>`
+                                ).join("")}
+                            </table>
+                        </div>
+                    </div>
+                </div>
+                <div id="appointments-modal"></div>
+            </div>
+        `;
+        return tmplAppointments;
+    }
+
     function servicesList(response) {
         const tmplServices = `
             <div class="onsched-container">
@@ -2956,6 +3327,97 @@ var OnSchedTemplates = function () {
             </div>
         `;
         return tmplSearchForm;
+    }
+
+    function appointmentSearchForm(params) {
+        let resources = params.resources ? params.resources : [];
+
+        const filters = [
+            {
+                name: 'Status',
+                paramName: 'status',
+                component: 'select',
+                type: 'select',
+                options: [
+                    {label: 'Booked', value: 'BK'}, 
+                    {label: 'Cancelled', value: 'CN'}, 
+                    {label: 'Reserved', value: 'RS'}, 
+                    {label: 'Rescheduled', value: 'RE' }, 
+                    {label: 'No show', value: 'NS'}, 
+                    {label: 'Initial', value: 'IN'}
+                ]            
+            },
+            // {
+            //     name: 'Calendar',
+            //     paramName: 'status',
+            //     component: 'select',
+            //     type: 'select',
+            //     options: params.calendars && [params.calendars.map(calendar => ({name: calendar.name, value: calendar.id}))]
+            // },
+            {
+                name: 'Resource',
+                paramName: 'resourceId',
+                component: 'select',
+                type: 'select',
+                options: resources.map(resource => (
+                    { label: resource.name, value: resource.id }
+                ))
+            },
+            {
+                name: 'From',
+                paramName: 'startDate',
+                component: 'input',
+                type: 'date',
+            },
+            {
+                name: 'To',
+                paramName: 'endDate',
+                component: 'input',
+                type: 'date',
+            },
+        ]
+        
+        const tmplAppointmentSearchForm = `
+            <div class="onsched-container">
+                <div class="onsched-row">
+                    <div class="onsched-col">
+                        <form class="onsched-search-form" method="get">
+                            <div class="onsched-filter-form">
+                                ${filters.map(filter => 
+                                    `
+                                        <div class="onsched-filter-wrapper">
+                                            <label for="${filter.name}">${filter.name}</label>
+                                            <${filter.component} id="${filter.paramName}" name="searchFilter-${filter.name}" type="${filter.type}" ${filter.component === 'input' ? '/>' : 
+                                            `
+                                                >
+                                                    <option value="">Any ${filter.name}</option>
+                                                    ${filter.options && filter.options.map((option, i) => `
+                                                        <option value="${option.value}" key="${i}">${option.label}</option>
+                                                    `)}
+                                                </${filter.component}>
+                                            `}
+                                        </div>    
+                                    `
+                                ).join("")}
+                            </div>
+                            <div class="onsched-search-wrapper">
+                                <input name="searchText" value="${params.searchText}" size="50" type="text" placeholder="${params.placeholder ? params.placeholder : 'Search by lastname, email, or customer ID'}" />
+                                <input type="submit" value=" " title="Click to search" />
+                            </div>
+                            <p>${params.message}</p>
+                            <div>
+                                <div class="onsched-progress-container" style=width:100%;height:8px;">
+                                    <div class="onsched-progress">
+                                        <div class="indeterminate"></div>
+                                    </div>
+                                </div>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        `;
+        return tmplAppointmentSearchForm;
     }
 
     function errorBox(params) {
@@ -3167,6 +3629,59 @@ var OnSchedTemplates = function () {
 
         `;
         return tmplBookingForm;
+    }
+    function appointementsModal(name, tableFields, auditTrailFields) {
+        const tmplAppointmentsModal = `
+    <div class="onsched-popup-shadow" data-animation="zoomInOut">
+        <div class="onsched-popup">
+            <header class="onsched-popup-header">
+                <h1>Booking - ${name}</h1>
+                <div class="onsched-close-btn"></div>
+            </header>
+            <section>
+                <table class="onsched-appointment-table">
+                    <tbody>
+                        ${tableFields.map(field =>
+                        `<tr>
+                            <th>${field.label}</th>
+                            <td>${field.value}</td>
+                        </tr>`
+                        ).join("")}
+                    </tbody>
+                </table>
+            </section>
+
+            <section>
+            ${auditTrailFields.length ? `
+                <h3>Audit Trail</h3>
+                <table class="onsched-appointment-table">
+                    <tbody>
+                        <tr>
+                            <th>User</th>
+                            <th>Modified on</th>
+                            <th>Modification</th>
+                        </tr>
+                        ${auditTrailFields.map(field =>
+                            `<tr>
+                                <td>${field.modifiedBy}</td>
+                                <td>${field.modifiedOn}</td>
+                                <td>${field.modificationType}</td>
+                            </tr>`
+                        ).join("")}
+                    </tbody>
+                </table>
+            ` : ''}
+            </section>
+            <footer class="onsched-popup-footer">
+                <a data-appointment-action="cancel">Cancel</a>
+                <a data-appointment-action="confirm">Confirm</a>
+            </footer>
+
+        </div>
+    </div>
+
+        `;
+        return tmplAppointmentsModal;
     }
     function bookingTimer(params) {
         const tmplBookingTimer = `
@@ -3417,6 +3932,80 @@ var OnSchedTemplates = function () {
 
             ${
                 resourceSetupAvailability(element, data)
+             }
+            <div class="onsched-wizard-section">
+                <h2>Address</h2>
+                <div class="onsched-form-row">
+                    <div class="onsched-form-col">
+                        <label for="addressLine1">Address Line 1</label>
+                        <input id="addressLine1" type="text" name="addressLine1" value="${dataValue(data.address.addressLine1)}" data-post="address"/>
+                    </div>
+                </div>
+                <div class="onsched-form-row">
+                    <div class="onsched-form-col">
+                        <label for="addressLine2">Address Line 2</label>
+                        <input id="addressLine2" type="text" name="addressLine2" value="${dataValue(data.address.addressLine2)}" data-post="address" />
+                    </div>
+                </div>
+                <div class="onsched-form-row">
+                    <div class="onsched-form-col">
+                        <label for="city">City</label>
+                        <input id="city" type="text" name="city" value="${dataValue(data.address.city)}" data-post="address"/>
+                    </div>
+                    <div class="onsched-form-col">
+                        <label for="state">State / Province</label>
+                        <select id="state" name="state" value="${dataValue(data.address.state)}" class="onsched-select" data-post="address"></select>
+                    </div>
+                </div>
+                <div class="onsched-form-row">
+                    <div class="onsched-form-col">
+                        <label for="country">Country</label>
+                        <select id="country" name="country" value="${dataValue(data.address.country)}" class="onsched-select" data-post="address">
+                            <option></option>
+                            <option value="CA">Canada</option>
+                            <option value="US">United States</option>
+                        </select>
+                    </div>
+                    <div class="onsched-form-col">
+                        <label for="postalCode">Zip / Postal Code</label>
+                        <input id="postalCode" type="text" name="postalCode" value="${dataValue(data.address.postalCode)}" data-post="address" />
+                    </div>
+                </div>
+            </div>
+            <div class="onsched-wizard-section">
+                <h2>Availability</h2>
+                <h4 class="onsched-business-hours-tz">Eastern Timezone</h4>
+                <div class="onsched-business-hours">${OnSchedTemplates.businessHoursTable(locale, data.availability)}</div>
+            </div>
+            ${
+                customFieldsArray && customFieldsArray.length
+                 ? 
+                `
+                    <div class="onsched-wizard-section">
+                        <h2>Custom Fields</h2>
+        
+                            ${customFieldsArray && customFieldsArray.map((field, i) => {
+                                let newRow = !(i % 2)
+        
+                                return (
+                                    `
+                                    ${newRow ? '<div class="onsched-form-row">' : ''}
+                                                    <div class="onsched-form-col">
+                                                        <label for="customField${i}">
+                                                            ${dataValue(field.label)}
+                                                        </label>
+                                                        <input type="text" id="customField${i}" name="field${i}" 
+                                                            value="${dataValue(field.value)}" 
+                                                            data-post="customFields" />
+                                                    </div>
+                                    ${newRow ? '</div>' : ''}
+                                    `
+                                )
+                            })}                                  
+                    </div>
+                `
+                 : 
+                ``
             }
 
             ${
@@ -3927,6 +4516,8 @@ var OnSchedTemplates = function () {
     }
 
     function previewImage(data) {
+        const placeholderIcon = 'https://onsched.com/assets/icons/image-placeholder.png';
+        
         const markup = `
             <img id="onsched-image-preview" 
                 src="${data.id == undefined || data.id.length == 0 || data.imageUrl.length == 0 ? placeholderIcon : data.imageUrl}" 
@@ -4747,9 +5338,10 @@ var OnSchedRest = function () {
     }
 
     function PutAppointmentBook(token, url, payload, callback) {
-
         return Put(token, url, payload, callback);
-
+    }
+    function PutAppointmentCancel(token, url, payload, callback) {
+        return Put(token, url, payload, callback);
     }
     function DeleteAppointment(token, url, callback) {
         return Delete(token, url, callback);
@@ -4759,6 +5351,14 @@ var OnSchedRest = function () {
     }
 
     function GetLocations(token, url, callback) {
+        return Get(token, url, callback);
+    }
+
+    function GetAppointments(token, url, callback) {
+        return Get(token, url, callback);
+    }
+
+    function GetAppointment(token, url, callback) {
         return Get(token, url, callback);
     }
 
@@ -4777,6 +5377,9 @@ var OnSchedRest = function () {
     }
     function GetResourceGroups(token, url, callback) {
         return Get(token, url, callback);
+    }
+    function PostLinkedService(token, url, payload, callback) {
+        return Post(token, url, payload, callback);
     }
     // Setup interface rest calls
 
@@ -4829,13 +5432,17 @@ var OnSchedRest = function () {
         PostAppointment: PostAppointment,
         PostCustomer: PostCustomer,
         PutAppointmentBook: PutAppointmentBook,
+        PutAppointmentCancel: PutAppointmentCancel,
         DeleteAppointment: DeleteAppointment,
         GetLocations: GetLocations,
+        GetAppointments: GetAppointments,
+        GetAppointment: GetAppointment,
         GetServiceGroups: GetServiceGroups,
         GetServices: GetServices,
         GetResources: GetResources,
         GetResourceGroups: GetResourceGroups,
         GetCustomers: GetCustomers,
+        PostLinkedService: PostLinkedService,
         PostLocation: PostLocation,
         PutLocation: PutLocation,
         PostResource: PostResource,

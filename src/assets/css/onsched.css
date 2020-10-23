@@ -93,6 +93,7 @@
     text-align: left;
     vertical-align: middle;
     border-radius: 2px;
+    cursor: default;
 }
 
 .onsched-table th {
@@ -421,6 +422,34 @@
     pointer-events: none;
 }
 
+.onsched-filter-form {
+    display: flex;
+    flex-wrap: wrap;
+    max-width: 719px;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 10px;
+}
+
+.onsched-filter-wrapper {
+    min-width: 150px;
+    margin: 10px 5px;
+}
+.onsched-filter-wrapper label {
+    display: block;
+    margin-bottom: 5px;
+}
+.onsched-filter-wrapper input,
+.onsched-filter-wrapper select {
+    background: #fff;
+    padding: 10px;
+    border: 1px solid #bdbdbd;
+    border-radius: 10px;
+    -moz-border-radius: 10px;
+    -webkit-border-radius: 10px;
+    -o-border-radius: 10px;
+    outline: none;
+}
 
 .onsched-list {
     width: 60%;
@@ -896,6 +925,35 @@ button.onsched-file-upload-btn:hover {
 }
 .onsched-list .onsched-table .info-col a.list-item.name {
     font-weight:700;
+}
+
+.onsched-appointment-table {
+    border-spacing: 15px;
+    text-align: left;
+    margin-bottom: 15px;
+}
+#appointments-modal h3 {
+    margin: 15px 15px 5px !important;
+    border-top: 2px solid #ddd;
+    padding-top: 15px;
+}
+#appointments-modal .onsched-popup-footer {
+    padding: 15px;
+    text-align: right;
+}
+#appointments-modal .onsched-popup-footer a {
+    margin: 0 15px;
+    cursor: pointer;
+}
+#appointments-modal .onsched-popup-footer a.disabled {
+    opacity: .4;
+    color: default !important;
+}
+
+@media(min-width: 992px) {
+    .onsched-appointment-table {
+        min-width: 700px;
+    }
 }
 
 /* POPUP ANIMATIONS

@@ -74,11 +74,12 @@ However, delay the fade out process for 2.5 seconds */
 <div id="booking-form"></div>
 <div id="confirmation"></div>
 <div id="appointment"></div>
-<div id="appointments"></div>
 
 <div id="locationSetup"></div>
 <div id="resourceSetup"></div>
 <div id="serviceSetup"></div>
+<div id="appointmentSearch"></div>
+<div id="appointments"></div>
 
 
 <div class="onsched-container">
@@ -150,6 +151,7 @@ However, delay the fade out process for 2.5 seconds */
     <button id="loadLocationSetup" type="button" class="open-modal">Location Setup</button>
     <button id="loadResourceSetup" type="button" class="open-modal">Resource Setup</button>
     <button id="loadServiceSetup" type="button" class="open-modal">Service Setup</button>    
+    <button id="loadAppointments" type="button" class="open-modal">Appointments</button>    
 </div>
 
 <div id="customer"></div>
@@ -368,10 +370,25 @@ However, delay the fade out process for 2.5 seconds */
     HideToast();
   });
   //        search.mount("search");
-
+  
+  var appointmentSearchParams = { message: '', searchText: '' };
+  var appointmentSearchOptions = {};
+  // location variable is system variable so use something else
+  var appointmentSearch = elements.create("appointmentSearch", appointmentSearchParams, appointmentSearchOptions);
+  var elAppointmentSearch = document.getElementById("appointmentSearch");
+  elAppointmentSearch.addEventListener("clicked", function (e) {
+    HideToast();
+    appointmentsParams.searchText = e.detail.searchText;
+    appointmentsParams.formValues = e.detail.formValues;
+    ShowToast("Searching Appointments...");
+    appointments.mount("appointments");
+  });
+  elAppointmentSearch.addEventListener("notFound", function (e) {
+    HideToast();
+  });
+  
   var elLocation = document.getElementById("location");
   elLocation.addEventListener("getLocation", function (e) {
-    console.log(e.detail);
     HideToast();
   });
 
@@ -393,13 +410,22 @@ However, delay the fade out process for 2.5 seconds */
   var resourcesParams = { locationId: '', resourceGroupId: '2' };
   var resourcesOptions = {};
   var resources = elements.create("resources", resourcesParams, resourcesOptions);
+  var elResources = document.getElementById("resource");
+  elResources.addEventListener("getResources", function (e) {
+    appointmentsParams.resources = e.detail.data;
+    //
+    // now I have what I need to call availability
+    availabilityParams.locationId = e.detail.locationId;
+    //            availabilityParams.serviceId = serviceParams.
+    availabilityParams.resourceId = e.detail.id;
+    HideToast();
+  });
 
   var resourceParams = { locationId: '', resourceId: '' };
   var resourceOptions = { getFirst: true };
   var resource = elements.create("resource", resourceParams, resourceOptions);
   var elResource = document.getElementById("resource");
   elResource.addEventListener("getResource", function (e) {
-    console.log(e.detail);
     //
     // now I have what I need to call availability
     availabilityParams.locationId = e.detail.locationId;
@@ -516,6 +542,11 @@ However, delay the fade out process for 2.5 seconds */
     serviceSetup.mount("serviceSetup");
      
    }   
+   var elAppointmentsSetupButton = document.getElementById("loadAppointments");
+   elAppointmentsSetupButton.onclick = function(e) {
+    ShowToast("Loading Appointments...");
+    appointmentSearch.mount("appointmentSearch");
+   }   
 // Setup element testing /////////////////////////////
   console.log("SETUP ELEMENT TESTING");
   var elLocationSetup = document.getElementById("locationSetup");
@@ -564,6 +595,17 @@ However, delay the fade out process for 2.5 seconds */
     console.log(e.detail);
     ShowToast("serviceSetupError event fired with response in e.detail");
   });
+
+  var elAppointments = document.getElementById("appointments");
+  //var appointmentsParams = {"id":"5", "availability": businessHours};
+  var appointmentsParams = {};
+  var appointmentsOptions = {};
+  var appointments = elements.create("appointments", appointmentsParams, appointmentsOptions);
+  var elAppointments = document.getElementById("appointments");
+  elAppointments.addEventListener("getAppointments", function (e) {
+    console.log(e.detail);
+  });
+  
   ///////////////////////////////////////////////////
 
   var fieldListItems = [
