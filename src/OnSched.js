@@ -10,6 +10,8 @@ import momenttimezone from 'moment-timezone';
 
 import './assets/css/index.css';
 import placeholderIcon from './assets/img/image-placeholder.png';
+import googleIcon from './assets/img/google.png';
+import outlookIcon from './assets/img/outlook.png';
 import { configureScope } from '@sentry/browser';
 
 Sentry.init({
@@ -471,6 +473,8 @@ var OnSchedMount = function () {
     } 
     function LocationSetupElement(element) {
 
+        console.log(element.options);
+
         var el = document.getElementById(element.id);
         // check for presence of id in params
         // if exists, then make get call and build UI with response data
@@ -489,18 +493,18 @@ var OnSchedMount = function () {
             "sun": { "startTime": 0, "endTime": 0 },
         };
 
-        var defaultData = { address:{ "state": "ON", "country": "CA" }, businessHours: defaultBusinessHours, settings: {}};
+        var defaultData = { address:{ "state": "ON", "country": "CA" }, businessHours: defaultBusinessHours, settings: {}, options: { wizardSections: []}};
 
         if (element.params.id == undefined) {
             // build the base html template for this wizard
             if (element.params.data == undefined)
-                el.innerHTML = OnSchedTemplates.locationSetup(element.onsched.locale, defaultData);
+                el.innerHTML = OnSchedTemplates.locationSetup(element, defaultData);
             else {
                 // make sure the supplied default data passed in params has busnessHours
                 // if not, we'll use our default businessHours
                 if (element.params.data.businessHours == undefined)
                     element.params.data.businessHours = defaultBusinessHours;
-                el.innerHTML = OnSchedTemplates.locationSetup(element.onsched.locale, element.params.data);
+                el.innerHTML = OnSchedTemplates.locationSetup(element, element.params.data);
             }
             OnSchedWizardHelpers.InitWizardDomElements(element);
             OnSchedWizardHelpers.InitLocationDomElements(element);
@@ -522,7 +526,7 @@ var OnSchedMount = function () {
                         return;
                     }
                     // now render the initial UI from the response data
-                    el.innerHTML = OnSchedTemplates.locationSetup(element.onsched.locale, response);                    
+                    el.innerHTML = OnSchedTemplates.locationSetup(element, response);                    
                     OnSchedWizardHelpers.InitWizardDomElements(element);
                     OnSchedWizardHelpers.InitLocationDomElements(element);
                     OnSchedWizardHelpers.SelectOptionMatchingData("select[name=timezoneName]", "tz", response.timezoneIana);
@@ -555,7 +559,7 @@ var OnSchedMount = function () {
         var defaultData = { name:"Test Resource", address:{ "state": "ON", "country": "CA" }, availability: defaultAvailability, settings: {}};
         if (element.params.id == undefined || element.params.id.length == 0) {
             if (element.params.data == undefined)
-                el.innerHTML = OnSchedTemplates.resourceSetup(element.onsched.locale, defaultData, element.options.customFields);
+                el.innerHTML = OnSchedTemplates.resourceSetup(element, defaultData, element.options.customFields);
             else {
                 // make sure the supplied default data passed in params has availability
                 // if not, we'll use our default availability
@@ -564,7 +568,7 @@ var OnSchedMount = function () {
                 if (element.params.data.contact == undefined)
                     element.params.data.contact = {};
 
-                el.innerHTML = OnSchedTemplates.resourceSetup(element.onsched.locale, element.params.data, element.options.customFields);
+                el.innerHTML = OnSchedTemplates.resourceSetup(element, element.params.data, element.options.customFields);
             }
             OnSchedWizardHelpers.InitWizardDomElements(element);
             OnSchedWizardHelpers.InitResourceDomElements(element);
@@ -587,7 +591,7 @@ var OnSchedMount = function () {
                     }
                     console.log(response);
                     // now render the initial UI from the response data
-                    el.innerHTML = OnSchedTemplates.resourceSetup(element.onsched.locale, response, element.options.customFields);                    
+                    el.innerHTML = OnSchedTemplates.resourceSetup(element, response, element.options.customFields);                    
                     OnSchedWizardHelpers.InitWizardDomElements(element);
                     OnSchedWizardHelpers.InitResourceDomElements(element);
                     OnSchedWizardHelpers.SelectOptionMatchingData("select[name=timezoneName]", "tz", response.timezoneIana);
@@ -621,7 +625,7 @@ var OnSchedMount = function () {
         if (element.params.id == undefined || element.params.id.length == 0) {
             console.log("No Id present, create new resource");
             if (element.params.data == undefined)
-                el.innerHTML = OnSchedTemplates.serviceSetup(element.onsched.locale, defaultData);
+                el.innerHTML = OnSchedTemplates.serviceSetup(element, defaultData);
             else {
                 // make sure the supplied default data passed in params has availability
                 // if not, we'll use our default availability
@@ -630,7 +634,7 @@ var OnSchedMount = function () {
                 if (element.params.data.contact == undefined)
                     element.params.data.contact = {};
 
-                el.innerHTML = OnSchedTemplates.serviceSetup(element.onsched.locale, element.params.data);
+                el.innerHTML = OnSchedTemplates.serviceSetup(element, element.params.data);
             }
 
             OnSchedWizardHelpers.InitWizardDomElements(element);
@@ -649,7 +653,7 @@ var OnSchedMount = function () {
                     }
                     console.log(response);
                     // now render the initial UI from the response data
-                    el.innerHTML = OnSchedTemplates.serviceSetup(element.onsched.locale, response);                    
+                    el.innerHTML = OnSchedTemplates.serviceSetup(element, response);                    
                     OnSchedWizardHelpers.InitWizardDomElements(element);
                     OnSchedWizardHelpers.InitServiceDomElements(element);
                     OnSchedWizardHelpers.ShowWizardSection(0);
@@ -3235,100 +3239,29 @@ var OnSchedTemplates = function () {
             return "";
     }
 
-    function locationSetup(locale, data) {
+
+    function locationSetup(element, data) {
 
         const tmplLocationSetup = `
         <div class="onsched-container">
         <form class="onsched-wizard onsched-form" name="locationSetup">
             <input type="hidden" name="step" value="0" />
             ${wizardTitle("Location Setup", data)}
-            <div class="onsched-wizard-section">
-                <h2>General Information</h2>
-                <div class="onsched-form-row">
-                    <div class="onsched-form-col">
-                        <label for="businessName">Business Name</label>
-                        <input id="businessName" type="text" name="name" value="${dataValue(data.name)}" required="required" data-post="root"/>
-                    </div>
-                    <div class="onsched-form-col">
-                        <label for="businessTimezone">Timezone</label>
-                        <select id="businessTimezone" class="onsched-select" name="timezoneName" value="${dataValue(data.timezoneName)}" data-post="root">
-                            ${TimezoneSelectOptions(Timezones())}
-                        </select>
-                    </div>
-                </div>
-                <div class="onsched-form-row">
-                    <div class="onsched-form-col">
-                        <label for="businessEmail">Email</label>
-                        <input id="businessEmail" type="email" name="email" value="${dataValue(data.email)}" data-post="root" />
-                    </div>
-                    <div class="onsched-form-col">
-                        <label for="businessWebsite">Website</label>
-                        <input id="businessWebsite" type="text" name="website" value="${dataValue(data.website)}" data-post="root" />
-                    </div>
-                </div>
-                <div class="onsched-form-row">
-                    <div class="onsched-form-col">
-                        <label for="businessPhone">Phone</label>
-                        <input id="businessPhone" type="tel" name="phone" value="${dataValue(OnSchedHelpers.FormatPhoneNumber(data.phone))}" data-post="root" />
-                    </div>
-                    <div class="onsched-form-col">
-                        <label for="businessFax">Fax</label>
-                        <input id="businessFax" type="tel" name="fax" value="${dataValue(OnSchedHelpers.FormatPhoneNumber(data.fax))}" data-post="root" />
-                    </div>
-                </div>
-            </div>
 
-            <div class="onsched-wizard-section">
-                <h2>Business Address</h2>
-                <div class="onsched-form-row">
-                    <div class="onsched-form-col">
-                        <label for="addressLine1">Address Line 1</label>
-                        <input id="addressLine1" type="text" name="addressLine1" value="${dataValue(data.address.addressLine1)}" data-post="address"/>
-                    </div>
-                </div>
-                <div class="onsched-form-row">
-                    <div class="onsched-form-col">
-                        <label for="addressLine2">Address Line 2</label>
-                        <input id="addressLine2" type="text" name="addressLine2" value="${dataValue(data.address.addressLine1)}"  data-post="address"/>
-                    </div>
-                </div>
-                <div class="onsched-form-row">
-                    <div class="onsched-form-col">
-                        <label for="city">City</label>
-                        <input id="city" type="text" name="city" value="${dataValue(data.address.city)}"  data-post="address" data-post="address"/>
-                    </div>
-                    <div class="onsched-form-col">
-                        <label for="state">State / Province</label>
-                        <select id="state" name="state" value="${dataValue(data.address.state)}" class="onsched-select" data-post="address"></select>
-                    </div>
-                </div>
-                <div class="onsched-form-row">
-                    <div class="onsched-form-col">
-                        <label for="country">Country</label>
-                        <select id="country" name="country" value="${dataValue(data.address.country)}" class="onsched-select" data-post="address">
-                            <option></option>
-                            <option value="CA">Canada</option>
-                            <option value="US">United States</option>
-                        </select>
-                    </div>
-                    <div class="onsched-form-col">
-                        <label for="postalCode">Zip / Postal Code</label>
-                        <input id="postalCode" type="text" name="postalCode" value="${dataValue(data.address.postalCode)}" data-post="address"/>
-                    </div>
-                </div>
-            </div>
-            <div class="onsched-wizard-section">
-                <h2>Business Hours</h2>
-                <h4 class="onsched-business-hours-tz"></h4>
-                <div class="onsched-business-hours">${OnSchedTemplates.businessHoursTable(locale, data.businessHours)}</div>
-            </div>
+            ${
+                locationSetupGeneralInformation(element, data)
+            }
+            ${
+                locationSetupBusinessAddress(element, data)
+            }
+            ${
+                locationSetupBusinessHours(element, data)
+            }
+
             <div class="onsched-wizard-nav">
                 <div style="display:table-row">
                     <div class="onsched-wizard-nav-status">
                         <!-- Circles which indicates the steps of the form: -->
-                        <span class="step active"></span>
-                        <span class="step"></span>
-                        <span class="step"></span>
                     </div>
                     <div style="display:table-cell">
                         <div class="onsched-progress-container">
@@ -3351,8 +3284,118 @@ var OnSchedTemplates = function () {
         return tmplLocationSetup;
 
     }
+    function locationSetupGeneralInformation(element, data) {
 
-    function resourceSetup(locale, data, customFields) {
+        console.log("In locationSetupGeneralInformation")
+        console.log(element);
+        console.log(element.options);
+
+//        if (element.options == null || element.options.wizardSections == null)
+//            return "";
+
+        const markup = `
+    <div class="onsched-wizard-section">
+        <h2>General Information</h2>
+        <div class="onsched-form-row">
+            <div class="onsched-form-col">
+                <label for="businessName">Business Name</label>
+                <input id="businessName" type="text" name="name" value="${dataValue(data.name)}" required="required" data-post="root"/>
+            </div>
+            <div class="onsched-form-col">
+                <label for="businessTimezone">Timezone</label>
+                <select id="businessTimezone" class="onsched-select" name="timezoneName" value="${dataValue(data.timezoneName)}" data-post="root">
+                    ${TimezoneSelectOptions(Timezones())}
+                </select>
+            </div>
+        </div>
+        <div class="onsched-form-row">
+            <div class="onsched-form-col">
+                <label for="businessEmail">Email</label>
+                <input id="businessEmail" type="email" name="email" value="${dataValue(data.email)}" data-post="root" />
+            </div>
+            <div class="onsched-form-col">
+                <label for="businessWebsite">Website</label>
+                <input id="businessWebsite" type="text" name="website" value="${dataValue(data.website)}" data-post="root" />
+            </div>
+        </div>
+        <div class="onsched-form-row">
+            <div class="onsched-form-col">
+                <label for="businessPhone">Phone</label>
+                <input id="businessPhone" type="tel" name="phone" value="${dataValue(OnSchedHelpers.FormatPhoneNumber(data.phone))}" data-post="root" />
+            </div>
+            <div class="onsched-form-col">
+                <label for="businessFax">Fax</label>
+                <input id="businessFax" type="tel" name="fax" value="${dataValue(OnSchedHelpers.FormatPhoneNumber(data.fax))}" data-post="root" />
+            </div>
+        </div>
+    </div>        
+    `;
+
+        return markup;
+    }
+
+    function locationSetupBusinessAddress(element, data) {
+        const markup = `
+    <div class="onsched-wizard-section">
+        <h2>Business Address</h2>
+        <div class="onsched-form-row">
+            <div class="onsched-form-col">
+                <label for="addressLine1">Address Line 1</label>
+                <input id="addressLine1" type="text" name="addressLine1" value="${dataValue(data.address.addressLine1)}" data-post="address"/>
+            </div>
+        </div>
+        <div class="onsched-form-row">
+            <div class="onsched-form-col">
+                <label for="addressLine2">Address Line 2</label>
+                <input id="addressLine2" type="text" name="addressLine2" value="${dataValue(data.address.addressLine1)}"  data-post="address"/>
+            </div>
+        </div>
+        <div class="onsched-form-row">
+            <div class="onsched-form-col">
+                <label for="city">City</label>
+                <input id="city" type="text" name="city" value="${dataValue(data.address.city)}"  data-post="address" data-post="address"/>
+            </div>
+            <div class="onsched-form-col">
+                <label for="state">State / Province</label>
+                <select id="state" name="state" value="${dataValue(data.address.state)}" class="onsched-select" data-post="address"></select>
+            </div>
+        </div>
+        <div class="onsched-form-row">
+            <div class="onsched-form-col">
+                <label for="country">Country</label>
+                <select id="country" name="country" value="${dataValue(data.address.country)}" class="onsched-select" data-post="address">
+                    <option></option>
+                    <option value="CA">Canada</option>
+                    <option value="US">United States</option>
+                </select>
+            </div>
+            <div class="onsched-form-col">
+                <label for="postalCode">Zip / Postal Code</label>
+                <input id="postalCode" type="text" name="postalCode" value="${dataValue(data.address.postalCode)}" data-post="address"/>
+            </div>
+        </div>
+    </div>
+        `;
+
+        return markup;
+    }
+
+    function locationSetupBusinessHours(element, data) {
+        const markup = `
+    <div class="onsched-wizard-section">
+        <h2>Business Hours</h2>
+        <h4 class="onsched-business-hours-tz"></h4>
+        <div class="onsched-business-hours">${OnSchedTemplates.businessHoursTable(element.onsched.locale, data.businessHours)}</div>
+    </div>        
+        `;
+
+        return markup;
+    }   
+
+
+
+ 
+    function resourceSetup(element, data, customFields) {
 
         const tmplResourceSetup = `
         <div class="onsched-container">
@@ -3360,218 +3403,34 @@ var OnSchedTemplates = function () {
             <input type="hidden" name="step" value="0" />
             ${wizardTitle("Resource Setup", data)}
 
-            <div class="onsched-wizard-section">
-                <h2>General Information</h2>
-                <div class="onsched-form-row">
-                    <div class="onsched-form-col">
-                        <label for="resourceName">Resource Name</label>
-                        <input id="resourceName" type="text" name="name" value="${dataValue(data.name)}" required="required" data-post="root"/>
-                    </div>
-                    <div class="onsched-form-col">
-                        <label for="resourceTimezone">Timezone</label>
-                        <select id="resourceTimezone" class="onsched-select" name="timezoneName" value="${dataValue(data.timezoneName)}" data-post="root">
-                            ${TimezoneSelectOptions(Timezones(), true)}
-                        </select>
-                    </div>
-                </div>
-                <div class="onsched-form-row">
-                    <div class="onsched-form-col">
-                        <label for="email">Email</label>
-                        <input type="email" id="email" name="email" value="${dataValue(data.email)}" data-post="root"/>
-                    </div>
-                    <div class="onsched-form-col">
-                        <label for="groupId">Group</label>
-                        <select id="groupId" name="groupId"  value="${dataValue(data.groupId)}" class="onsched-select" data-post="root"></select>
-                    </div>
-                </div>
-                <div class="onsched-form-row">
-                    <div class="onsched-form-col">
-                    <label for="description">Description</label>
-                    <textarea id="description" name="description" rows="3" placeholder="Enter Resource Description" data-post="root">${dataValue(data.description)}
-                    </textarea>                    
-                    </div>
-                </div>
-                 <div class="onsched-form-row">
-                    <div class="onsched-form-col">
-                        <label>Image preview</label>
-                        ${previewImage(data)}
-                    </div>
-                    <div class="onsched-form-col">
-                        <label>Upload Image</label>
-                        <div>
-                            <input type="file" accept="image/*" id="onsched-system-file-upload" name="onsched-system-file-upload" hidden="hidden">
-                            <button type="button" class="onsched-file-upload-btn">Choose a file</button>
-                            <span id="onsched-file-upload-txt" class="onsched-file-upload-txt">No file chosen yet.</span>
-                        </div>
-                    </div>                    
-                </div>               
-            </div>
+            ${
+                resourceSetupGeneralInformation(element, data)
+            }
 
-            <div class="onsched-wizard-section">
-                <h2>Contact Information</h2>
-                <div class="onsched-form-row">
-                    <div class="onsched-form-col">
-                        <label for="businessPhone">Business Phone</label>
-                        <input type="tel" id="businessPhone" name="businessPhone"
-                            value="${dataValue(OnSchedHelpers.FormatPhoneNumber(data.contact.businessPhone))}" data-post="contact"/>
-                    </div>
-                    <div class="onsched-form-col">
-                        <label for=""mobilePhone>Mobile Phone</label>
-                        <input type="tel" id="mobilePhone" name="mobilePhone" 
-                            value="${dataValue(OnSchedHelpers.FormatPhoneNumber(data.contact.mobilePhone))}" data-post="contact" />
-                    </div>
+            ${
+                resourceSetupContactInformation(element, data)
+            }
 
-                </div>
-                <div class="onsched-form-row">
-                    <div class="onsched-form-col">
-                        <label for="homePhone">Home Phone</label>
-                        <input type="tel" id="homePhone" name="homePhone" 
-                            value="${dataValue(OnSchedHelpers.FormatPhoneNumber(data.contact.homePhone))}" data-post="contact" />
-                    </div> 
-                    <div class="onsched-form-col">
-                        <label for="preferredPhoneType">Preferred Contact Phone</label>
-                        <select class="form-control" id="preferredPhoneType" name="preferredPhoneType" value="${dataValue(data.contact.preferredPhoneType)}" data-post="contact">
-                            <option value="B" selected="selected">Business</option>
-                            <option value="M" selected="selected">Mobile</option>
-                            <option value="H">Home</option>
-                        </select>
-                    </div>                                     
-                </div>      
-                <div class="onsched-form-row">
-                    <div class="onsched-form-col">
-                        <label for="notificationType">Notification Type</label>
-                        <select class="onsched-select" id="notificationType" name="notificationType" value="${dataValue(data.notificationType)}" aria-required="true" aria-invalid="false" data-post="root">
-                            <option value="0"></option>
-                            <option value="1" selected="selected">Email</option><option value="2">SMS</option>
-                            <option value="3">Email and SMS</option>
-                        </select>
-                    </div>
-                    <div class="onsched-form-col">
-                        <label for="bookingNotification">Booking Notifications</label>
-                        <select class="form-control" id="bookingNotification" name="bookingNotification" value="${dataValue(data.bookingNotifications)}" aria-required="true" aria-invalid="false" data-post="root">
-                            <option value="0">None</option>
-                            <option value="1" selected="selected">Online Bookings</option>
-                            <option value="2">All Bookings &amp; Reminders</option>
-                        </select>
-                    </div>
-                </div>                          
-                <div class="onsched-form-row">
-                    <div class="onsched-form-col">
-                        <label for="">Skype Username</label>
-                        <input type="text" id="skypeUsername" name="skypeUsername" value="${dataValue(data.contact.skypeUsername)}"  data-post="contact"/>
-                    </div>
-                    <div class="onsched-form-col">
-                    </div>
-                </div>
-            </div>
+            ${
+                resourceSetupAddress(element, data)
+            }
 
-            <div class="onsched-wizard-section">
-                <h2>Address</h2>
-                <div class="onsched-form-row">
-                    <div class="onsched-form-col">
-                        <label for="addressLine1">Address Line 1</label>
-                        <input id="addressLine1" type="text" name="addressLine1" value="${dataValue(data.address.addressLine1)}" data-post="address"/>
-                    </div>
-                </div>
-                <div class="onsched-form-row">
-                    <div class="onsched-form-col">
-                        <label for="addressLine2">Address Line 2</label>
-                        <input id="addressLine2" type="text" name="addressLine2" value="${dataValue(data.address.addressLine2)}" data-post="address" />
-                    </div>
-                </div>
-                <div class="onsched-form-row">
-                    <div class="onsched-form-col">
-                        <label for="city">City</label>
-                        <input id="city" type="text" name="city" value="${dataValue(data.address.city)}" data-post="address"/>
-                    </div>
-                    <div class="onsched-form-col">
-                        <label for="state">State / Province</label>
-                        <select id="state" name="state" value="${dataValue(data.address.state)}" class="onsched-select" data-post="address"></select>
-                    </div>
-                </div>
-                <div class="onsched-form-row">
-                    <div class="onsched-form-col">
-                        <label for="country">Country</label>
-                        <select id="country" name="country" value="${dataValue(data.address.country)}" class="onsched-select" data-post="address">
-                            <option></option>
-                            <option value="CA">Canada</option>
-                            <option value="US">United States</option>
-                        </select>
-                    </div>
-                    <div class="onsched-form-col">
-                        <label for="postalCode">Zip / Postal Code</label>
-                        <input id="postalCode" type="text" name="postalCode" value="${dataValue(data.address.postalCode)}" data-post="address" />
-                    </div>
-                </div>
-            </div>
-            <div class="onsched-wizard-section">
-                <h2>Availability</h2>
-                <h4 class="onsched-business-hours-tz">Eastern Timezone</h4>
-                <div class="onsched-business-hours">${OnSchedTemplates.businessHoursTable(locale, data.availability)}</div>
-            </div>
-            <div class="onsched-wizard-section">
-                <h2>Custom Fields</h2>
-                <div class="onsched-form-row">
-                    <div class="onsched-form-col">
-                        <label for="customField1">
-                            ${customFields != undefined && customFields.field1 != undefined ? customFields.field1.label : "Custom Field 1" }
-                        </label>
-                        <input type="text" id="customField1" name="field1" 
-                            value="${dataValue(data.customFields.field1)}" 
-                            data-post="customFields" />
-                    </div>
-                    <div class="onsched-form-col">
-                        <label for="customField2">Custom Field 2</label>
-                        <input type="text" id="customField2" name="field2" value="${dataValue(data.customFields.field2)}" data-post="customFields" />
-                    </div>                    
-                </div>
-                <div class="onsched-form-row">
-                    <div class="onsched-form-col">
-                        <label for="customField3">Custom Field 3</label>
-                        <input type="text" id="customField3" name="field3" value="${dataValue(data.customFields.field3)}" data-post="customFields" />                    </div>
-                    <div class="onsched-form-col">
-                        <label for="customField4">Custom Field 4</label>
-                        <input type="text" id="customField4" name="field4" value="${dataValue(data.customFields.field4)}" data-post="customFields" />
-                    </div>                    
-                </div>
-                <div class="onsched-form-row">
-                    <div class="onsched-form-col">
-                        <label for="customField5">Custom Field 5</label>
-                        <input type="text" id="customField5" name="field5" value="${dataValue(data.customFields.field5)}" data-post="customFields" />
-                    </div>
-                    <div class="onsched-form-col">
-                        <label for="customField6">Custom Field 6</label>
-                        <input type="text" id="customField6" name="field6" value="${dataValue(data.customFields.field6)}" data-post="customFields" />                    
-                    </div>                    
-                </div>
-                <div class="onsched-form-row">
-                    <div class="onsched-form-col">
-                        <label for="customField7">Custom Field 7</label>
-                        <input type="text" id="customField7" name="field7" value="${dataValue(data.customFields.field7)}" data-post="customFields" />  
-                    </div>
-                    <div class="onsched-form-col">
-                        <label for="customField8">Custom Field 8</label>
-                        <input type="text" id="customField8" name="field8" value="${dataValue(data.customFields.field8)}" data-post="customFields" />                      
-                    </div>                    
-                </div>
-                <div class="onsched-form-row">
-                    <div class="onsched-form-col">
-                        <label for="customField9">Custom Field 9</label>
-                        <input type="text" id="customField9" name="field9" value="${dataValue(data.customFields.field9)}" data-post="customFields" />                       
-                    </div>
-                    <div class="onsched-form-col">
-                        <label for="customField10">Custom Field 10</label>
-                        <input type="text" id="customField10" name="field10" value="${dataValue(data.customFields.field10)}" data-post="customFields" />                       
-                    </div>                    
-                </div>                                                                
-            </div>
+            ${
+                resourceSetupAvailability(element, data)
+            }
 
+            ${
+                resourceSetupCalendarSync(element, data)
+            }
+
+            ${
+                resourceSetupCustomFields(element, data)
+            }
 
             <div class="onsched-wizard-nav">
                 <div style="display:table-row">
                     <div class="onsched-wizard-nav-status">
                         <!-- Circles which indicates the steps of the form: -->
-
                     </div>
                     <div class="onsched-wizard-nav-buttons">
                         <button type="button" id="prevButton" class="prevButton">Previous</button>
@@ -3586,170 +3445,283 @@ var OnSchedTemplates = function () {
         return tmplResourceSetup;
     }
 
-    function serviceSetup(locale, data) {
+    function resourceSetupGeneralInformation(element, data) {
+        const markup = `
+        <div class="onsched-wizard-section">
+        <h2>General Information</h2>
+        <div class="onsched-form-row">
+            <div class="onsched-form-col">
+                <label for="resourceName">Resource Name</label>
+                <input id="resourceName" type="text" name="name" value="${dataValue(data.name)}" required="required" data-post="root"/>
+            </div>
+            <div class="onsched-form-col">
+                <label for="resourceTimezone">Timezone</label>
+                <select id="resourceTimezone" class="onsched-select" name="timezoneName" value="${dataValue(data.timezoneName)}" data-post="root">
+                    ${TimezoneSelectOptions(Timezones(), true)}
+                </select>
+            </div>
+        </div>
+        <div class="onsched-form-row">
+            <div class="onsched-form-col">
+                <label for="email">Email</label>
+                <input type="email" id="email" name="email" value="${dataValue(data.email)}" data-post="root"/>
+            </div>
+            <div class="onsched-form-col">
+                <label for="groupId">Group</label>
+                <select id="groupId" name="groupId"  value="${dataValue(data.groupId)}" class="onsched-select" data-post="root"></select>
+            </div>
+        </div>
+        <div class="onsched-form-row">
+            <div class="onsched-form-col">
+            <label for="description">Description</label>
+            <textarea id="description" name="description" rows="3" placeholder="Enter Resource Description" data-post="root">${dataValue(data.description)}
+            </textarea>                    
+            </div>
+        </div>
+         <div class="onsched-form-row">
+            <div class="onsched-form-col">
+                <label>Image preview</label>
+                ${previewImage(data)}
+            </div>
+            <div class="onsched-form-col">
+                <label>Upload Image</label>
+                <div>
+                    <input type="file" accept="image/*" id="onsched-system-file-upload" name="onsched-system-file-upload" hidden="hidden">
+                    <button type="button" class="onsched-file-upload-btn">Choose a file</button>
+                    <span id="onsched-file-upload-txt" class="onsched-file-upload-txt">No file chosen yet.</span>
+                </div>
+            </div>                    
+        </div>               
+    </div>
+        `;
+        return markup;
+    }
+
+    function resourceSetupContactInformation(element, data) {
+        const markup = `
+    <div class="onsched-wizard-section">
+        <h2>Contact Information</h2>
+        <div class="onsched-form-row">
+            <div class="onsched-form-col">
+                <label for="businessPhone">Business Phone</label>
+                <input type="tel" id="businessPhone" name="businessPhone"
+                    value="${dataValue(OnSchedHelpers.FormatPhoneNumber(data.contact.businessPhone))}" data-post="contact"/>
+            </div>
+            <div class="onsched-form-col">
+                <label for=""mobilePhone>Mobile Phone</label>
+                <input type="tel" id="mobilePhone" name="mobilePhone" 
+                    value="${dataValue(OnSchedHelpers.FormatPhoneNumber(data.contact.mobilePhone))}" data-post="contact" />
+            </div>
+        </div>
+        <div class="onsched-form-row">
+            <div class="onsched-form-col">
+                <label for="homePhone">Home Phone</label>
+                <input type="tel" id="homePhone" name="homePhone" 
+                    value="${dataValue(OnSchedHelpers.FormatPhoneNumber(data.contact.homePhone))}" data-post="contact" />
+            </div> 
+            <div class="onsched-form-col">
+                <label for="preferredPhoneType">Preferred Contact Phone</label>
+                <select class="form-control" id="preferredPhoneType" name="preferredPhoneType" value="${dataValue(data.contact.preferredPhoneType)}" data-post="contact">
+                    <option value="B" selected="selected">Business</option>
+                    <option value="M" selected="selected">Mobile</option>
+                    <option value="H">Home</option>
+                </select>
+            </div>                                     
+        </div>      
+        <div class="onsched-form-row">
+            <div class="onsched-form-col">
+                <label for="notificationType">Notification Type</label>
+                <select class="onsched-select" id="notificationType" name="notificationType" value="${dataValue(data.notificationType)}" aria-required="true" aria-invalid="false" data-post="root">
+                    <option value="0"></option>
+                    <option value="1" selected="selected">Email</option><option value="2">SMS</option>
+                    <option value="3">Email and SMS</option>
+                </select>
+            </div>
+            <div class="onsched-form-col">
+                <label for="bookingNotification">Booking Notifications</label>
+                <select class="form-control" id="bookingNotification" name="bookingNotification" value="${dataValue(data.bookingNotifications)}" aria-required="true" aria-invalid="false" data-post="root">
+                    <option value="0">None</option>
+                    <option value="1" selected="selected">Online Bookings</option>
+                    <option value="2">All Bookings &amp; Reminders</option>
+                </select>
+            </div>
+        </div>                          
+        <div class="onsched-form-row">
+            <div class="onsched-form-col">
+                <label for="">Skype Username</label>
+                <input type="text" id="skypeUsername" name="skypeUsername" value="${dataValue(data.contact.skypeUsername)}"  data-post="contact"/>
+            </div>
+            <div class="onsched-form-col">
+            </div>
+        </div>
+    </div>
+        `;
+        return markup;
+    }
+
+    function resourceSetupAddress(element, data) {
+        const markup = `
+    <div class="onsched-wizard-section">
+        <h2>Address</h2>
+        <div class="onsched-form-row">
+            <div class="onsched-form-col">
+                <label for="addressLine1">Address Line 1</label>
+                <input id="addressLine1" type="text" name="addressLine1" value="${dataValue(data.address.addressLine1)}" data-post="address"/>
+            </div>
+        </div>
+        <div class="onsched-form-row">
+            <div class="onsched-form-col">
+                <label for="addressLine2">Address Line 2</label>
+                <input id="addressLine2" type="text" name="addressLine2" value="${dataValue(data.address.addressLine2)}" data-post="address" />
+            </div>
+        </div>
+        <div class="onsched-form-row">
+            <div class="onsched-form-col">
+                <label for="city">City</label>
+                <input id="city" type="text" name="city" value="${dataValue(data.address.city)}" data-post="address"/>
+            </div>
+            <div class="onsched-form-col">
+                <label for="state">State / Province</label>
+                <select id="state" name="state" value="${dataValue(data.address.state)}" class="onsched-select" data-post="address"></select>
+            </div>
+        </div>
+        <div class="onsched-form-row">
+            <div class="onsched-form-col">
+                <label for="country">Country</label>
+                <select id="country" name="country" value="${dataValue(data.address.country)}" class="onsched-select" data-post="address">
+                    <option></option>
+                    <option value="CA">Canada</option>
+                    <option value="US">United States</option>
+                </select>
+            </div>
+            <div class="onsched-form-col">
+                <label for="postalCode">Zip / Postal Code</label>
+                <input id="postalCode" type="text" name="postalCode" value="${dataValue(data.address.postalCode)}" data-post="address" />
+            </div>
+        </div>
+    </div>
+        `;
+        return markup;
+    }
+
+    function resourceSetupAvailability(element, data) {
+        const markup = `
+    <div class="onsched-wizard-section">
+        <h2>Availability</h2>
+        <h4 class="onsched-business-hours-tz">Eastern Timezone</h4>
+        <div class="onsched-business-hours">${OnSchedTemplates.businessHoursTable(element.onsched.locale, data.availability)}</div>
+    </div>
+ 
+        `;
+        return markup;
+    }
+
+    function resourceSetupCalendarSync(element, data) {
+        const markup = `
+    <div class="onsched-wizard-section">
+        <h2>Outlook / Google Calendar Sync</h2>
+        <div class="onsched-form-row">
+            <div class="onsched-form-col" style="width:60px">
+                <img id="outlook-icon" src="${outlookIcon}" width="30" height="30"/>
+            </div>
+            <div class="onsched-form-col">
+                <label>Outlook email address</label>
+                <input type="text" id="outlook-email" name="outlookCalendarId" />
+                <input type="button" name="outlookAuthButton" value="Authorize" />
+            </div>
+        </div>
+        <div class="onsched-form-row">
+            <div class="onsched-form-col">
+                <img id="google-icon" src="${googleIcon}" width="30" height="30"/>
+            </div>
+            <div class="onsched-form-col">
+                <label>Google email address</label>
+                <input type="text" id="google-email" name="googleCalendarId" />
+                <input type="button" name="googleAuthButton" value="Authorize"/>
+            </div>
+        </div>
+    </div>
+        `;
+        return markup;
+    }
+
+    function resourceSetupCustomFields(element, data, customFields) {
+        const markup = `
+    <div class="onsched-wizard-section">
+        <h2>Custom Fields</h2>
+        <div class="onsched-form-row">
+            <div class="onsched-form-col">
+                <label for="customField1">
+                    ${customFields != undefined && customFields.field1 != undefined ? customFields.field1.label : "Custom Field 1" }
+                </label>
+                <input type="text" id="customField1" name="field1" 
+                    value="${dataValue(data.customFields.field1)}" 
+                    data-post="customFields" />
+            </div>
+            <div class="onsched-form-col">
+                <label for="customField2">Custom Field 2</label>
+                <input type="text" id="customField2" name="field2" value="${dataValue(data.customFields.field2)}" data-post="customFields" />
+            </div>                    
+        </div>
+        <div class="onsched-form-row">
+            <div class="onsched-form-col">
+                <label for="customField3">Custom Field 3</label>
+                <input type="text" id="customField3" name="field3" value="${dataValue(data.customFields.field3)}" data-post="customFields" />                    </div>
+            <div class="onsched-form-col">
+                <label for="customField4">Custom Field 4</label>
+                <input type="text" id="customField4" name="field4" value="${dataValue(data.customFields.field4)}" data-post="customFields" />
+            </div>                    
+        </div>
+        <div class="onsched-form-row">
+            <div class="onsched-form-col">
+                <label for="customField5">Custom Field 5</label>
+                <input type="text" id="customField5" name="field5" value="${dataValue(data.customFields.field5)}" data-post="customFields" />
+            </div>
+            <div class="onsched-form-col">
+                <label for="customField6">Custom Field 6</label>
+                <input type="text" id="customField6" name="field6" value="${dataValue(data.customFields.field6)}" data-post="customFields" />                    
+            </div>                    
+        </div>
+        <div class="onsched-form-row">
+            <div class="onsched-form-col">
+                <label for="customField7">Custom Field 7</label>
+                <input type="text" id="customField7" name="field7" value="${dataValue(data.customFields.field7)}" data-post="customFields" />  
+            </div>
+            <div class="onsched-form-col">
+                <label for="customField8">Custom Field 8</label>
+                <input type="text" id="customField8" name="field8" value="${dataValue(data.customFields.field8)}" data-post="customFields" />                      
+            </div>                    
+        </div>
+        <div class="onsched-form-row">
+            <div class="onsched-form-col">
+                <label for="customField9">Custom Field 9</label>
+                <input type="text" id="customField9" name="field9" value="${dataValue(data.customFields.field9)}" data-post="customFields" />                       
+            </div>
+            <div class="onsched-form-col">
+                <label for="customField10">Custom Field 10</label>
+                <input type="text" id="customField10" name="field10" value="${dataValue(data.customFields.field10)}" data-post="customFields" />                       
+            </div>                    
+        </div>                                                                
+    </div>
+        `;
+        return markup;
+    }   
+
+
+    function serviceSetup(element, data) {
 
         const tmplServiceSetup = `
         <div class="onsched-container">
         <form class="onsched-wizard onsched-form" name="serviceSetup">
             <input type="hidden" name="step" value="0" />
             <h1>Service Setup</h1>
-            <div class="onsched-wizard-section">
-                <h2>General Information</h2>
-                <div class="onsched-form-row">
-                    <div class="onsched-form-col">
-                        <label for="serviceName">Service Name</label>
-                        <input id="serviceName" type="text" name="name"  value="${dataValue(data.name)}" required="required" data-post="root" />
-                    </div>
-                    <div class="onsched-form-col">
-                        <label for="serviceType">Service Type</label>
-                        <select id="serviceType" class="onsched-select" name="type" value="${dataValue(data.type)}" data-post="root">
-                            <option value="1"/>Appointment</option>
-                            <option value="2"/>Event</option>
-                            <option value="3"/>Meeting</option>
-                            <option value="4"/>Class</option>
-                        </select>
-                    </div>
-                </div>
-                <div class="onsched-form-row">
-                    <div class="onsched-form-col">
-                        <label for="duration">Duration</label>
-                        <select id="duration" class="onsched-select" name="duration" value="${dataValue(data.duration)}" data-post="root">
-                            ${timeIntervals("en-US", 5, data.duration)}
-                        </select>                       
-                    </div>
-                    <div class="onsched-form-col">
-                        <label for="serviceGroupId">Group</label>
-                        <select id="serviceGroupId" class="onsched-select" name="serviceGroupId" value="${dataValue(data.serviceGroupId)}" data-post="root">
-                        </select>     
-                    </div>
-                </div>
-                <div class="onsched-form-row">
-                    <div class="onsched-form-col">
-                        <label for="description">Description</label>
-                        <textarea id="description" name="description" rows="3" placeholder="Enter Service Description" data-post="root" required="requited">${dataValue(data.description)}</textarea>                    
-                    </div>
-                </div>                
-                <div class="onsched-form-row">
-                    <div class="onsched-form-col">
-                        <label>Image preview</label>
-                        ${previewImage(data)}
-                    </div>
-                    <div class="onsched-form-col">
-                        <label>Upload Image</label>
-                        <div>
-                            <input type="file" accept="image/*" id="onsched-system-file-upload" name="onsched-system-file-upload" hidden="hidden">
-                            <button type="button" class="onsched-file-upload-btn">Choose a file</button>
-                            <span id="onsched-file-upload-txt" class="onsched-file-upload-txt">No file chosen yet.</span>
-                        </div>
-                    </div>                    
-                </div>        
-            </div>
-            
-            <div class="onsched-wizard-section">
-                <h2>Service Settings</h2>
-                <div class="onsched-form-row">
-                    <div class="onsched-form-col">
-                        <label>Booking Limit (0 or blank to defaults to calendar bookings per slot)</label>
-                        <input type="number" id="bookingLimit" name="bookingLimit" min="0" max="500" value="${dataValue(data.bookingLimit)}" data-post="root" data-type="int">
-                    </div>
-                    <div class="onsched-form-col">
-                        <label for="bookingInterval">Booking Interval</label>
-                        <select id="bookingInterval" name="bookingInterval" value="${dataValue(data.bookingInterval)}" data-post="root">
-                            ${timeIntervals("en-US", 5, 30)}
-                        </select>
-                    </div>
-                </div>
-                <div class="onsched-form-row">
-                    <div class="onsched-form-col">
-                        <label for="bookAheadUnit">Book Ahead Unit</label>
-                        <select id="bookAheadUnit" name="bookAheadUnit" value="${dataValue(data.bookAheadUnit)}" data-post="settings">
-                            <option value="0">Use the online booking setting</option>
-                            <option value="1">Days</option>
-                            <option value="2">Weeks</option>
-                            <option value="3">Months</option>
-                        </select>
-                    </div>
-                    <div class="onsched-form-col">
-                        <label for="bookAheadValue">Book Ahead Value</label>
-                        <select id="bookAheadValue" name="bookAheadValue" value="${dataValue(data.bookAheadValue)}" data-post="settings">
-                            <option value="0">Use the online booking setting</option>
-                            <option value="1">1</option>
-                            <option value="2">2</option>
-                            <option value="3">3</option>
-                            <option value="4">4</option>
-                            <option value="5">5</option>
-                            <option value="6">6</option>
-                            <option value="7">7</option>
-                            <option value="8">8</option>
-                            <option value="9">9</option>
-                            <option value="10">10</option>
-                            <option value="11">11</option>
-                            <option value="12">12</option>
-                        </select>
-                    </div>
-                </div>
-                <div class="onsched-form-row">
-                    <div class="onsched-form-col">
-                        <label for="bookInAdvance">Book In Advance</label>
-                        <select id="bookInAdvance" name="bookInAdvance" value="${dataValue(data.bookInAdvance)}" data-post="settings">
-                            ${timeIntervals("en-US", 30, 30)}
-                        </select>
-                    </div>
-                    <div class="onsched-form-col">
-                        <label for="roundRobin">Round Robin</label>
-                        <select id="roundRobin" name="roundRobin" value="${dataValue(data.roundRobin)}" data-post="root">
-                            <option value="0">None</option>
-                            <option value="1">Random</option>
-                            <option value="2">Balanced</option>
-                        </select>
-                    </div>
-                </div>
-                <div class="onsched-form-row">
-                    <div class="onsched-form-col">
-                        <label for="durationSelect">
-                            <input id="durationSelect" type="checkbox" name="durationSelect" ${checkboxChecked(dataValue(data.durationSelect))} data-post="options" data-type="bool"/>
-                            Duration Selection
-                        </label>
-                        <label style="margin-bottom:16px">
-                            (Choose this option if you want variable durations e.g.30,60,or 90 mins)
-                        </label>
-                    </div>
-                    <div class="onsched-form-col minmaxinterval">
-                        <label for="durationMin">Duration Min / Max / Interval</label>
-                        <div>
-                            <select id="durationMin" class="onsched-select" name="durationMin" value="${dataValue(data.durationMin)}" data-post="options">
-                                ${timeIntervals("en-US", 5, 30)}
-                            </select>                                   
-                            <select id="durationMax" class="onsched-select" name="durationMax" value="${dataValue(data.durationMax)}" data-post="options">
-                                ${timeIntervals("en-US", 5, 90)}
-                            </select> 
-                            <select id="durationInterval" class="onsched-select" name="durationInterval" value="${dataValue(data.durationInterval)}" data-post="options">
-                                ${timeIntervals("en-US", 5, 30)}
-                            </select>
-                        </div>                        
-                    </div>
-                </div> 
-                <div class="onsched-form-row">
-                    <div class="onsched-form-col">
-                        <label for="public">
-                            <input id="public" type="checkbox" name="public" ${checkboxChecked(dataValue(data.showOnline))} data-post="root" data-type="bool" />
-                            Consumer booking enabled
-                        </label>
-                    </div>
-                    <div class="onsched-form-col">
-                        <label for="defaultService">
-                            <input id="defaultService" type="checkbox" name="defaultService" ${checkboxChecked(dataValue(data.defaultService))} data-post="options" data-type="bool" />
-                            Use as the default service
-                        </label>
-                    </div>
-                </div>               
-            </div>
 
-            <div class="onsched-wizard-section">
-                <h2>Availability</h2>
-                <h4 class="onsched-business-hours-tz">Eastern Timezone</h4>
-                <div class="onsched-business-hours">${OnSchedTemplates.businessHoursTable(locale, data.availability)}</div>
-            </div>
+            ${
+                serviceSetupGeneralInformation(element, data)
+            }
+            ${serviceSetupSettings(element, data)}
+            ${serviceSetupAvailability(element, data)}           
+
             <div class="onsched-wizard-nav">
                 <div style="display:table-row">
                     <div class="onsched-wizard-nav-status">
@@ -3770,6 +3742,174 @@ var OnSchedTemplates = function () {
 
         return tmplServiceSetup;
     }
+
+    function serviceSetupGeneralInformation(element, data) {
+        const markup = `
+    <div class="onsched-wizard-section">
+        <h2>General Information</h2>
+        <div class="onsched-form-row">
+            <div class="onsched-form-col">
+                <label for="serviceName">Service Name</label>
+                <input id="serviceName" type="text" name="name"  value="${dataValue(data.name)}" required="required" data-post="root" />
+            </div>
+            <div class="onsched-form-col">
+                <label for="serviceType">Service Type</label>
+                <select id="serviceType" class="onsched-select" name="type" value="${dataValue(data.type)}" data-post="root">
+                    <option value="1"/>Appointment</option>
+                    <option value="2"/>Event</option>
+                    <option value="3"/>Meeting</option>
+                    <option value="4"/>Class</option>
+                </select>
+            </div>
+        </div>
+        <div class="onsched-form-row">
+            <div class="onsched-form-col">
+                <label for="duration">Duration</label>
+                <select id="duration" class="onsched-select" name="duration" value="${dataValue(data.duration)}" data-post="root">
+                    ${timeIntervals("en-US", 5, data.duration)}
+                </select>                       
+            </div>
+            <div class="onsched-form-col">
+                <label for="serviceGroupId">Group</label>
+                <select id="serviceGroupId" class="onsched-select" name="serviceGroupId" value="${dataValue(data.serviceGroupId)}" data-post="root">
+                </select>     
+            </div>
+        </div>
+        <div class="onsched-form-row">
+            <div class="onsched-form-col">
+                <label for="description">Description</label>
+                <textarea id="description" name="description" rows="3" placeholder="Enter Service Description" data-post="root" required="requited">${dataValue(data.description)}</textarea>                    
+            </div>
+        </div>                
+        <div class="onsched-form-row">
+            <div class="onsched-form-col">
+                <label>Image preview</label>
+                ${previewImage(data)}
+            </div>
+            <div class="onsched-form-col">
+                <label>Upload Image</label>
+                <div>
+                    <input type="file" accept="image/*" id="onsched-system-file-upload" name="onsched-system-file-upload" hidden="hidden">
+                    <button type="button" class="onsched-file-upload-btn">Choose a file</button>
+                    <span id="onsched-file-upload-txt" class="onsched-file-upload-txt">No file chosen yet.</span>
+                </div>
+            </div>                    
+        </div>        
+    </div>        `;
+        return markup;
+    }
+    function serviceSetupSettings(element, data) {
+        const markup = `
+    <div class="onsched-wizard-section">
+        <h2>Service Settings</h2>
+        <div class="onsched-form-row">
+            <div class="onsched-form-col">
+                <label>Booking Limit (0 or blank to defaults to calendar bookings per slot)</label>
+                <input type="number" id="bookingLimit" name="bookingLimit" min="0" max="500" value="${dataValue(data.bookingLimit)}" data-post="root" data-type="int">
+            </div>
+            <div class="onsched-form-col">
+                <label for="bookingInterval">Booking Interval</label>
+                <select id="bookingInterval" name="bookingInterval" value="${dataValue(data.bookingInterval)}" data-post="root">
+                    ${timeIntervals("en-US", 5, 30)}
+                </select>
+            </div>
+        </div>
+        <div class="onsched-form-row">
+            <div class="onsched-form-col">
+                <label for="bookAheadUnit">Book Ahead Unit</label>
+                <select id="bookAheadUnit" name="bookAheadUnit" value="${dataValue(data.bookAheadUnit)}" data-post="settings">
+                    <option value="0">Use the online booking setting</option>
+                    <option value="1">Days</option>
+                    <option value="2">Weeks</option>
+                    <option value="3">Months</option>
+                </select>
+            </div>
+            <div class="onsched-form-col">
+                <label for="bookAheadValue">Book Ahead Value</label>
+                <select id="bookAheadValue" name="bookAheadValue" value="${dataValue(data.bookAheadValue)}" data-post="settings">
+                    <option value="0">Use the online booking setting</option>
+                    <option value="1">1</option>
+                    <option value="2">2</option>
+                    <option value="3">3</option>
+                    <option value="4">4</option>
+                    <option value="5">5</option>
+                    <option value="6">6</option>
+                    <option value="7">7</option>
+                    <option value="8">8</option>
+                    <option value="9">9</option>
+                    <option value="10">10</option>
+                    <option value="11">11</option>
+                    <option value="12">12</option>
+                </select>
+            </div>
+        </div>
+        <div class="onsched-form-row">
+            <div class="onsched-form-col">
+                <label for="bookInAdvance">Book In Advance</label>
+                <select id="bookInAdvance" name="bookInAdvance" value="${dataValue(data.bookInAdvance)}" data-post="settings">
+                    ${timeIntervals("en-US", 30, 30)}
+                </select>
+            </div>
+            <div class="onsched-form-col">
+                <label for="roundRobin">Round Robin</label>
+                <select id="roundRobin" name="roundRobin" value="${dataValue(data.roundRobin)}" data-post="root">
+                    <option value="0">None</option>
+                    <option value="1">Random</option>
+                    <option value="2">Balanced</option>
+                </select>
+            </div>
+        </div>
+        <div class="onsched-form-row">
+            <div class="onsched-form-col">
+                <label for="durationSelect">
+                    <input id="durationSelect" type="checkbox" name="durationSelect" ${checkboxChecked(dataValue(data.durationSelect))} data-post="options" data-type="bool"/>
+                    Duration Selection
+                </label>
+                <label style="margin-bottom:16px">
+                    (Choose this option if you want variable durations e.g.30,60,or 90 mins)
+                </label>
+            </div>
+            <div class="onsched-form-col minmaxinterval">
+                <label for="durationMin">Duration Min / Max / Interval</label>
+                <div>
+                    <select id="durationMin" class="onsched-select" name="durationMin" value="${dataValue(data.durationMin)}" data-post="options">
+                        ${timeIntervals("en-US", 5, 30)}
+                    </select>                                   
+                    <select id="durationMax" class="onsched-select" name="durationMax" value="${dataValue(data.durationMax)}" data-post="options">
+                        ${timeIntervals("en-US", 5, 90)}
+                    </select> 
+                    <select id="durationInterval" class="onsched-select" name="durationInterval" value="${dataValue(data.durationInterval)}" data-post="options">
+                        ${timeIntervals("en-US", 5, 30)}
+                    </select>
+                </div>                        
+            </div>
+        </div> 
+        <div class="onsched-form-row">
+            <div class="onsched-form-col">
+                <label for="public">
+                    <input id="public" type="checkbox" name="public" ${checkboxChecked(dataValue(data.showOnline))} data-post="root" data-type="bool" />
+                    Consumer booking enabled
+                </label>
+            </div>
+            <div class="onsched-form-col">
+                <label for="defaultService">
+                    <input id="defaultService" type="checkbox" name="defaultService" ${checkboxChecked(dataValue(data.defaultService))} data-post="options" data-type="bool" />
+                    Use as the default service
+                </label>
+            </div>
+        </div>               
+    </div>        `;
+        return markup;
+    }
+    function serviceSetupAvailability(element, data) {
+        const markup = `
+    <div class="onsched-wizard-section">
+        <h2>Availability</h2>
+        <h4 class="onsched-business-hours-tz">Eastern Timezone</h4>
+        <div class="onsched-business-hours">${OnSchedTemplates.businessHoursTable(element.onsched.locale, data.availability)}</div>
+    </div>        `;
+        return markup;
+    }   
 
     function wizardTitle(title, data) {
         const markup = `
@@ -4354,6 +4494,28 @@ var OnSchedTemplates = function () {
         return TzUtcTime(tzData);
     }
 
+    function wizardSections() {
+
+        var locationSetupSections = [
+            "generalInformation",
+        ];
+
+        var resourceSetupSections = [
+            "generalInformation",
+            "contactInformation",
+            "address",
+            "availability",
+            "customFields",
+        ];
+        var wizardSections = [
+            { "locationSetup": locationSetupSections },
+            { "resourceSetup": resourceSetupSections },
+
+        ];
+
+        return wizardSections;
+    }
+
     return {
         availabilityContainer: availabilityContainer,
         timesContainer: timesContainer,
@@ -4383,7 +4545,8 @@ var OnSchedTemplates = function () {
         wizardTitle:wizardTitle,
         wizardSteps:wizardSteps,
         previewImage:previewImage,
-        timeIntervals:timeIntervals
+        timeIntervals:timeIntervals,
+        wizardSections: wizardSections,
     };
 }();
 

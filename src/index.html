@@ -270,7 +270,7 @@ However, delay the fade out process for 2.5 seconds */
   /// Begining of OnSchedJs logic
   ///
   var onschedOptions = { locale: "en-US"};
-  var onsched = OnSched("DemoUser", "sbox", onschedOptions);
+  var onsched = OnSched("DemoUser", "live", onschedOptions);
   var elements = onsched.elements();
 
   var now = new Date();
@@ -529,15 +529,15 @@ However, delay the fade out process for 2.5 seconds */
                 "sun": { "startTime": 0, "endTime": 0 },
             };
  //           var data = { name:"Test F Location", address:{ "state": "ON", "country": "CA" }, businessHours: businessHours, settings: {}};
-  var locationData = { name:"Test F Location", address:{ "state": "ON", "country": "CA" }, settings: {}};
+  var locationData = { name:"Test F Location", address:{ "state": "ON", "country": "CA" }, settings: {}, options: {}};
 
 //  var locationSetupParams = { "id":"8e574b6b-0976-4561-b5d1-21e9bb4eddf7", "tzOffset": tzOffset, "data":data};
   var locationSetupParams = { "tzOffset": tzOffset, "data":locationData};
   console.log(locationSetupParams);
   var locationSetupOptions = {};
   var locationSetup = elements.create("locationSetup", locationSetupParams, locationSetupOptions);
-
-  var resourceData = { name:"Test F Location", address:{ "state": "ON", "country": "CA" }, settings: {}};
+  var wizardSections = [];
+  var resourceData = { name:"Test F Location", address:{ "state": "ON", "country": "CA" }, settings: {"wizardSections": wizardSections}};
 
   var elResourceSetup = document.getElementById("resourceSetup");
   elResourceSetup.addEventListener("resourceSetupComplete", function (e) {
