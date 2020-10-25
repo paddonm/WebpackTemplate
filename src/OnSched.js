@@ -1674,6 +1674,7 @@ var OnSchedResponse = function () {
         var selectedDate = response.firstAvailableDate.length > 0 ?
             OnSchedHelpers.ParseDate(response.firstAvailableDate) :
             OnSchedHelpers.ParseDate(response.startDate);
+//            console.log("OnSchedResponse.GetAvailability="+selectedDate);
 
         var elDateSelected = document.querySelector(".onsched-available-times-header .date-selected");
         var dateSelectedTitle = selectedDate.toLocaleDateString(
@@ -1692,7 +1693,11 @@ var OnSchedResponse = function () {
             var availableDays = response.availableDays.length > days ? response.availableDays.slice(0, days) : response.availableDays;
             var elCalendar = document.querySelector(".onsched-calendar");
             elCalendar.innerHTML = OnSchedTemplates.calendarSelector(availableDays, selectedDate, element.onsched.locale);
-        }
+            elDateSelected.title = dateSelectedTitle;
+            var elTimezones = document.querySelector(".onsched-container.onsched-availability select.onsched-select.timezone");       
+            elTimezones.innerHTML = OnSchedTemplates.TimezoneSelectOptions(OnSchedTemplates.Timezones(selectedDate));
+            console.log("RebuildCalendar");
+         }
 
         // Business name currently hidden. Leave logic for possible future use
         var elBusinessName = document.querySelector(".onsched-available-times-header .onsched-business-name");
@@ -2346,7 +2351,6 @@ var OnSchedOnClick = function () {
         var dateSelectedTitle = prevDate.toLocaleDateString(
             element.onsched.locale, { weekday: 'long', month: 'short', day: 'numeric', year: 'numeric' });
         elDateSelected.title = dateSelectedTitle;
-
         OnSchedHelpers.ShowProgress();
         element.onsched.accessToken.then(x =>
             OnSchedRest.GetAvailability(x, url, function (response) {
@@ -2358,9 +2362,12 @@ var OnSchedOnClick = function () {
     function MonthNext(event, element) {
 
         event.target.disabled = true;
+        event.preventDefault = true;
+//        console.log(event.target);
 
         var lastDayDate = OnSchedHelpers.ParseDate(event.target.dataset.lastday);
         var nextDate = OnSchedHelpers.AddDaysToDate(lastDayDate, 1);
+
         var url = OnSchedHelpers.CreateAvailabilityUrl(element.onsched.apiBaseUrl, element.params, nextDate);
 
         var calendarHtml = OnSchedTemplates.calendarSelectorFromDate(nextDate, element.onsched.locale);
@@ -2383,13 +2390,14 @@ var OnSchedOnClick = function () {
         var elDateSelected = document.querySelector(".onsched-available-times-header .date-selected");
         var dateSelectedTitle = nextDate.toLocaleDateString(
             element.onsched.locale, { weekday: 'long', month: 'short', day: 'numeric', year: 'numeric' });
-//        dateSelectedTitle += " " + nextDate.toTimeString();
         elDateSelected.title = dateSelectedTitle;
 
         OnSchedHelpers.ShowProgress();
         element.onsched.accessToken.then(x =>
             OnSchedRest.GetAvailability(x, url, function (response) {
                 OnSchedResponse.GetAvailability(element, response);
+                var elMonthNext = document.querySelector(".onsched-availability button.month-next");
+                console.log("elMonthNext="+elMonthNext.disabled);
             })
         );
     }
@@ -2464,7 +2472,7 @@ var OnSchedHelpers = function () {
         return results === null ? '' : decodeURIComponent(results[1].replace(/\+/g, ' '));
     }
 
-    function CreateAvailabilityUrl(baseUrl, params, date, tzOffset) {
+    function CreateAvailabilityUrl(baseUrl, params, date) {
         var startDate = date == null ? params.date : date;
         var endDate = date == null ? params.date : date;
         var url = baseUrl;
@@ -2473,9 +2481,14 @@ var OnSchedHelpers = function () {
         url += "/" + CreateDateString(startDate);
         url += "/" + CreateDateString(endDate);
 
+        var tzOffset = -startDate.getTimezoneOffset();
+ //       element.params.tzOffset = OnSchedHelpers.IsEmpty(element.params.tzOffset) ? tzOffset : element.params.tzOffset;
+
         url = OnSchedHelpers.IsEmpty(params.locationId) ? url : AddUrlParam(url, "locationId", params.locationId);
-        url = OnSchedHelpers.IsEmpty(params.tzOffset) ? url : AddUrlParam(url, "tzOffset", params.tzOffset);
+//        url = OnSchedHelpers.IsEmpty(params.tzOffset) ? url : AddUrlParam(url, "tzOffset", params.tzOffset);
+        url = AddUrlParam(url, "tzOffset", tzOffset);
         url = OnSchedHelpers.IsEmpty(params.resourceId) ? url : AddUrlParam(url, "resourceId", params.resourceId);
+//        console.log("CreateAvailabilityUrl="+url)
         return url;
     }
     function AddUrlParam(url, name, value) {
@@ -3910,7 +3923,7 @@ var OnSchedTemplates = function () {
 
 
  
-    function resourceSetup(element, data, customFields) {
+    function resourceSetup(element, data, customFieldsArray) {
 
         const tmplResourceSetup = `
         <div class="onsched-container">
@@ -3975,7 +3988,7 @@ var OnSchedTemplates = function () {
             <div class="onsched-wizard-section">
                 <h2>Availability</h2>
                 <h4 class="onsched-business-hours-tz">Eastern Timezone</h4>
-                <div class="onsched-business-hours">${OnSchedTemplates.businessHoursTable(locale, data.availability)}</div>
+                <div class="onsched-business-hours">${OnSchedTemplates.businessHoursTable(element.onsched.locale, data.availability)}</div>
             </div>
             ${
                 customFieldsArray && customFieldsArray.length
@@ -5007,24 +5020,25 @@ var OnSchedTemplates = function () {
         return markup;
     }
 
-    function Timezones() {
+    function Timezones(date) {
         var tzRegionData = [
-            { "name": "US / Canada", "timezones": TzUsCanada() },
-            { "name": "Europe", "timezones": TzEurope() },
-            { "name": "Australia", "timezones": TzAustralia() },
+            { "name": "US / Canada", "timezones": TzUsCanada(date) },
+            { "name": "Europe", "timezones": TzEurope(date) },
+            { "name": "Australia", "timezones": TzAustralia(date) },
         ];
         return tzRegionData;
     }
-    function TzUtcTime(tzData) {
+    function TzUtcTime(tzData, date) {
         var today = new Date();
+        date = date == undefined ? today : date;
         for (var i = 0; i < tzData.length; i++) {
-            var m = moment.tz(today, tzData[i].id);
+            var m = moment.tz(date, tzData[i].id);
             tzData[i].name += " " + "(UTC" + m.format("Z") + ")";
             tzData[i].offset = m.utcOffset();
         }
         return tzData;
     }
-    function TzUsCanada() {
+    function TzUsCanada(date) {
 
         var tzData = [
 
@@ -5038,9 +5052,9 @@ var OnSchedTemplates = function () {
             { "name": "Newfoundland Time", "id": "America/St_Johns", "offset": "0" }
         ];
 
-        return TzUtcTime(tzData);
+        return TzUtcTime(tzData, date);
     }
-    function TzEurope() {
+    function TzEurope(date) {
         var tzData = [
 
             { "name": "UK,Ireland,Lisbon", "id": "Europe/London", "offset": "0" },
@@ -5048,9 +5062,9 @@ var OnSchedTemplates = function () {
             { "name": "Eastern European Time", "id": "Europe/Bucharest", "offset": "0" },
             { "name": "Minsk Time", "id": "Europe/Minsk", "offset": "0" },
         ];
-        return TzUtcTime(tzData);
+        return TzUtcTime(tzData, date);
     }
-    function TzAustralia() {
+    function TzAustralia(date) {
         var tzData = [
 
             { "name": "Australian Western Time", "id": "Australia/Perth", "offset": "0" },
@@ -5060,29 +5074,29 @@ var OnSchedTemplates = function () {
             { "name": "Austrailian Eastern Time", "id": "Australia/Sydney", "offset": "0" },
             { "name": "Austrailian Lord Howe Time", "id": "Australia/Lord_Howe", "offset": "0" },
         ];
-        return TzUtcTime(tzData);
+        return TzUtcTime(tzData, date);
     }
-    function TzAsia() {
+    function TzAsia(date) {
         var tzData = [
 
             { "name": "Placeholder", "id": "America/Los_Angeles", "offset": "0" },
 
         ];
-        return TzUtcTime(tzData);
+        return TzUtcTime(tzData, date);
     }
-    function TzAtlantic() {
+    function TzAtlantic(date) {
         var tzData = [
             { "name": "Placeholder", "id": "America/Los_Angeles", "offset": "0" },
 
         ];
-        return TzUtcTime(tzData);
+        return TzUtcTime(tzData, date);
     }
-    function TzPacific() {
+    function TzPacific(date) {
         var tzData = [
             { "name": "Placeholder", "id": "America/Los_Angeles", "offset": "0" },
 
         ];
-        return TzUtcTime(tzData);
+        return TzUtcTime(tzData, date);
     }
 
     function wizardSections() {
@@ -5122,6 +5136,7 @@ var OnSchedTemplates = function () {
         locationSetup: locationSetup,
         serviceSetup: serviceSetup,
         searchForm: searchForm,
+        appointmentSearchForm: appointmentSearchForm,
         confirmation: confirmation,
         bookingForm: bookingForm,
         bookingTimer: bookingTimer,
@@ -5138,6 +5153,8 @@ var OnSchedTemplates = function () {
         previewImage:previewImage,
         timeIntervals:timeIntervals,
         wizardSections: wizardSections,
+        Timezones:Timezones,
+        TimezoneSelectOptions:TimezoneSelectOptions,
     };
 }();
 
