@@ -342,7 +342,7 @@ var OnSchedMount = function () {
 
         var now = new Date();
         var tzOffset = -now.getTimezoneOffset();
-        element.params.tzOffset = OnSchedHelpers.IsEmpty(element.params.tzOffset) ? tzOffset : element.params.tzOffset;
+ //       element.params.tzOffset = OnSchedHelpers.IsEmpty(element.params.tzOffset) ? tzOffset : element.params.tzOffset;
 
         var html = OnSchedTemplates.availabilityContainer();
         var el = document.getElementById(element.id);
@@ -351,13 +351,13 @@ var OnSchedMount = function () {
         el.addEventListener("click", element.onClick);
         el.addEventListener("change", element.onChange);
         var elTimezone = document.querySelector(".onsched-select.timezone");
-        elTimezone.value = element.params.tzOffset;
+        elTimezone.value = tzOffset;
         // initialize the calendar using only the date which is lightening fast
         var elCalendar = document.querySelector(".onsched-calendar");
         elCalendar.innerHTML = OnSchedTemplates.calendarSelectorFromDate(element.params.date, element.onsched.locale);
         var elTimes = document.querySelector(".onsched-available-times");
         elTimes.innerHTML = "";
-        var url = OnSchedHelpers.CreateAvailabilityUrl(element.onsched.apiBaseUrl, element.params);
+        var url = OnSchedHelpers.CreateAvailabilityUrl(element.onsched.apiBaseUrl, element.params, now, tzOffset);
 
         // calculate available days to pull when mounting
         url = OnSchedHelpers.AddUrlParam(url, "dayAvailabilityStartDate",
@@ -1674,7 +1674,6 @@ var OnSchedResponse = function () {
         var selectedDate = response.firstAvailableDate.length > 0 ?
             OnSchedHelpers.ParseDate(response.firstAvailableDate) :
             OnSchedHelpers.ParseDate(response.startDate);
-//            console.log("OnSchedResponse.GetAvailability="+selectedDate);
 
         var elDateSelected = document.querySelector(".onsched-available-times-header .date-selected");
         var dateSelectedTitle = selectedDate.toLocaleDateString(
@@ -1696,7 +1695,8 @@ var OnSchedResponse = function () {
             elDateSelected.title = dateSelectedTitle;
             var elTimezones = document.querySelector(".onsched-container.onsched-availability select.onsched-select.timezone");       
             elTimezones.innerHTML = OnSchedTemplates.TimezoneSelectOptions(OnSchedTemplates.Timezones(selectedDate));
-            console.log("RebuildCalendar");
+            var elTimezone = document.querySelector(".onsched-select.timezone");
+            elTimezone.value = response.tzRequested;
          }
 
         // Business name currently hidden. Leave logic for possible future use
@@ -2122,10 +2122,10 @@ var OnSchedOnChange = function () {
     function OnChangeTimezone(event, element) {
         var el = event.target;
         var tzOffset = event.target.options[el.selectedIndex].value;
-        element.params["tzOffset"] = tzOffset;
+//        element.params["tzOffset"] = tzOffset;
         var elSelectedDate = document.querySelector(".onsched-calendar .day.selected");
         var selectedDate = OnSchedHelpers.ParseDate(elSelectedDate.dataset.date);
-        var url = OnSchedHelpers.CreateAvailabilityUrl(element.onsched.apiBaseUrl, element.params, selectedDate);
+        var url = OnSchedHelpers.CreateAvailabilityUrl(element.onsched.apiBaseUrl, element.params, selectedDate, tzOffset);
         var elDateSelected = document.querySelector(".onsched-available-times-header .date-selected");
         var dateSelectedTitle = selectedDate.toLocaleDateString(
             element.onsched.locale, { weekday: 'long', month: 'short', day: 'numeric', year: 'numeric' });
@@ -2165,9 +2165,11 @@ var OnSchedOnClick = function () {
         else
             dayClicked.classList.add("selected");
 
+        var elSelectTimezone = document.querySelector(".onsched-select.timezone");
+        var tzOffset = elSelectTimezone != null ? elSelectTimezone.value : 0;
         var title = document.querySelector(".onsched-calendar-header .onsched-calendar-title");
         var clickedDate = OnSchedHelpers.ParseDate(dayClicked.dataset.date);
-        var url = OnSchedHelpers.CreateAvailabilityUrl(element.onsched.apiBaseUrl, element.params, clickedDate);
+        var url = OnSchedHelpers.CreateAvailabilityUrl(element.onsched.apiBaseUrl, element.params, clickedDate, tzOffset);
         if (clickedDate.getMonth() != title.dataset.month || clickedDate.getFullYear() != title.dataset.year) {
             var calendarHtml = OnSchedTemplates.calendarSelectorFromDate(clickedDate, element.onsched.locale);
             var elCalendar = document.querySelector(".onsched-calendar");
@@ -2330,7 +2332,9 @@ var OnSchedOnClick = function () {
         prevDate = OnSchedHelpers.FirstDayOfMonth(prevDate);
 
 
-        var url = OnSchedHelpers.CreateAvailabilityUrl(element.onsched.apiBaseUrl, element.params, prevDate);
+        var elSelectTimezone = document.querySelector(".onsched-select.timezone");
+        var tzOffset = elSelectTimezone != null ? elSelectTimezone.value : 0;        
+        var url = OnSchedHelpers.CreateAvailabilityUrl(element.onsched.apiBaseUrl, element.params, prevDate, tzOffset);
 
         var calendarHtml = OnSchedTemplates.calendarSelectorFromDate(prevDate, element.onsched.locale);
         var elCalendar = document.querySelector(".onsched-calendar");
@@ -2352,6 +2356,8 @@ var OnSchedOnClick = function () {
             element.onsched.locale, { weekday: 'long', month: 'short', day: 'numeric', year: 'numeric' });
         elDateSelected.title = dateSelectedTitle;
         OnSchedHelpers.ShowProgress();
+        var elMonthPrev = document.querySelector(".onsched-availability button.month-prev");
+        elMonthPrev.disabled = true;        
         element.onsched.accessToken.then(x =>
             OnSchedRest.GetAvailability(x, url, function (response) {
                 OnSchedResponse.GetAvailability(element, response);
@@ -2368,7 +2374,9 @@ var OnSchedOnClick = function () {
         var lastDayDate = OnSchedHelpers.ParseDate(event.target.dataset.lastday);
         var nextDate = OnSchedHelpers.AddDaysToDate(lastDayDate, 1);
 
-        var url = OnSchedHelpers.CreateAvailabilityUrl(element.onsched.apiBaseUrl, element.params, nextDate);
+        var elSelectTimezone = document.querySelector(".onsched-select.timezone");
+        var tzOffset = elSelectTimezone != null ? elSelectTimezone.value : 0; 
+        var url = OnSchedHelpers.CreateAvailabilityUrl(element.onsched.apiBaseUrl, element.params, nextDate, tzOffset);
 
         var calendarHtml = OnSchedTemplates.calendarSelectorFromDate(nextDate, element.onsched.locale);
         var elCalendar = document.querySelector(".onsched-calendar");
@@ -2393,11 +2401,14 @@ var OnSchedOnClick = function () {
         elDateSelected.title = dateSelectedTitle;
 
         OnSchedHelpers.ShowProgress();
+        // disable navigation while rest call in progress
+        var elMonthPrev = document.querySelector(".onsched-availability button.month-prev");
+        var elMonthNext = document.querySelector(".onsched-availability button.month-next");
+        elMonthNext.disabled = true;
+        elMonthPrev.disabled = true;        
         element.onsched.accessToken.then(x =>
             OnSchedRest.GetAvailability(x, url, function (response) {
                 OnSchedResponse.GetAvailability(element, response);
-                var elMonthNext = document.querySelector(".onsched-availability button.month-next");
-                console.log("elMonthNext="+elMonthNext.disabled);
             })
         );
     }
@@ -2472,7 +2483,7 @@ var OnSchedHelpers = function () {
         return results === null ? '' : decodeURIComponent(results[1].replace(/\+/g, ' '));
     }
 
-    function CreateAvailabilityUrl(baseUrl, params, date) {
+    function CreateAvailabilityUrl(baseUrl, params, date, tzOffset) {
         var startDate = date == null ? params.date : date;
         var endDate = date == null ? params.date : date;
         var url = baseUrl;
@@ -2481,7 +2492,7 @@ var OnSchedHelpers = function () {
         url += "/" + CreateDateString(startDate);
         url += "/" + CreateDateString(endDate);
 
-        var tzOffset = -startDate.getTimezoneOffset();
+        tzOffset = IsEmpty(tzOffset) ? -startDate.getTimezoneOffset() : tzOffset;
  //       element.params.tzOffset = OnSchedHelpers.IsEmpty(element.params.tzOffset) ? tzOffset : element.params.tzOffset;
 
         url = OnSchedHelpers.IsEmpty(params.locationId) ? url : AddUrlParam(url, "locationId", params.locationId);
