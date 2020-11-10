@@ -2761,7 +2761,7 @@ var OnSchedHelpers = function () {
         ]
 
         var elModal = document.getElementById('appointments-modal');
-        elModal.innerHTML = OnSchedTemplates.appointementsModal(response.name, tableFields, response.auditTrail);
+        elModal.innerHTML = OnSchedTemplates.appointmentsModal(response.name, tableFields, response.auditTrail);
         
         var elPopup = document.querySelector('#appointments-modal .onsched-popup-shadow');
         elPopup.classList.add('is-visible');
@@ -3654,7 +3654,7 @@ var OnSchedTemplates = function () {
         `;
         return tmplBookingForm;
     }
-    function appointementsModal(name, tableFields, auditTrailFields) {
+    function appointmentsModal(name, tableFields, auditTrailFields) {
         const tmplAppointmentsModal = `
     <div class="onsched-popup-shadow" data-animation="zoomInOut">
         <div class="onsched-popup">
@@ -5148,6 +5148,8 @@ var OnSchedTemplates = function () {
         serviceSetup: serviceSetup,
         searchForm: searchForm,
         appointmentSearchForm: appointmentSearchForm,
+        appointmentsList: appointmentsList,
+        appointmentsModal: appointmentsModal,
         confirmation: confirmation,
         bookingForm: bookingForm,
         bookingTimer: bookingTimer,
