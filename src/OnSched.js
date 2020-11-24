@@ -4544,7 +4544,7 @@ var OnSchedTemplates = function () {
         
         const markup = `
             <img id="onsched-image-preview" 
-                src="${data.id == undefined || data.id.length == 0 || data.imageUrl.length == 0 ? placeholderIcon : data.imageUrl}" 
+                src="${data.id == undefined || data.id.length == 0 || !data.imageUrl || data.imageUrl.length == 0 ? placeholderIcon : data.imageUrl}" 
                 width="50" height="50" data-post="image" />
         `;
 
