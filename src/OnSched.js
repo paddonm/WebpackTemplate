@@ -685,10 +685,15 @@ var OnSchedMount = function () {
             availability: defaultAvailability, 
             settings: {}
         };
+
+        var customFields = [];
+        if (element.options.customFields) {
+            customFields = element.options.customFields;
+        }
         
         if (element.params.id == undefined || element.params.id.length == 0) {
             if (element.params.data == undefined)
-                el.innerHTML = OnSchedTemplates.resourceSetup(element, defaultData, element.options.customFields);
+                el.innerHTML = OnSchedTemplates.resourceSetup(element, defaultData, customFields);
             else {
                 // make sure the supplied default data passed in params has availability
                 // if not, we'll use our default availability
@@ -697,7 +702,7 @@ var OnSchedMount = function () {
                 if (element.params.data.contact == undefined)
                     element.params.data.contact = {};
 
-                el.innerHTML = OnSchedTemplates.resourceSetup(element, element.params.data, element.options.customFields);
+                el.innerHTML = OnSchedTemplates.resourceSetup(element, element.params.data, customFields);
             }
             OnSchedWizardHelpers.InitWizardDomElements(element);
             OnSchedWizardHelpers.InitResourceDomElements(element);
@@ -3942,103 +3947,17 @@ var OnSchedTemplates = function () {
             <input type="hidden" name="step" value="0" />
             ${wizardTitle("Resource Setup", data)}
 
-            ${
-                resourceSetupGeneralInformation(element, data)
-            }
+            ${resourceSetupGeneralInformation(element, data)}
 
-            ${
-                resourceSetupContactInformation(element, data)
-            }
+            ${resourceSetupContactInformation(element, data)}
 
-            ${
-                resourceSetupAddress(element, data)
-            }
+            ${resourceSetupAddress(element, data)}
 
-            ${
-                resourceSetupAvailability(element, data)
-             }
-            <div class="onsched-wizard-section">
-                <h2>Address</h2>
-                <div class="onsched-form-row">
-                    <div class="onsched-form-col">
-                        <label for="addressLine1">Address Line 1</label>
-                        <input id="addressLine1" type="text" name="addressLine1" value="${dataValue(data.address.addressLine1)}" data-post="address"/>
-                    </div>
-                </div>
-                <div class="onsched-form-row">
-                    <div class="onsched-form-col">
-                        <label for="addressLine2">Address Line 2</label>
-                        <input id="addressLine2" type="text" name="addressLine2" value="${dataValue(data.address.addressLine2)}" data-post="address" />
-                    </div>
-                </div>
-                <div class="onsched-form-row">
-                    <div class="onsched-form-col">
-                        <label for="city">City</label>
-                        <input id="city" type="text" name="city" value="${dataValue(data.address.city)}" data-post="address"/>
-                    </div>
-                    <div class="onsched-form-col">
-                        <label for="state">State / Province</label>
-                        <select id="state" name="state" value="${dataValue(data.address.state)}" class="onsched-select" data-post="address"></select>
-                    </div>
-                </div>
-                <div class="onsched-form-row">
-                    <div class="onsched-form-col">
-                        <label for="country">Country</label>
-                        <select id="country" name="country" value="${dataValue(data.address.country)}" class="onsched-select" data-post="address">
-                            <option></option>
-                            <option value="CA">Canada</option>
-                            <option value="US">United States</option>
-                        </select>
-                    </div>
-                    <div class="onsched-form-col">
-                        <label for="postalCode">Zip / Postal Code</label>
-                        <input id="postalCode" type="text" name="postalCode" value="${dataValue(data.address.postalCode)}" data-post="address" />
-                    </div>
-                </div>
-            </div>
-            <div class="onsched-wizard-section">
-                <h2>Availability</h2>
-                <h4 class="onsched-business-hours-tz">Eastern Timezone</h4>
-                <div class="onsched-business-hours">${OnSchedTemplates.businessHoursTable(element.onsched.locale, data.availability)}</div>
-            </div>
-            ${
-                customFieldsArray && customFieldsArray.length
-                 ? 
-                `
-                    <div class="onsched-wizard-section">
-                        <h2>Custom Fields</h2>
-        
-                            ${customFieldsArray && customFieldsArray.map((field, i) => {
-                                let newRow = !(i % 2)
-        
-                                return (
-                                    `
-                                    ${newRow ? '<div class="onsched-form-row">' : ''}
-                                                    <div class="onsched-form-col">
-                                                        <label for="customField${i}">
-                                                            ${dataValue(field.label)}
-                                                        </label>
-                                                        <input type="text" id="customField${i}" name="field${i}" 
-                                                            value="${dataValue(field.value)}" 
-                                                            data-post="customFields" />
-                                                    </div>
-                                    ${newRow ? '</div>' : ''}
-                                    `
-                                )
-                            })}                                  
-                    </div>
-                `
-                 : 
-                ``
-            }
+            ${resourceSetupCustomFields(customFieldsArray)}
+            
+            ${resourceSetupAvailability(element, data)}
 
-            ${
-                resourceSetupCalendarSync(element, data)
-            }
-
-            ${
-                resourceSetupCustomFields(element, data)
-            }
+            ${resourceSetupCalendarSync(element, data)}
 
             <div class="onsched-wizard-nav">
                 <div style="display:table-row">
@@ -4258,65 +4177,34 @@ var OnSchedTemplates = function () {
         return markup;
     }
 
-    function resourceSetupCustomFields(element, data, customFields) {
-        const markup = `
-    <div class="onsched-wizard-section">
-        <h2>Custom Fields</h2>
-        <div class="onsched-form-row">
-            <div class="onsched-form-col">
-                <label for="customField1">
-                    ${customFields != undefined && customFields.field1 != undefined ? customFields.field1.label : "Custom Field 1" }
-                </label>
-                <input type="text" id="customField1" name="field1" 
-                    value="${dataValue(data.customFields.field1)}" 
-                    data-post="customFields" />
-            </div>
-            <div class="onsched-form-col">
-                <label for="customField2">Custom Field 2</label>
-                <input type="text" id="customField2" name="field2" value="${dataValue(data.customFields.field2)}" data-post="customFields" />
-            </div>                    
-        </div>
-        <div class="onsched-form-row">
-            <div class="onsched-form-col">
-                <label for="customField3">Custom Field 3</label>
-                <input type="text" id="customField3" name="field3" value="${dataValue(data.customFields.field3)}" data-post="customFields" />                    </div>
-            <div class="onsched-form-col">
-                <label for="customField4">Custom Field 4</label>
-                <input type="text" id="customField4" name="field4" value="${dataValue(data.customFields.field4)}" data-post="customFields" />
-            </div>                    
-        </div>
-        <div class="onsched-form-row">
-            <div class="onsched-form-col">
-                <label for="customField5">Custom Field 5</label>
-                <input type="text" id="customField5" name="field5" value="${dataValue(data.customFields.field5)}" data-post="customFields" />
-            </div>
-            <div class="onsched-form-col">
-                <label for="customField6">Custom Field 6</label>
-                <input type="text" id="customField6" name="field6" value="${dataValue(data.customFields.field6)}" data-post="customFields" />                    
-            </div>                    
-        </div>
-        <div class="onsched-form-row">
-            <div class="onsched-form-col">
-                <label for="customField7">Custom Field 7</label>
-                <input type="text" id="customField7" name="field7" value="${dataValue(data.customFields.field7)}" data-post="customFields" />  
-            </div>
-            <div class="onsched-form-col">
-                <label for="customField8">Custom Field 8</label>
-                <input type="text" id="customField8" name="field8" value="${dataValue(data.customFields.field8)}" data-post="customFields" />                      
-            </div>                    
-        </div>
-        <div class="onsched-form-row">
-            <div class="onsched-form-col">
-                <label for="customField9">Custom Field 9</label>
-                <input type="text" id="customField9" name="field9" value="${dataValue(data.customFields.field9)}" data-post="customFields" />                       
-            </div>
-            <div class="onsched-form-col">
-                <label for="customField10">Custom Field 10</label>
-                <input type="text" id="customField10" name="field10" value="${dataValue(data.customFields.field10)}" data-post="customFields" />                       
-            </div>                    
-        </div>                                                                
-    </div>
-        `;
+    function resourceSetupCustomFields(customFields) {
+        var markup = ``;
+        if (customFields && customFields.length) {
+            markup = `
+                        <div class="onsched-wizard-section">
+                            <h2>Custom Fields</h2>
+
+                                ${customFields && customFields.map((field, i) => {
+                                    let newRow = !(i % 2)
+
+                                    return (
+                                        `
+                                        ${newRow ? '<div class="onsched-form-row">' : ''}
+                                                        <div class="onsched-form-col">
+                                                            <label for="customField${i}">
+                                                                ${dataValue(field.label)}
+                                                            </label>
+                                                            <input type="text" id="customField${i}" name="field${i}" 
+                                                                value="${dataValue(field.value)}" 
+                                                                data-post="customFields" />
+                                                        </div>
+                                        ${newRow ? '</div>' : ''}
+                                        `
+                                    )
+                                })}                                  
+                        </div>
+                    `
+        }
         return markup;
     }   
 
