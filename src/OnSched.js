@@ -691,7 +691,30 @@ var OnSchedMount = function () {
             customFields = element.options.customFields;
         }
         
-        if (element.params.id == undefined || element.params.id.length == 0) {
+        if (element.options.suppressUI) {
+            if (element.params.data) {
+                if (element.params.id && element.params.id.length) {
+                    var resourceUrl = element.onsched.setupApiBaseUrl + "/resources/" + element.params.id;
+                    element.onsched.accessToken.then(x =>
+                        OnSchedRest.PutResource(x, resourceUrl, element.params.data, function (response) {
+                            OnSchedResponse.PutResource(element, response);
+                        })
+                    );    
+                }
+                else {
+                    var resourceUrl = element.onsched.setupApiBaseUrl + "/resources";
+                    element.onsched.accessToken.then(x =>
+                        OnSchedRest.PostResource(x, resourceUrl, element.params.data, function (response) {
+                            OnSchedResponse.PutResource(element, response);
+                        })
+                    );    
+                }
+            }
+            else {
+                console.log("Data object must be supplied to resourceSetupParams to supress the UI");
+            }
+        }
+        else if (element.params.id == undefined || element.params.id.length == 0) {
             if (element.params.data == undefined)
                 el.innerHTML = OnSchedTemplates.resourceSetup(element, defaultData, customFields);
             else {
@@ -2002,13 +2025,22 @@ var OnSchedResponse = function () {
         }
         // check if we need to upload an image for this resource
         const elSystemFileUploadBtn = document.querySelector(".onsched-wizard.onsched-form input[name=onsched-system-file-upload]");
-        console.log("elSystemFileUpload");
-        console.log(elSystemFileUpload);
-        if (elSystemFileUploadBtn.value) {
-            var image = document.getElementById("onsched-image-preview");
-            const base64String = OnSchedWizardHelpers.Base64Encoded(image); 
-            var postData = { imageFileName:elSystemFileUploadBtn.dataset.filename, imageFileData: base64String};
-            console.log(postData);
+
+        var base64String;
+        var postData = {};
+
+        if (elSystemFileUploadBtn) {
+            if (elSystemFileUploadBtn.value) {
+                var image = document.getElementById("onsched-image-preview");
+                base64String = OnSchedWizardHelpers.Base64Encoded(image); 
+                postData = { imageFileName:elSystemFileUploadBtn.dataset.filename, imageFileData: base64String};
+            }
+        }
+        else {
+            postData = element.params.data.image;
+        }
+
+        if (postData.imageFileName && postData.imageFileData) {
             const uploadImageUrl = element.onsched.setupApiBaseUrl + "/resources/"+ response.id + "/uploadimage";
             element.onsched.accessToken.then(x =>
                 OnSchedRest.PostResourceImage(x, uploadImageUrl, postData, function (response) {
@@ -2020,8 +2052,6 @@ var OnSchedResponse = function () {
             );                 
         }
         
-        console.log("OnSchedResponse.PutResource");
-        console.log(response);        
         var elResourceSetup = document.getElementById(element.id);
         var confirmationEvent = new CustomEvent("resourceSetupComplete", { detail: response });
         elResourceSetup.dispatchEvent(confirmationEvent); 
@@ -5382,4 +5412,3 @@ export {
     OnSchedTemplates,
     OnSchedRest
 }
-
