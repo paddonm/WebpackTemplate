@@ -274,6 +274,7 @@ var OnSchedMount = function () {
         url = element.params.units != null ? OnSchedHelpers.AddUrlParam(url, "units", element.params.units) : url;
         url = element.params.offset != null ? OnSchedHelpers.AddUrlParam(url, "offset", element.params.offset) : url;
         url = element.params.limit != null ? OnSchedHelpers.AddUrlParam(url, "limit", element.params.limit) : url;
+        url = element.params.ignorePrimary != null ? OnSchedHelpers.AddUrlParam(url, "ignorePrimary", element.params.ignorePrimary) : url;
         url = OnSchedHelpers.AddUrlParam(url, "nearestTo", element.params.nearestTo);
         OnSchedHelpers.ShowProgress();
         element.onsched.accessToken.then(x =>
