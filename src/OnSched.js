@@ -1867,8 +1867,10 @@ var OnSchedResponse = function () {
         if (response.count > 0) {
             // fire a custom event here
             var getCustomerEvent = new CustomEvent("getCustomer", { detail: response.data[0] });
+            var getCustomersEvent = new CustomEvent("getCustomers", { detail: response });
             var elCustomer = document.getElementById(element.id);
             elCustomer.dispatchEvent(getCustomerEvent);
+            elCustomer.dispatchEvent(getCustomersEvent);
         }
     }
 
