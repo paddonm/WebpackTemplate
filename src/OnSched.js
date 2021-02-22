@@ -454,6 +454,28 @@ var OnSchedMount = function () {
                 }) // end rest response
             ); // end promise
         }
+        // If updating the appointment to CANCELLED call the PUT /appointments/{id}/cancel
+        else if (element.options.cancel) {
+            var cancelUrl = element.onsched.apiBaseUrl + "/appointments/" + element.params.appointmentId + "/cancel";
+            var payload = {};
+            // Check if appointmentBM object is passed in for payload
+            if (element.params.appointmentBM) {
+                payload = element.params.appointmentBM;
+            }
+
+            element.onsched.accessToken.then(x => 
+                OnSchedRest.Put(x, cancelUrl, payload, function(response) {
+                    if (response.error) {
+                        console.log("Rest error response code=" + response.code);
+                    }
+                    else {
+                        var bookingCancellationEvent = new CustomEvent("bookingCancellation", { detail: response });
+                        el.dispatchEvent(bookingCancellationEvent);
+                    }
+                    
+                }) // end rest response
+            ); // end promise
+        }
         // If not confirming the appointment, then just fire an event with the response
         if (element.options.confirm == undefined || element.options.confirm == false) {
             var getAppointmentEvent = new CustomEvent("getAppointment", { detail: response });
