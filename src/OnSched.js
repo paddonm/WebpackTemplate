@@ -358,7 +358,7 @@ var OnSchedMount = function () {
         elCalendar.innerHTML = OnSchedTemplates.calendarSelectorFromDate(element.params.date, element.onsched.locale);
         var elTimes = document.querySelector(".onsched-available-times");
         elTimes.innerHTML = "";
-        var url = OnSchedHelpers.CreateAvailabilityUrl(element.onsched.apiBaseUrl, element.params, now, tzOffset);
+        var url = OnSchedHelpers.CreateAvailabilityUrl(element.onsched.apiBaseUrl, element.params, element.params.date, tzOffset);
 
         // calculate available days to pull when mounting
         url = OnSchedHelpers.AddUrlParam(url, "dayAvailabilityStartDate",
