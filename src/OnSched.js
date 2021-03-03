@@ -381,6 +381,9 @@ var OnSchedMount = function () {
 
         element.onsched.accessToken.then(x =>
             OnSchedRest.GetAvailability(x, url, function (response) {
+                var getAvailabilityEvent = new CustomEvent("getAvailability", { detail: response });
+                el.dispatchEvent(getAvailabilityEvent);
+
                 OnSchedResponse.GetAvailability(element, response);
             })
         );
@@ -2194,6 +2197,9 @@ var OnSchedOnChange = function () {
 
         element.onsched.accessToken.then(x =>
             OnSchedRest.GetAvailability(x, url, function (response) {
+                var getAvailabilityEvent = new CustomEvent("getAvailability", { detail: response });
+                document.getElementById('availability').dispatchEvent(getAvailabilityEvent);
+
                 OnSchedResponse.GetAvailability(element, response);
             })
         );
@@ -2253,6 +2259,9 @@ var OnSchedOnClick = function () {
         OnSchedHelpers.ShowProgress();
         element.onsched.accessToken.then(x =>
             OnSchedRest.GetAvailability(x, url, function (response) {
+                var getAvailabilityEvent = new CustomEvent("getAvailability", { detail: response });
+                document.getElementById('availability').dispatchEvent(getAvailabilityEvent);
+
                 OnSchedResponse.GetAvailability(element, response);
             })
         );
@@ -2420,6 +2429,9 @@ var OnSchedOnClick = function () {
         elMonthPrev.disabled = true;        
         element.onsched.accessToken.then(x =>
             OnSchedRest.GetAvailability(x, url, function (response) {
+                var getAvailabilityEvent = new CustomEvent("getAvailability", { detail: response });
+                document.getElementById('availability').dispatchEvent(getAvailabilityEvent);
+
                 OnSchedResponse.GetAvailability(element, response);
             })
         );
@@ -2468,6 +2480,9 @@ var OnSchedOnClick = function () {
         elMonthPrev.disabled = true;        
         element.onsched.accessToken.then(x =>
             OnSchedRest.GetAvailability(x, url, function (response) {
+                var getAvailabilityEvent = new CustomEvent("getAvailability", { detail: response });
+                document.getElementById('availability').dispatchEvent(getAvailabilityEvent);
+
                 OnSchedResponse.GetAvailability(element, response);
             })
         );
