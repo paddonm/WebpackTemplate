@@ -427,12 +427,6 @@ var OnSchedMount = function () {
     function AppointmentElement(element) {
         var el = document.getElementById(element.id);
         el.addEventListener("click", element.onClick);
-        var url = element.onsched.apiBaseUrl + "/appointments/" + element.params.appointmentId;
-
-        // if (!element.options.create && element.params.appointmentId === null || element.params.appointmentId.length === 0) {
-        //     console.log("A valid appointmentId not present.");
-        //     return;
-        // }
 
         // If updating the appointment to BOOKED call the PUT /appointments/{id}/book
         if (element.options.book) {
