@@ -429,10 +429,10 @@ var OnSchedMount = function () {
         el.addEventListener("click", element.onClick);
         var url = element.onsched.apiBaseUrl + "/appointments/" + element.params.appointmentId;
 
-        if (element.params.appointmentId === null || element.params.appointmentId.length === 0) {
-            console.log("A valid appointmentId not present.");
-            return;
-        }
+        // if (!element.options.create && element.params.appointmentId === null || element.params.appointmentId.length === 0) {
+        //     console.log("A valid appointmentId not present.");
+        //     return;
+        // }
 
         // If updating the appointment to BOOKED call the PUT /appointments/{id}/book
         if (element.options.book) {
@@ -479,10 +479,28 @@ var OnSchedMount = function () {
                 }) // end rest response
             ); // end promise
         }
+        else if (element.options.create) {
+            var createUrl = element.onsched.apiBaseUrl + "/appointments";
+    
+            element.onsched.accessToken.then(x => 
+                OnSchedRest.Post(x, createUrl, element.params, function(response) {
+                    if (response.error) {
+                        console.log("Rest error response code=" + response.code);
+                    }
+                    else {
+                        var createAppointmentEvent = new CustomEvent("createAppointment", { detail: response });
+                        el.dispatchEvent(createAppointmentEvent);
+                    }
+                    
+                }) // end rest response
+            ); // end promise
+        }
         // If not confirming the appointment, then just fire an event with the response
         if (element.options.confirm == undefined || element.options.confirm == false) {
-            var getAppointmentEvent = new CustomEvent("getAppointment", { detail: response });
-            el.dispatchEvent(getAppointmentEvent);
+            if (element.params.appointmentId) {
+                var getAppointmentEvent = new CustomEvent("getAppointment", { detail: response });
+                el.dispatchEvent(getAppointmentEvent);
+            }
         }
         else {
             // confirm option is set to we call the PUT /appointments/{id}/confirm
