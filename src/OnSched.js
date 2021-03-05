@@ -1818,10 +1818,6 @@ var OnSchedResponse = function () {
         var htmlAppointments = OnSchedTemplates.appointmentsList(response);
         var el = document.getElementById(element.id);
         el.innerHTML = htmlAppointments;
-        // fire a custom event here
-        eventModel = { 'object': response.object, 'hasMore': response.hasMore, 'count': response.count, 'total': response.total, 'data': response.data };
-        getAppointmentsEvent = new CustomEvent("getAppointments", { detail: eventModel });
-        el.dispatchEvent(getAppointmentsEvent);
     }
 
     function GetLocation(element, response) {
