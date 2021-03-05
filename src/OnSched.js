@@ -2876,6 +2876,7 @@ var OnSchedHelpers = function () {
                 OnSchedHelpers.ShowProgress();
                 element.onsched.accessToken.then(x =>
                     OnSchedRest.PutAppointmentCancel(x, url, {}, detail => {
+                        OnSchedMount.AppointmentsElement(element);
                         OnSchedHelpers.HideProgress();
                         var cancelAppointmentEvent = new CustomEvent("cancelAppointment", { detail });
                         elAppointments.dispatchEvent(cancelAppointmentEvent);
