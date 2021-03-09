@@ -123,6 +123,9 @@ function OnSched(ClientId, Environment, Options) {
                         case "appointmentSearch":
                             OnSchedMount.AppointmentSearchElement(this);
                             break;
+                        case "allocations":
+                            OnSchedMount.AllocationsElement(this);
+                            break;
                             default:
                             // TODO - raise App error event
                             console.log("Unsupported element " + element.type);
@@ -248,6 +251,25 @@ var OnSchedMount = function () {
             })
         );
         
+    }
+
+    function AllocationsElement(element) {
+        var el = document.getElementById(element.id);
+        el.addEventListener("click", element.onClick);
+        
+        var url = element.onsched.setupApiBaseUrl + `/services/${element.params.serviceId}/allocations`;
+        
+        delete element.params.serviceId
+
+        Object.entries(element.params).map(param => {
+            url = OnSchedHelpers.AddUrlParam(url, param[0], param[1]) 
+        })
+        
+        element.onsched.accessToken.then(x =>
+            OnSchedRest.GetAllocations(x, url, function (response) {
+                OnSchedResponse.GetAllocations(element, response);
+            })
+        );
     }
     
     function ServicesElement(element) {
@@ -874,6 +896,7 @@ var OnSchedMount = function () {
         ServiceSetupElement: ServiceSetupElement,
         AppointmentsElement: AppointmentsElement,
         AppointmentSearchElement: AppointmentSearchElement,
+        AllocationsElement: AllocationsElement
     };
 }(); // End OnSchedMount
 
@@ -1876,9 +1899,20 @@ var OnSchedResponse = function () {
             elResources.dispatchEvent(getResourcesEvent);
         }
     }
-
+    
     function GetResource(element, response) {
+        
+    }
 
+    function GetAllocations(element, response) {
+        var elAllocations = document.getElementById(element.id);
+
+        var htmlAllocations = OnSchedTemplates.allocationsList(response);
+        elAllocations.innerHTML = htmlAllocations;
+
+        // fire a custom event here
+        var getAllocationsEvent = new CustomEvent("getAllocations", { detail: response });
+        elAllocations.dispatchEvent(getAllocationsEvent);
     }
 
     function GetCustomers(element, response) {
@@ -2173,6 +2207,7 @@ var OnSchedResponse = function () {
         GetResources: GetResources,
         GetResource: GetResource,
         GetCustomers: GetCustomers,
+        GetAllocations: GetAllocations,
         PostAppointment: PostAppointment,
         PutAppointmentBook: PutAppointmentBook,
         PostLocation: PostLocation,
@@ -2520,6 +2555,13 @@ var OnSchedOnClick = function () {
             var elResources = document.getElementById(element.id);
             var getResourcesEvent = new CustomEvent("clickResource", { detail: eventModel });
             elResources.dispatchEvent(getResourcesEvent);
+        }
+        else
+        if (elementType == "allocations") {
+            eventModel = { allocationId: itemClicked.dataset.id };
+            var elAllocations = document.getElementById(element.id);
+            var getAllocationsEvent = new CustomEvent("clickAllocation", { detail: eventModel });
+            elAllocations.dispatchEvent(getAllocationsEvent);
         }
     }
     return {
@@ -3409,6 +3451,93 @@ var OnSchedTemplates = function () {
             </div>
         `;
         return tmplResources;
+    }
+
+    function allocationsList(response) {
+        const tmplAllocations = `
+            <div class="onsched-container">
+                <div class="onsched-row">
+                    <div class="onsched-col">
+                        <div class="onsched-list">
+                            <table class="onsched-table">
+                                <tbody>
+                                    <tr>
+                                        <th>Repeats</th>
+                                        <th>From</th>
+                                        <th>To</th>
+                                        <th>Effective</th>
+                                        <th>Booking Limit</th>
+                                        <th>Resource</th>
+                                        <th>Reason</th>
+                                    </tr>
+                                    ${response.data.map((allocation, index) => {
+                                        let repeats = 'Never';
+
+                                        if (allocation.repeats) {
+                                            switch (allocation.frequency) {
+                                                case 'D':
+                                                    repeats = 'Daily';
+                                                    break;
+                                                case 'W': 
+                                                    repeats = 'Weekly';
+                                                    break;
+                                                case 'M':
+                                                    repeats = 'Monthly';
+                                                    break;
+                                                default:
+                                                    repeats = 'Never';
+                                            }
+                                        }
+                                
+                                        return (
+                                            `<tr key="${index}">
+                                                <td 
+                                                    class="list-item info-col" 
+                                                    data-id=${allocation.id} 
+                                                    data-element="allocations">${repeats}
+                                                </td>
+                                                <td 
+                                                    class="list-item info-col" 
+                                                    data-id=${allocation.id} 
+                                                    data-element="allocations">${allocation.startTime}
+                                                </td>
+                                                <td 
+                                                    class="list-item info-col" 
+                                                    data-id=${allocation.id} 
+                                                    data-element="allocations">${allocation.endTime}
+                                                </td>
+                                                <td 
+                                                    class="list-item info-col" 
+                                                    data-id=${allocation.id} 
+                                                    data-element="allocations">${allocation.startDate} until ${allocation.endDate}
+                                                </td>
+                                                <td 
+                                                    class="list-item info-col" 
+                                                    data-id=${allocation.id} 
+                                                    data-element="allocations">${allocation.bookingLimit}
+                                                </td>
+                                                <td 
+                                                    class="list-item info-col" 
+                                                    data-id=${allocation.id} 
+                                                    data-element="allocations">${allocation.resourceName}
+                                                </td>
+                                                <td 
+                                                    class="list-item info-col" 
+                                                    data-id=${allocation.id} 
+                                                    data-element="allocations">${allocation.reason}
+                                                </td>
+                                            </tr>`
+                                        )
+                                    }
+                                    ).join("")}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        `;
+        return tmplAllocations;
     }
 
     function searchForm(params) {
@@ -5135,6 +5264,7 @@ var OnSchedTemplates = function () {
         wizardSections: wizardSections,
         Timezones:Timezones,
         TimezoneSelectOptions:TimezoneSelectOptions,
+        allocationsList: allocationsList
     };
 }();
 
@@ -5375,6 +5505,9 @@ var OnSchedRest = function () {
     function GetResourceGroups(token, url, callback) {
         return Get(token, url, callback);
     }
+    function GetAllocations(token, url, callback) {
+        return Get(token, url, callback);
+    }
     function PostLinkedService(token, url, payload, callback) {
         return Post(token, url, payload, callback);
     }
@@ -5439,6 +5572,7 @@ var OnSchedRest = function () {
         GetResources: GetResources,
         GetResourceGroups: GetResourceGroups,
         GetCustomers: GetCustomers,
+        GetAllocations: GetAllocations,
         PostLinkedService: PostLinkedService,
         PostLocation: PostLocation,
         PutLocation: PutLocation,
