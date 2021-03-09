@@ -80,6 +80,7 @@ However, delay the fade out process for 2.5 seconds */
 <div id="serviceSetup"></div>
 <div id="appointmentSearch"></div>
 <div id="appointments"></div>
+<div id="allocations"></div>
 
 
 <div class="onsched-container">
@@ -152,6 +153,7 @@ However, delay the fade out process for 2.5 seconds */
     <button id="loadResourceSetup" type="button" class="open-modal">Resource Setup</button>
     <button id="loadServiceSetup" type="button" class="open-modal">Service Setup</button>    
     <button id="loadAppointments" type="button" class="open-modal">Appointments</button>    
+    <button id="loadAllocations" type="button" class="open-modal">Allocations</button>    
 </div>
 
 <div id="customer"></div>
@@ -386,6 +388,17 @@ However, delay the fade out process for 2.5 seconds */
   elAppointmentSearch.addEventListener("notFound", function (e) {
     HideToast();
   });
+
+  var elAllocations = document.getElementById("allocations");
+  var allocationsParams = { serviceId: '1' };
+  var allocationsOptions = {};
+  var allocations = elements.create("allocations", allocationsParams, allocationsOptions);
+  elAllocations.addEventListener("getAllocations", e => {
+    console.log('e.detail', e.detail);
+  })
+  elAllocations.addEventListener("clickAllocation", e => {
+    console.log('e.detail', e.detail);
+  })
   
   var elLocation = document.getElementById("location");
   elLocation.addEventListener("getLocation", function (e) {
@@ -546,6 +559,11 @@ However, delay the fade out process for 2.5 seconds */
    elAppointmentsSetupButton.onclick = function(e) {
     ShowToast("Loading Appointments...");
     appointmentSearch.mount("appointmentSearch");
+   }   
+   var elAllocationsButton = document.getElementById("loadAllocations");
+   elAllocationsButton.onclick = function(e) {
+    ShowToast("Loading Allocations...");
+    allocations.mount("allocations");
    }   
 // Setup element testing /////////////////////////////
   console.log("SETUP ELEMENT TESTING");
