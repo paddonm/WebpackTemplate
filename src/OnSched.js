@@ -928,14 +928,14 @@ var OnSchedMount = function () {
             var urlAllocation = element.onsched.setupApiBaseUrl + `/services/allocations/${element.params.id}`;
             OnSchedHelpers.ShowProgress();
             element.onsched.accessToken.then(x =>
-                OnSchedRest.GetAllocations(x, urlAllocation, function (response) {
+                OnSchedRest.GetAllocation(x, urlAllocation, function (response) {
                     if (response.error) {
                         console.log("Error response=" + response.code);
                         return;
                     }
 
                     // now render the initial UI from the response data
-                    el.innerHTML = OnSchedTemplates.allocationSetup(element, data);                    
+                    el.innerHTML = OnSchedTemplates.allocationSetup(element, response);                    
 
                     OnSchedWizardHelpers.InitWizardDomElements(element);
                     OnSchedWizardHelpers.InitAllocationDomElements(element);
@@ -1064,9 +1064,9 @@ var OnSchedWizardHelpers = function () {
                     }
                     break;
                 case "allocationSetup":
+                    var postData = GetAllocationPostData(form.elements);
+                    
                     if (!element.params.id) {
-                        var postData = GetAllocationPostData(form.elements);
-
                         var allocationsUrl = element.onsched.setupApiBaseUrl + `/services/${element.params.serviceId}/allocations`;
                         OnSchedHelpers.ShowProgress();
                         element.onsched.accessToken.then(x =>
@@ -1076,12 +1076,18 @@ var OnSchedWizardHelpers = function () {
                         );
                     }
                     else {
-                        var putData = GetServicePutData(form.elements, element);
-                        var servicesUrl = element.onsched.setupApiBaseUrl + "/services/" + element.params.id;
+                        var allocationsUrl = element.onsched.setupApiBaseUrl + "/services/allocations/" + element.params.id;
                         OnSchedHelpers.ShowProgress();
                         element.onsched.accessToken.then(x =>
-                            OnSchedRest.PutService(x, servicesUrl, putData, function (response) {
-                                OnSchedResponse.PutService(element, response);
+                            OnSchedRest.GetAllocations(x, allocationsUrl, function (response) {
+                                var putData = GetAllocationPostData(form.elements);
+
+                                OnSchedHelpers.ShowProgress();
+                                element.onsched.accessToken.then(x =>
+                                    OnSchedRest.PutAllocation(x, allocationsUrl, putData, function (response) {
+                                        OnSchedResponse.PutAllocation(element, response);
+                                    })
+                                );
                             })
                         );     
                     }
@@ -1365,7 +1371,7 @@ var OnSchedWizardHelpers = function () {
         var elWeekdays = document.getElementById('weekdays');
         var elWeekdaysRow = document.getElementById('weekdays-row');
         var elDWMSwitch = document.getElementById('dwm-switch');
-        var weekdays = [];
+        var weekdays = elWeekdays.value.split("");
 
         elFrequency.onchange = e => {
             switch(e.target.value) {
@@ -2135,10 +2141,31 @@ var OnSchedResponse = function () {
 
         var htmlAllocations = OnSchedTemplates.allocationsList(response);
         elAllocations.innerHTML = htmlAllocations;
-
+        
         // fire a custom event here
         var getAllocationsEvent = new CustomEvent("getAllocations", { detail: response });
         elAllocations.dispatchEvent(getAllocationsEvent);
+    }
+    
+    function GetAllocation(element, response) {
+        // fire a custom event here
+        var getAllocationsEvent = new CustomEvent("getAllocation", { detail: response });
+        elAllocations.dispatchEvent(getAllocationsEvent);
+    }
+    
+    function PutAllocation(element, response) {
+        var elAllocationSetup = document.getElementById(element.id);
+
+        if (response.error) {
+            console.log("Rest error response code=" + response.code);
+            console.log(response.data);
+            
+            var errorEvent = new CustomEvent("allocationSetupError", { detail: response });
+            elAllocationSetup.dispatchEvent(errorEvent);    
+        }
+        
+        var confirmationEvent = new CustomEvent("allocationSetupComplete", { detail: response });
+        elAllocationSetup.dispatchEvent(confirmationEvent);    
     }
 
     function GetCustomers(element, response) {
@@ -2450,6 +2477,7 @@ var OnSchedResponse = function () {
         GetResource: GetResource,
         GetCustomers: GetCustomers,
         GetAllocations: GetAllocations,
+        GetAllocation: GetAllocation,
         PostAppointment: PostAppointment,
         PutAppointmentBook: PutAppointmentBook,
         PostLocation: PostLocation,
@@ -2458,7 +2486,8 @@ var OnSchedResponse = function () {
         PutResource: PutResource,
         PostService: PostService,
         PutService: PutService,
-        PostAllocation: PostAllocation
+        PostAllocation: PostAllocation,
+        PutAllocation: PutAllocation,
     };
 }(); // End OnSchedResponse
 
@@ -4957,12 +4986,12 @@ var OnSchedTemplates = function () {
                         </div>
                         <div class="onsched-form-row" id="weekdays-row" style="${checkFrequency('W') ? '' : 'display:none;'}">
                             <div class="onsched-form-col">
-                                <input id="weekdays" type="hidden" name="weekdays" data-post="repeat" />
+                                <input id="weekdays" type="hidden" name="weekdays" value="${data.repeat ? dataValue(data.repeat.weekdays) : ''}" data-post="repeat" />
                                 <label>Weekdays</label>
                                 <div class="onsched-repeat-weekdays">
                                 ${
                                     ['sun', 'mon', 'tue', 'wed', 'thu', 'fri', 'sat'].map((weekday, i) => 
-                                        `<label for="repeat-weekly-${weekday}">
+                                        `<label for="repeat-weekly-${weekday}" class="${data.repeat && data.repeat.weekdays.includes(i.toString()) ? 'selected' : ''}">
                                             <input id="repeat-weekly-${weekday}" type="checkbox" name="repeat-weekly-${weekday}" ${data.repeat && checkboxChecked(dataValue(data.repeat.weekdays.includes(i)))} data-type="bool" />
                                             ${weekday.slice(0,1)}
                                         </label>`
@@ -5881,6 +5910,9 @@ var OnSchedRest = function () {
     function GetAllocations(token, url, callback) {
         return Get(token, url, callback);
     }
+    function GetAllocation(token, url, callback) {
+        return Get(token, url, callback);
+    }
     function PostLinkedService(token, url, payload, callback) {
         return Post(token, url, payload, callback);
     }
@@ -5912,6 +5944,9 @@ var OnSchedRest = function () {
     }
     function PostAllocation(token, url, payload, callback) {
         return Post(token, url, payload, callback);
+    }
+    function PutAllocation(token, url, payload, callback) {
+        return Put(token, url, payload, callback);
     }
 
     function ShowProgress() {
@@ -5949,6 +5984,7 @@ var OnSchedRest = function () {
         GetResourceGroups: GetResourceGroups,
         GetCustomers: GetCustomers,
         GetAllocations: GetAllocations,
+        GetAllocation: GetAllocation,
         PostLinkedService: PostLinkedService,
         PostLocation: PostLocation,
         PutLocation: PutLocation,
@@ -5959,6 +5995,7 @@ var OnSchedRest = function () {
         PutService: PutService,
         PostServiceImage: PostServiceImage,
         PostAllocation: PostAllocation,
+        PutAllocation: PutAllocation,
         ShowProgress: ShowProgress,
         HideProgress: HideProgress
     };
