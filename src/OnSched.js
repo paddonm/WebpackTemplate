@@ -3760,12 +3760,12 @@ var OnSchedTemplates = function () {
                                                 <td 
                                                     class="list-item info-col" 
                                                     data-id=${allocation.id} 
-                                                    data-element="allocations">${allocation.startTime}
+                                                    data-element="allocations">${timeFromMilitaryTime(allocation.startTime, "en-US")}
                                                 </td>
                                                 <td 
                                                     class="list-item info-col" 
                                                     data-id=${allocation.id} 
-                                                    data-element="allocations">${allocation.endTime}
+                                                    data-element="allocations">${timeFromMilitaryTime(allocation.endTime, "en-US")}
                                                 </td>
                                                 <td 
                                                     class="list-item info-col" 
