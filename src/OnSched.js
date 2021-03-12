@@ -1077,19 +1077,14 @@ var OnSchedWizardHelpers = function () {
                     }
                     else {
                         var allocationsUrl = element.onsched.setupApiBaseUrl + "/services/allocations/" + element.params.id;
+                        var putData = GetAllocationPostData(form.elements);
+
                         OnSchedHelpers.ShowProgress();
                         element.onsched.accessToken.then(x =>
-                            OnSchedRest.GetAllocations(x, allocationsUrl, function (response) {
-                                var putData = GetAllocationPostData(form.elements);
-
-                                OnSchedHelpers.ShowProgress();
-                                element.onsched.accessToken.then(x =>
-                                    OnSchedRest.PutAllocation(x, allocationsUrl, putData, function (response) {
-                                        OnSchedResponse.PutAllocation(element, response);
-                                    })
-                                );
+                            OnSchedRest.PutAllocation(x, allocationsUrl, putData, function (response) {
+                                OnSchedResponse.PutAllocation(element, response);
                             })
-                        );     
+                        );
                     }
                     break;
                  default:
@@ -2163,7 +2158,7 @@ var OnSchedResponse = function () {
             var errorEvent = new CustomEvent("allocationSetupError", { detail: response });
             elAllocationSetup.dispatchEvent(errorEvent);    
         }
-        
+
         var confirmationEvent = new CustomEvent("allocationSetupComplete", { detail: response });
         elAllocationSetup.dispatchEvent(confirmationEvent);    
     }
