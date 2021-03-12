@@ -1384,10 +1384,6 @@ var OnSchedWizardHelpers = function () {
                     break;
                 default:
             }
-            if (e.target.value === 'W') {
-            }
-            else {
-            }
         }
         
         Array.from(weekdayInputs).map((input, i) => input.onchange = e => {
