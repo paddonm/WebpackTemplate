@@ -2451,8 +2451,6 @@ var OnSchedResponse = function () {
             elAllocationSetup.dispatchEvent(errorEvent);    
         }
 
-        console.log("OnSchedResponse.PostAllocation");
-        console.log(response);
         var confirmationEvent = new CustomEvent("allocationSetupComplete", { detail: response });
         elAllocationSetup.dispatchEvent(confirmationEvent);    
     }   
