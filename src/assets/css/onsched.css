@@ -1309,27 +1309,37 @@ button.onsched-file-upload-btn:hover {
     text-transform: capitalize;
     display: flex;
     flex-direction: column;
-    padding: 10px 8.4px;
     align-items: center;
-    border-radius: 50%;
+    justify-content: center;
     font-size: 1rem;
-    background-color: #d8d8de;
     color: #212529;
     font-weight: 600;
     cursor: pointer;
 }
 .onsched-form .onsched-repeat-weekdays label.selected {
-    background-color: #1a73e8;
-    color: #fff;
+    color: #1a73e8;
+}
+@media (min-width: 600px) {
+    .onsched-form .onsched-repeat-weekdays label {
+        background-color: #d8d8de;
+        border-radius: 50%;
+        width: 45px;
+        height: 45px;
+    }
+    .onsched-form .onsched-repeat-weekdays label.selected {
+        background-color: #1a73e8;
+        color: #fff;
+    }
 }
 .onsched-form #interval {
-    width: calc(100% - 55px);
+    width: 100%;
 }
 .onsched-form #dwm-switch {
     font-size: 12px;
     display: inline-block;
-    position: relative;
-    top: -7px;
+    position: absolute;
+    margin-left: -55px;
+    margin-top: 8px;
 }
 
 /* Input control styles */
