@@ -126,6 +126,9 @@ function OnSched(ClientId, Environment, Options) {
                         case "allocations":
                             OnSchedMount.AllocationsElement(this);
                             break;
+                        case "allocationSetup":
+                            OnSchedMount.AllocationSetupElement(this);
+                            break;
                             default:
                             // TODO - raise App error event
                             console.log("Unsupported element " + element.type);
@@ -879,6 +882,69 @@ var OnSchedMount = function () {
         }
     }
 
+    function AllocationSetupElement(element) {
+        var el = document.getElementById(element.id);
+
+        // check for presence of id in params
+        // if exists, then make get call and build UI with response data
+        // otherwise
+        // creating a fresh allocation, use defaults incoming in params
+        var date = new Date().toISOString().slice(0, 10)
+
+        var defaultData = {
+            locationId: '',
+            resourceId: '',
+            startDate: date,
+            endDate: date,
+            startTime: 900,
+            endTime: 1700,
+            reason: '',
+            bookingLimit: 0,
+            allDay: false,
+            repeats: false,
+            repeat: {
+                frequency: 'D',
+                interval:  1,
+                weekdays:  '',
+                monthDay:  '1',
+                monthType: 'D'
+              },
+        }
+
+        let data = defaultData;
+
+        if (!element.params.id) {
+            if (element.params.data) {
+                data = Object.assign(defaultData, element.params.data);
+            }
+
+            el.innerHTML = OnSchedTemplates.allocationSetup(element, data);
+
+            OnSchedWizardHelpers.InitWizardDomElements(element);
+            OnSchedWizardHelpers.InitAllocationDomElements(element);
+            OnSchedWizardHelpers.ShowWizardSection(0);
+        }
+        // else {
+        //     console.log("Id present, get service and build UI from response data");
+        //     var urlService = element.onsched.apiBaseUrl + "/services/" + element.params.id;
+        //     OnSchedHelpers.ShowProgress();
+        //     element.onsched.accessToken.then(x =>
+        //         OnSchedRest.GetServices(x, urlService, function (response) {
+        //             if (response.error) {
+        //                 console.log("Rest error response code=" + response.code);
+        //                 return;
+        //             }
+        //             console.log(response);
+        //             // now render the initial UI from the response data
+        //             el.innerHTML = OnSchedTemplates.allocationSetup(element, response);                    
+        //             OnSchedWizardHelpers.InitWizardDomElements(element);
+        //             OnSchedWizardHelpers.InitServiceDomElements(element);
+        //             OnSchedWizardHelpers.ShowWizardSection(0);
+        //         }) // end rest response
+        //     ); // end promise     
+        // }
+    }
+
     return {
         SearchElement: SearchElement,
         LocationsElement: LocationsElement,
@@ -896,7 +962,8 @@ var OnSchedMount = function () {
         ServiceSetupElement: ServiceSetupElement,
         AppointmentsElement: AppointmentsElement,
         AppointmentSearchElement: AppointmentSearchElement,
-        AllocationsElement: AllocationsElement
+        AllocationsElement: AllocationsElement,
+        AllocationSetupElement: AllocationSetupElement
     };
 }(); // End OnSchedMount
 
@@ -982,6 +1049,29 @@ var OnSchedWizardHelpers = function () {
                                 element.onsched.accessToken.then(x =>
                                     OnSchedRest.PostLinkedService(x, linkedServiceUrl, calData, function (linkedResponse) {})
                                 );
+                            })
+                        );
+                    }
+                    else {
+                        var putData = GetServicePutData(form.elements, element);
+                        var servicesUrl = element.onsched.setupApiBaseUrl + "/services/" + element.params.id;
+                        OnSchedHelpers.ShowProgress();
+                        element.onsched.accessToken.then(x =>
+                            OnSchedRest.PutService(x, servicesUrl, putData, function (response) {
+                                OnSchedResponse.PutService(element, response);
+                            })
+                        );     
+                    }
+                    break;
+                case "allocationSetup":
+                    if (!element.params.id) {
+                        var postData = GetAllocationPostData(form.elements);
+
+                        var allocationsUrl = element.onsched.setupApiBaseUrl + `/services/${element.params.serviceId}/allocations`;
+                        OnSchedHelpers.ShowProgress();
+                        element.onsched.accessToken.then(x =>
+                            OnSchedRest.PostAllocation(x, allocationsUrl, postData, function (response) {
+                                OnSchedResponse.PostAllocation(element, response);
                             })
                         );
                     }
@@ -1260,6 +1350,81 @@ var OnSchedWizardHelpers = function () {
                     console.log(response);
                     var elServiceGroups = document.querySelector(".onsched-wizard.onsched-form select[name=serviceGroupId]");
                     elServiceGroups.innerHTML = OnSchedTemplates.resourceGroupOptions(response.data);
+                    // template the resourcegroup select
+                }
+            }) // end rest response
+        ); // end promise           
+    }
+
+    function InitAllocationDomElements(element) {
+        var url = element.onsched.apiBaseUrl + `/resources`;
+        var elRepeatObj = document.getElementById('repeat-object');
+        var elRepeats = document.getElementById('repeats');
+        var elFrequency = document.getElementById('frequency');
+        var weekdayInputs = document.querySelectorAll("input[id^='repeat-weekly-']");
+        var elWeekdays = document.getElementById('weekdays');
+        var elWeekdaysRow = document.getElementById('weekdays-row');
+        var elDWMSwitch = document.getElementById('dwm-switch');
+        var weekdays = [];
+
+        elFrequency.onchange = e => {
+            switch(e.target.value) {
+                case 'D':
+                    elWeekdaysRow.style.display = 'none';
+                    elDWMSwitch.innerText = 'day(s)';
+                    break;
+                case 'W':
+                    elWeekdaysRow.style.display = 'flex';
+                    elDWMSwitch.innerText = 'week(s)';
+                break;
+                case 'M':
+                    elWeekdaysRow.style.display = 'none';
+                    elDWMSwitch.innerText = 'month(s)';
+                    break;
+                default:
+            }
+            if (e.target.value === 'W') {
+            }
+            else {
+            }
+        }
+        
+        Array.from(weekdayInputs).map((input, i) => input.onchange = e => {
+            e.target.parentElement.className = e.target.checked ? 'selected' : '';
+            let idx = i.toString();
+            
+            if (weekdays.includes(idx)) {
+                weekdays = weekdays.filter(w => w !== idx);
+            }
+            else {
+                weekdays.push(idx);
+            }
+            
+            elWeekdays.value = weekdays.join("");
+        })
+
+
+        elRepeats.onchange = e => {
+            if (e.target.checked) {
+                elRepeatObj.style.display = 'unset';
+            }
+            else {
+                elRepeatObj.style.display = 'none';
+            }
+        }
+        
+        Object.entries(element.params).map(param => {
+            url = OnSchedHelpers.AddUrlParam(url, param[0], param[1]) 
+        })
+
+        element.onsched.accessToken.then(x =>
+            OnSchedRest.GetResources(x, url, function (response) {
+                if (response.error) {
+                    console.log("Rest error response code=" + response.code);
+                }
+                else {
+                    var elResources = document.querySelector(".onsched-wizard.onsched-form select[name=resourceId]");
+                    elResources.innerHTML = OnSchedTemplates.resourceGroupOptions(response.data);
                     // template the resourcegroup select
                 }
             }) // end rest response
@@ -1632,6 +1797,66 @@ var OnSchedWizardHelpers = function () {
             console.log(e);        
         }
     }
+    function GetAllocationPostData(formElements) {
+        try {
+            var date = new Date().toISOString().slice(0, 10);
+
+            var defaultData = {
+                locationId: '',
+                resourceId: '',
+                startDate: date,
+                endDate: date,
+                startTime: 900,
+                endTime: 1700,
+                reason: '',
+                bookingLimit: 0,
+                allDay: false,
+                repeats: false,
+                repeat: {
+                    frequency: 'D',
+                    interval:  1,
+                    weekdays:  '',
+                    monthDay:  date.slice(-2),
+                    monthType: 'D'
+                  },
+            }
+
+            var postData = defaultData;
+
+            for (var i = 0;i < formElements.length;i++) {
+                var formEl = formElements[i];
+                
+                var value = formEl.value;
+                if (formEl.type === 'checkbox') {
+                    value = formEl.checked;
+                }
+
+                // Change monthDay with startDate
+                if (formEl.name === 'startDate') {
+                    postData.repeat.monthDay = value.slice(-2);
+                }
+                
+                if (formEl.dataset.post) {
+                    if (formEl.dataset.post === 'root') {
+                        postData[formEl.name] = value;
+                        if (formEl.type === 'checkbox') {
+                            postData[formEl.name] = value;
+                        }
+                    }
+                    else if (formEl.dataset.post === 'repeat') {
+                        postData.repeat[formEl.name] = value;
+                    }
+                }
+            }
+
+            return postData;     
+        
+        } catch(e) {
+            // TODO - raise error event to the app client
+            console.log("GetAllocationPostData failed");
+            console.log(e);        
+        }
+    }
 
     function WizardPrevHandler(e) {
         var elStep = document.querySelector(".onsched-wizard input[name=step]")
@@ -1745,6 +1970,7 @@ var OnSchedWizardHelpers = function () {
         InitLocationDomElements: InitLocationDomElements,
         InitResourceDomElements: InitResourceDomElements,
         InitServiceDomElements: InitServiceDomElements,
+        InitAllocationDomElements: InitAllocationDomElements,
         SelectOptionMatchingData: SelectOptionMatchingData,
         Base64Encoded:Base64Encoded,
     };
@@ -2195,6 +2421,22 @@ var OnSchedResponse = function () {
         var confirmationEvent = new CustomEvent("serviceetupComplete", { detail: response });
         elResourceSetup.dispatchEvent(confirmationEvent); 
         elResourceSetup.innerHTML = "";   
+    }
+    function PostAllocation(element, response) {
+        var elAllocationSetup = document.getElementById(element.id);
+
+        if (response.error) {
+            console.log("Rest error response code=" + response.code);
+            console.log(response.data);
+            
+            var errorEvent = new CustomEvent("allocationSetupError", { detail: response });
+            elAllocationSetup.dispatchEvent(errorEvent);    
+        }
+
+        console.log("OnSchedResponse.PostAllocation");
+        console.log(response);
+        var confirmationEvent = new CustomEvent("allocationSetupComplete", { detail: response });
+        elAllocationSetup.dispatchEvent(confirmationEvent);    
     }   
 
     return {
@@ -2215,7 +2457,8 @@ var OnSchedResponse = function () {
         PostResource: PostResource,
         PutResource: PutResource,
         PostService: PostService,
-        PutService: PutService
+        PutService: PutService,
+        PostAllocation: PostAllocation
     };
 }(); // End OnSchedResponse
 
@@ -4620,6 +4863,130 @@ var OnSchedTemplates = function () {
         return markup;
     }   
 
+    function allocationSetup(element, data) {
+        var times = initTimesSelectData("en-US").map(time => 
+            `<option key="${time[0]}" value="${time[0]}">${time[1]}</option>`
+        );
+        
+        const tmplAllocationSetup = `
+        <div class="onsched-container">
+            <form class="onsched-wizard onsched-form" name="allocationSetup">
+                <input type="hidden" name="step" value="0" />
+                <h1>Allocation Setup</h1>
+
+                <div class="onsched-wizard-section">
+                    <h2>Add Event</h2>
+                    <div class="onsched-form-row">
+                        <div class="onsched-form-col">
+                            <label for="startDate">Starting</label>
+                            <input id="startDate" type="date" name="startDate"  value="${dataValue(data.startDate)}" required="required" data-post="root" />
+                        </div>
+                        <div class="onsched-form-col">
+                            <label for="endDate">Ending</label>
+                            <input id="endDate" type="date" name="endDate"  value="${dataValue(data.endDate)}" required="required" data-post="root" />
+                        </div>
+                    </div> 
+                    <div class="onsched-form-row">
+                        <div class="onsched-form-col">
+                            <label for="startTime">At</label>
+                            <select id="startTime" class="onsched-select" name="startTime" value="${dataValue(data.startTime)}" data-post="root">
+                                ${times}
+                            </select>
+                        </div>
+                        <div class="onsched-form-col">
+                            <label for="endTime">At</label>
+                            <select id="endTime" class="onsched-select" name="endTime" value="${dataValue(data.endTime)}" data-post="root">
+                                ${times}
+                            </select>
+                        </div>
+                    </div> 
+                    <div class="onsched-form-row">
+                        <div class="onsched-form-col">
+                            <label for="resourceId">Resource</label>
+                            <select id="resourceId" class="onsched-select" name="resourceId" value="${dataValue(data.resourceId)}" data-post="root">
+                                <option />
+                            </select>
+                        </div>
+                        <div class="onsched-form-col">
+                            <label for="bookingLimit">Booking Limit</label>
+                            <input id="bookingLimit" type="number" name="bookingLimit"  value="${dataValue(data.bookingLimit)}" data-post="root" />
+                        </div>
+                    </div> 
+                    <div class="onsched-form-row">
+                        <div class="onsched-form-col">
+                            <label for="reason">Reason</label>
+                            <input id="reason" type="text" name="reason"  value="${dataValue(data.reason)}" data-post="root" />
+                        </div>
+                    </div> 
+                    <div class="onsched-form-row">
+                        <div class="onsched-form-col">
+                            <label for="repeats">
+                                <input id="repeats" type="checkbox" name="repeats" ${checkboxChecked(dataValue(data.repeats))} data-post="root" data-type="bool" />
+                                Repeats
+                            </label>
+                        </div>
+                    </div> 
+                    <div id="repeat-object" style="display:none;">
+                        <div class="onsched-form-row">
+                            <div class="onsched-form-col">
+                                <label for="frequency">Repeat</label>
+                                <select id="frequency" class="onsched-select" name="frequency" value="${dataValue(data.repeat.frequency)}" data-post="repeat">
+                                    <option value="D">Daily</option>
+                                    <option value="W">Weekly</option>
+                                    <option value="M">Monthly</option>
+                                </select>
+                            </div>
+                            <div class="onsched-form-col">
+                                <label for="interval">Every</label>
+                                <div>
+                                    <select id="interval" class="onsched-select" name="interval" value="${dataValue(data.repeat.interval)}" data-post="repeat">
+                                        <option value="1">1</option>
+                                        <option value="2">2</option>
+                                        <option value="3">3</option>
+                                        <option value="4">4</option>
+                                        <option value="5">5</option>
+                                    </select>
+                                    <span id="dwm-switch">day(s)</span>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="onsched-form-row" id="weekdays-row" style="display:none;">
+                            <div class="onsched-form-col">
+                                <input id="weekdays" type="hidden" name="weekdays" data-post="repeat" />
+                                <label>Weekdays</label>
+                                <div class="onsched-repeat-weekdays">
+                                ${
+                                    ['sun', 'mon', 'tue', 'wed', 'thu', 'fri', 'sat'].map((weekday, i) => 
+                                        `<label for="repeat-weekly-${weekday}">
+                                            <input id="repeat-weekly-${weekday}" type="checkbox" name="repeat-weekly-${weekday}" ${checkboxChecked(dataValue(data.repeat.weekdays.includes(i)))} data-type="bool" />
+                                            ${weekday.slice(0,1)}
+                                        </label>`
+                                    ).join("")
+                                }
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>     
+
+                <div class="onsched-wizard-nav">
+                    <div style="display:table-row">
+                        <div class="onsched-wizard-nav-status">
+                            <span class="step active"></span>
+                        </div>
+                        <div class="onsched-wizard-nav-buttons">
+                            <button type="button" id="prevButton" class="prevButton">Previous</button>
+                            <button type="submit" id="nextButton" class="nextButton">Next</button>
+                        </div>
+                    </div>
+                </div>
+            </form>
+        </div>        
+        `;
+
+        return tmplAllocationSetup;
+    }
+
     function wizardTitle(title, data) {
         const markup = `
             <div style="display:table;width:100%;">
@@ -5264,7 +5631,8 @@ var OnSchedTemplates = function () {
         wizardSections: wizardSections,
         Timezones:Timezones,
         TimezoneSelectOptions:TimezoneSelectOptions,
-        allocationsList: allocationsList
+        allocationsList: allocationsList,
+        allocationSetup: allocationSetup
     };
 }();
 
@@ -5537,6 +5905,9 @@ var OnSchedRest = function () {
     function PostServiceImage(token, url, payload, callback) {
         return Post(token, url, payload, callback);
     }
+    function PostAllocation(token, url, payload, callback) {
+        return Post(token, url, payload, callback);
+    }
 
     function ShowProgress() {
         var indicators = document.getElementsByClassName("onsched-progress");
@@ -5582,6 +5953,7 @@ var OnSchedRest = function () {
         PostService: PostService,
         PutService: PutService,
         PostServiceImage: PostServiceImage,
+        PostAllocation: PostAllocation,
         ShowProgress: ShowProgress,
         HideProgress: HideProgress
     };
