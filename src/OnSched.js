@@ -924,25 +924,25 @@ var OnSchedMount = function () {
             OnSchedWizardHelpers.InitAllocationDomElements(element);
             OnSchedWizardHelpers.ShowWizardSection(0);
         }
-        // else {
-        //     console.log("Id present, get service and build UI from response data");
-        //     var urlService = element.onsched.apiBaseUrl + "/services/" + element.params.id;
-        //     OnSchedHelpers.ShowProgress();
-        //     element.onsched.accessToken.then(x =>
-        //         OnSchedRest.GetServices(x, urlService, function (response) {
-        //             if (response.error) {
-        //                 console.log("Rest error response code=" + response.code);
-        //                 return;
-        //             }
-        //             console.log(response);
-        //             // now render the initial UI from the response data
-        //             el.innerHTML = OnSchedTemplates.allocationSetup(element, response);                    
-        //             OnSchedWizardHelpers.InitWizardDomElements(element);
-        //             OnSchedWizardHelpers.InitServiceDomElements(element);
-        //             OnSchedWizardHelpers.ShowWizardSection(0);
-        //         }) // end rest response
-        //     ); // end promise     
-        // }
+        else {
+            var urlAllocation = element.onsched.setupApiBaseUrl + `/services/allocations/${element.params.id}`;
+            OnSchedHelpers.ShowProgress();
+            element.onsched.accessToken.then(x =>
+                OnSchedRest.GetAllocations(x, urlAllocation, function (response) {
+                    if (response.error) {
+                        console.log("Error response=" + response.code);
+                        return;
+                    }
+
+                    // now render the initial UI from the response data
+                    el.innerHTML = OnSchedTemplates.allocationSetup(element, data);                    
+
+                    OnSchedWizardHelpers.InitWizardDomElements(element);
+                    OnSchedWizardHelpers.InitAllocationDomElements(element);
+                    OnSchedWizardHelpers.ShowWizardSection(0);
+                }) // end rest response
+            ); // end promise     
+        }
     }
 
     return {
@@ -4867,7 +4867,12 @@ var OnSchedTemplates = function () {
         var times = initTimesSelectData("en-US").map(time => 
             `<option key="${time[0]}" value="${time[0]}">${time[1]}</option>`
         );
-        
+
+        const checkFrequency = frequency => {
+            if (!data.repeat) return false
+            return dataValue(data.repeat.frequency) === frequency
+        }
+
         const tmplAllocationSetup = `
         <div class="onsched-container">
             <form class="onsched-wizard onsched-form" name="allocationSetup">
@@ -4926,20 +4931,20 @@ var OnSchedTemplates = function () {
                             </label>
                         </div>
                     </div> 
-                    <div id="repeat-object" style="display:none;">
+                    <div id="repeat-object" style="${data.repeats ? '' : 'display:none;'}">
                         <div class="onsched-form-row">
                             <div class="onsched-form-col">
                                 <label for="frequency">Repeat</label>
-                                <select id="frequency" class="onsched-select" name="frequency" value="${dataValue(data.repeat.frequency)}" data-post="repeat">
-                                    <option value="D">Daily</option>
-                                    <option value="W">Weekly</option>
-                                    <option value="M">Monthly</option>
+                                <select id="frequency" class="onsched-select" name="frequency" value="${data.repeat ? dataValue(data.repeat.frequency) : 'D'}" data-post="repeat">
+                                    <option value="D" ${checkFrequency("D") ? 'selected' : ''} >Daily</option>
+                                    <option value="W" ${checkFrequency("W") ? 'selected' : ''} >Weekly</option>
+                                    <option value="M" ${checkFrequency("M") ? 'selected' : ''} >Monthly</option>
                                 </select>
                             </div>
                             <div class="onsched-form-col">
                                 <label for="interval">Every</label>
                                 <div>
-                                    <select id="interval" class="onsched-select" name="interval" value="${dataValue(data.repeat.interval)}" data-post="repeat">
+                                    <select id="interval" class="onsched-select" name="interval" value="${data.repeat ? dataValue(data.repeat.interval) : '1'}" data-post="repeat">
                                         <option value="1">1</option>
                                         <option value="2">2</option>
                                         <option value="3">3</option>
@@ -4950,7 +4955,7 @@ var OnSchedTemplates = function () {
                                 </div>
                             </div>
                         </div>
-                        <div class="onsched-form-row" id="weekdays-row" style="display:none;">
+                        <div class="onsched-form-row" id="weekdays-row" style="${checkFrequency('W') ? '' : 'display:none;'}">
                             <div class="onsched-form-col">
                                 <input id="weekdays" type="hidden" name="weekdays" data-post="repeat" />
                                 <label>Weekdays</label>
@@ -4958,7 +4963,7 @@ var OnSchedTemplates = function () {
                                 ${
                                     ['sun', 'mon', 'tue', 'wed', 'thu', 'fri', 'sat'].map((weekday, i) => 
                                         `<label for="repeat-weekly-${weekday}">
-                                            <input id="repeat-weekly-${weekday}" type="checkbox" name="repeat-weekly-${weekday}" ${checkboxChecked(dataValue(data.repeat.weekdays.includes(i)))} data-type="bool" />
+                                            <input id="repeat-weekly-${weekday}" type="checkbox" name="repeat-weekly-${weekday}" ${data.repeat && checkboxChecked(dataValue(data.repeat.weekdays.includes(i)))} data-type="bool" />
                                             ${weekday.slice(0,1)}
                                         </label>`
                                     ).join("")
