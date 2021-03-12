@@ -81,6 +81,7 @@ However, delay the fade out process for 2.5 seconds */
 <div id="appointmentSearch"></div>
 <div id="appointments"></div>
 <div id="allocations"></div>
+<div id="allocationSetup"></div>
 
 
 <div class="onsched-container">
@@ -154,6 +155,7 @@ However, delay the fade out process for 2.5 seconds */
     <button id="loadServiceSetup" type="button" class="open-modal">Service Setup</button>    
     <button id="loadAppointments" type="button" class="open-modal">Appointments</button>    
     <button id="loadAllocations" type="button" class="open-modal">Allocations</button>    
+    <button id="loadAllocationSetup" type="button" class="open-modal">Allocation Setup</button>    
 </div>
 
 <div id="customer"></div>
@@ -565,6 +567,11 @@ However, delay the fade out process for 2.5 seconds */
     ShowToast("Loading Allocations...");
     allocations.mount("allocations");
    }   
+   var elAllocationSetupButton = document.getElementById("loadAllocationSetup");
+   elAllocationSetupButton.onclick = function(e) {
+    ShowToast("Loading Allocation Setup...");
+    allocationSetup.mount("allocationSetup");
+   }   
 // Setup element testing /////////////////////////////
   console.log("SETUP ELEMENT TESTING");
   var elLocationSetup = document.getElementById("locationSetup");
@@ -612,6 +619,21 @@ However, delay the fade out process for 2.5 seconds */
   elServiceSetup.addEventListener("serviceSetupError", function (e) {
     console.log(e.detail);
     ShowToast("serviceSetupError event fired with response in e.detail");
+  });
+
+  var elAllocationSetup = document.getElementById("allocationSetup");
+  //var allocationSetupParams = {"id":"5", "availability": businessHours};
+  var allocationSetupParams = {serviceId: '1', id: '16012'};
+  var allocationSetupOptions = {};
+  var allocationSetup = elements.create("allocationSetup", allocationSetupParams, allocationSetupOptions);
+  var elAllocationSetup = document.getElementById("allocationSetup");
+  elAllocationSetup.addEventListener("allocationSetupComplete", function (e) {
+    console.log(e.detail);
+    ShowToast("allocationSetupComplete event fired with response in e.detail");
+  });
+  elAllocationSetup.addEventListener("allocationSetupError", function (e) {
+    console.log(e.detail);
+    ShowToast("allocationSetupError event fired with response in e.detail");
   });
 
   var elAppointments = document.getElementById("appointments");

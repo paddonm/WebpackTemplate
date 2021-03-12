@@ -1290,6 +1290,48 @@ button.onsched-file-upload-btn:hover {
     --s: .5;
 }
  */
+
+ /* OnSched Allocation Form */
+ .onsched-form .onsched-repeat-weekdays {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    max-width: 600px;
+    margin: 10px 0;
+    width: 100%;
+}
+.onsched-form .onsched-repeat-weekdays input[type=checkbox] {
+    margin-bottom: -14px;
+    opacity: 0;
+    cursor: pointer;
+}
+.onsched-form .onsched-repeat-weekdays label {
+    text-transform: capitalize;
+    display: flex;
+    flex-direction: column;
+    padding: 10px 8.4px;
+    align-items: center;
+    border-radius: 50%;
+    font-size: 1rem;
+    background-color: #d8d8de;
+    color: #212529;
+    font-weight: 600;
+    cursor: pointer;
+}
+.onsched-form .onsched-repeat-weekdays label.selected {
+    background-color: #1a73e8;
+    color: #fff;
+}
+.onsched-form #interval {
+    width: calc(100% - 55px);
+}
+.onsched-form #dwm-switch {
+    font-size: 12px;
+    display: inline-block;
+    position: relative;
+    top: -7px;
+}
+
 /* Input control styles */
 
 .onsched-form input[type=color],
