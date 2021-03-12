@@ -938,7 +938,7 @@ var OnSchedMount = function () {
                     el.innerHTML = OnSchedTemplates.allocationSetup(element, response);                    
 
                     OnSchedWizardHelpers.InitWizardDomElements(element);
-                    OnSchedWizardHelpers.InitAllocationDomElements(element);
+                    OnSchedWizardHelpers.InitAllocationDomElements(element, response);
                     OnSchedWizardHelpers.ShowWizardSection(0);
                 }) // end rest response
             ); // end promise     
@@ -1357,7 +1357,7 @@ var OnSchedWizardHelpers = function () {
         ); // end promise           
     }
 
-    function InitAllocationDomElements(element) {
+    function InitAllocationDomElements(element, allocation) {
         var url = element.onsched.apiBaseUrl + `/resources`;
         var elRepeatObj = document.getElementById('repeat-object');
         var elRepeats = document.getElementById('repeats');
@@ -1421,7 +1421,15 @@ var OnSchedWizardHelpers = function () {
                 }
                 else {
                     var elResources = document.querySelector(".onsched-wizard.onsched-form select[name=resourceId]");
-                    elResources.innerHTML = OnSchedTemplates.resourceGroupOptions(response.data);
+                    const resourcesSelectList = `
+                        <option value="">None</option>
+                        ${response.data.map((resource) => 
+                            `
+                            <option value="${resource.id}" ${resource.id === allocation.resourceId ? 'selected' : ''}>${resource.name}</option>
+                            `
+                        ).join("")}
+                    `;
+                    elResources.innerHTML = resourcesSelectList;
                     // template the resourcegroup select
                 }
             }) // end rest response
