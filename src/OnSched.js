@@ -3735,7 +3735,7 @@ var OnSchedTemplates = function () {
                                         let repeats = 'Never';
 
                                         if (allocation.repeats) {
-                                            switch (allocation.frequency) {
+                                            switch (allocation.repeat.frequency) {
                                                 case 'D':
                                                     repeats = 'Daily';
                                                     break;
