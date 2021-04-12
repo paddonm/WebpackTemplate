@@ -174,12 +174,12 @@ However, delay the fade out process for 2.5 seconds */
 
         <div class="onsched-control-group">
           <label for="password">Password</label>
-          <input id="password" type="password" placeholder="Password">
+          <input autocomplete="current-password" id="password" type="password" placeholder="Password">
         </div>
 
         <div class="onsched-control-group">
           <label for="emailAddress">Email Address</label>
-          <input id="emailAddress" type="email" placeholder="Email Address">
+          <input autocomplete="email" id="emailAddress" type="email" placeholder="Email Address">
         </div>
 
         <div class="onsched-control-group">
@@ -296,8 +296,8 @@ However, delay the fade out process for 2.5 seconds */
   //        availability.mount("availability");
   var elAvailability = document.getElementById("availability");
 
-  elAvailability.addEventListener("clickTime", function (e) {
-    console.log("CLICKTIME EVENT")
+  elAvailability.addEventListener("getAvailability", function (e) {
+    console.log("GET AVAIL")
     console.log(e.detail);
   });
   elAvailability.addEventListener("bookingConfirmation", function (e) {
@@ -326,13 +326,12 @@ However, delay the fade out process for 2.5 seconds */
   var locationsParams = { units: 'imperial', limit: 8, offset: 0 };
   var locationsOptions = {};
   var locations = elements.create("locations", locationsParams, locationsOptions);
-  console.log("create locations");
-  console.log(locations);
+
   var elLocations = document.getElementById("locations");
   elLocations.addEventListener("getLocations", function (e) {
     elServices.innerHTML = "";
     elAvailability.innerHTML = "";
-    //            console.log(e.detail);
+    console.log('getLocations', e.detail);
     HideToast();
   });
   elLocations.addEventListener("notFound", function (e) {
@@ -340,18 +339,18 @@ However, delay the fade out process for 2.5 seconds */
     searchParams.message = e.detail.message;
     searchParams.searchText = e.detail.searchText;
     search.update(searchParams, searchOptions)
+    console.log('notFound', e.detail);
     HideToast();
   });
   elLocations.addEventListener("clickLocation", function (e) {
+    console.log('clickLocation', e.detail);
     ShowToast(e.detail.locationId);
-    console.log(e.detail);
     serviceParams.locationId = e.detail.locationId;
     serviceOptions.getFirst = true;
     service.update(serviceParams, serviceOptions);
     service.mount("service");
     resource.params.locationId = e.detail.locationId;
     resource.update(resourceParams);
-    console.log(resourceParams);
   });
   var locationParams = { locationId: '' };
   var locationOptions = {};
@@ -425,7 +424,8 @@ However, delay the fade out process for 2.5 seconds */
   var resourcesParams = { locationId: '', resourceGroupId: '2' };
   var resourcesOptions = {};
   var resources = elements.create("resources", resourcesParams, resourcesOptions);
-  var elResources = document.getElementById("resource");
+  var elResources = document.getElementById("resources");
+  elResources.addEventListener("clickResource", function (e) { console.log('clicking', e.detail)});
   elResources.addEventListener("getResources", function (e) {
     appointmentsParams.resources = e.detail.data;
     //
@@ -450,7 +450,7 @@ However, delay the fade out process for 2.5 seconds */
   });
   //        resource.mount("resource");
 
-  var appointmentParams = { locationId: '', appointmentId: '383587' };
+  var appointmentParams = { locationId: '', appointmentId: "1171219" };
   var appointmentOptions = { confirm: true};
   var appointment = elements.create("appointment", appointmentParams, appointmentOptions);
   var elAppointment = document.getElementById("appointment");
@@ -572,8 +572,7 @@ However, delay the fade out process for 2.5 seconds */
     ShowToast("Loading Allocation Setup...");
     allocationSetup.mount("allocationSetup");
    }   
-// Setup element testing /////////////////////////////
-  console.log("SETUP ELEMENT TESTING");
+
   var elLocationSetup = document.getElementById("locationSetup");
   var businessHours = {
                 "mon": { "startTime": 800, "endTime": 1700 },
@@ -585,11 +584,11 @@ However, delay the fade out process for 2.5 seconds */
                 "sun": { "startTime": 0, "endTime": 0 },
             };
  //           var data = { name:"Test F Location", address:{ "state": "ON", "country": "CA" }, businessHours: businessHours, settings: {}};
-  var locationData = { name:"Test F Location", address:{ "state": "ON", "country": "CA" }, settings: {}, options: {}};
+  var locationData = { name:"Test F Location", address:{ "state": "ON", "country": "CA" }, options: {}};
 
 //  var locationSetupParams = { "id":"8e574b6b-0976-4561-b5d1-21e9bb4eddf7", "tzOffset": tzOffset, "data":data};
   var locationSetupParams = { "tzOffset": tzOffset, "data":locationData};
-  console.log(locationSetupParams);
+
   var locationSetupOptions = {};
   var locationSetup = elements.create("locationSetup", locationSetupParams, locationSetupOptions);
   var wizardSections = [];
@@ -663,9 +662,7 @@ However, delay the fade out process for 2.5 seconds */
       bookingField.fieldLength = 50;
       bookingField.fieldType = "string";
       bookingField.fieldListItems = fieldListItems;
-      console.log(bookingField);
       var inputFieldHtml = OnSchedTemplates.selectField(bookingField, "customer");
-      console.log(inputFieldHtml);
 
 
   function ShowToast(message) {
