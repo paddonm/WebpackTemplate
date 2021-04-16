@@ -61,7 +61,7 @@ export const LastDayOfMonth = (date) => {
 
 export const AddDaysToDate = (inputDate, days) => {
   var date = new Date(inputDate);
-  date.setTime(date.getTime() + (days * 24 * 60 * 60 * 1000));
+  date.setDate(inputDate.getDate()+days);
   return date;
 }
 
