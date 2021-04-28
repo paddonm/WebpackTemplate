@@ -1,4 +1,5 @@
 import moment from 'moment'
+import { OnSchedTemplates } from '../OnSchedTemplates'
 
 
 export const appointmentsList = response => {
@@ -231,7 +232,7 @@ const bookingField = (data, type) => {
     const tmplBookingField = `
         <div class="onsched-form-row">
             <div class="onsched-form-col">
-                ${data.fieldListItems.length > 0 ? selectField(data, type) : inputField(data, type)}
+                ${data.fieldListItems.length > 0 ? OnSchedTemplates.selectField(data, type) : OnSchedTemplates.inputField(data, type)}
             </div>
         </div>
     `;
@@ -265,78 +266,86 @@ export const bookingForm = (response, options, locale) => {
   var bookingDateOptions = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
   var bookingDate = date.toLocaleString(locale, bookingDateOptions);
 
-  const tmplBookingForm = `
-    <div class="onsched-popup-shadow" data-animation="zoomInOut">
-      <div class="onsched-popup">
-          <header class="onsched-popup-header">
-              <i class="fa fa-clock" style="margin-right:8px;font-size:18px;color:#1a73e8;"></i>
-              <span class="booking-timer">2:00 mins</span>&nbsp;to complete booking
-              <a href="#" class="onsched-close-btn" title="Close" aria-label="close modal" data-close></a>
-          </header>
-          <section class="onsched-booking-summary">
-              <h4>${response.businessName}</h4>
-              <h5>${response.serviceName}</h5>
-              <h5>
-                  ${OnSchedHelpers.FormatDuration(response.duration)}
-                  - ${response.resourceName}
-              </h5>
-              <h5>
-                  ${bookingDate} @ ${OnSchedHelpers.FormatTime(response.time)}
-              </h5>
-          </section>
+  var tmplBookingForm;
 
-          <section class="onsched-popup-content">
-              <form class="onsched-form booking-form">
-                  <input type="hidden" name="id" value="${response.id}" />
-                  <div class="onsched-form-row">
-                      <div class="onsched-form-col">
-                          <label for="onsched-field-firstname">First Name</label>
-                          <input id="onsched-field-firstname" type="text" name="firstname" autofocus placeholder="* required" required>
+  if (response.bookingForms && response.bookingForms.bookingForm) {
+    tmplBookingForm = response.bookingForms.bookingForm;
+  }
+  else {
+    tmplBookingForm = `
+        <div class="onsched-popup-shadow" data-animation="zoomInOut">
+          <div class="onsched-popup">
+              <header class="onsched-popup-header">
+                  <i class="fa fa-clock" style="margin-right:8px;font-size:18px;color:#1a73e8;"></i>
+                  <span class="booking-timer">2:00 mins</span>&nbsp;to complete booking
+                  <a href="#" class="onsched-close-btn" title="Close" aria-label="close modal" data-close></a>
+              </header>
+              <section class="onsched-booking-summary">
+                  <h4>${response.businessName}</h4>
+                  <h5>${response.serviceName}</h5>
+                  <h5>
+                      ${OnSchedHelpers.FormatDuration(response.duration)}
+                      - ${response.resourceName}
+                  </h5>
+                  <h5>
+                      ${bookingDate} @ ${OnSchedHelpers.FormatTime(response.time)}
+                  </h5>
+              </section>
+    
+              <section class="onsched-popup-content">
+                  <form class="onsched-form booking-form">
+                      <input type="hidden" name="id" value="${response.id}" />
+                      <div class="onsched-form-row">
+                          <div class="onsched-form-col">
+                              <label for="onsched-field-firstname">First Name</label>
+                              <input id="onsched-field-firstname" type="text" name="firstname" autofocus placeholder="* required" required>
+                          </div>
+                          <div class="onsched-form-col">
+                              <label for="onsched-field-lastname">Last Name</label>
+                              <input id="onsched-field-lastname" type="text" name="lastname" placeholder="* required" required>
+                          </div>
                       </div>
-                      <div class="onsched-form-col">
-                          <label for="onsched-field-lastname">Last Name</label>
-                          <input id="onsched-field-lastname" type="text" name="lastname" placeholder="* required" required>
+                      <div class="onsched-form-row">
+                          <div class="onsched-form-col">
+                              <label for="onsched-field-email">Email</label>
+                              <input id="onsched-field-email" type="email" name="email" placeholder="Enter valid email address" required>
+                          </div>
+                          <div class="onsched-form-col">
+                              <label for="onsched-field-phone">Phone</label>
+                              <input id="onsched-field-phone" type="phone" name="phone" placeholder="Enter phone number (optional)">
+                          </div>
                       </div>
-                  </div>
-                  <div class="onsched-form-row">
-                      <div class="onsched-form-col">
-                          <label for="onsched-field-email">Email</label>
-                          <input id="onsched-field-email" type="email" name="email" placeholder="Enter valid email address" required>
+                      <div class="onsched-form-privacy-fields">
+                          ${privacyFields(options)}
                       </div>
-                      <div class="onsched-form-col">
-                          <label for="onsched-field-phone">Phone</label>
-                          <input id="onsched-field-phone" type="phone" name="phone" placeholder="Enter phone number (optional)">
+                      <div class="onsched-form-booking-fields">
+                          ${bookingFields(response.appointmentBookingFields, "appointment")}
+                          ${bookingFields(response.customerBookingFields, "customer")}
                       </div>
-                  </div>
-                  <div class="onsched-form-privacy-fields">
-                      ${privacyFields(options)}
-                  </div>
-                  <div class="onsched-form-booking-fields">
-                      ${bookingFields(response.appointmentBookingFields, "appointment")}
-                      ${bookingFields(response.customerBookingFields, "customer")}
-                  </div>
-                  <div class="onsched-form-row last">
-                      <div class="onsched-form-col">
-                          <label for="onsched-field-message">Customer Message</label>
-                          <textarea id="onsched-field-message" name="customerMessage" cols="3" rows="4" placeholder="Send us a message (optional)"></textarea>
+                      <div class="onsched-form-row last">
+                          <div class="onsched-form-col">
+                              <label for="onsched-field-message">Customer Message</label>
+                              <textarea id="onsched-field-message" name="customerMessage" cols="3" rows="4" placeholder="Send us a message (optional)"></textarea>
+                          </div>
                       </div>
-                  </div>
-                  <div class="onsched-form-row">
-                      <div class="onsched-form-col">
-                          <button type="submit" class="btn-submit">Complete Booking</button>
+                      <div class="onsched-form-row">
+                          <div class="onsched-form-col">
+                              <button type="submit" class="btn-submit">Complete Booking</button>
+                          </div>
+                          <div class="onsched-form-col">
+                              <button type="button" class="btn-cancel">Cancel</button>
+                          </div>
                       </div>
-                      <div class="onsched-form-col">
-                          <button type="button" class="btn-cancel">Cancel</button>
-                      </div>
-                  </div>
-              </form>
-          </section>
-          <footer class="onsched-popup-footer" style="display:none;">
+                  </form>
+              </section>
+              <footer class="onsched-popup-footer" style="display:none;">
+    
+              </footer>
+    
+          </div>
+        </div>
+    `;
+  }
 
-          </footer>
-
-      </div>
-    </div>
-  `;
   return tmplBookingForm;
 }
