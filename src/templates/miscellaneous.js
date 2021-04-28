@@ -136,23 +136,31 @@ export const confirmation = (appointment, locale) => {
       day: "numeric"
   };  
   var formattedDate = date.toLocaleString(locale, options);
-  const tmplConfirmation = `
-      <div class="onsched-container onsched-confirmation-container">
-          <div class="onsched-row">
-              <div class="onsched-col">
-                  <div class="onsched-booking-confirmation">
-                      <h4>${appointment.businessName}</h4>
-                      <p>Your appointment has been confirmed ${appointment.name}. See details below.</p>
-                      <p> </p>
-                      <p>${formattedDate} @ ${OnSchedHelpers.FormatTime(appointment.time)}</p>
-                      <p>${appointment.serviceName} ${OnSchedHelpers.FormatDuration(appointment.duration)} - ${appointment.resourceName}</p>
-                      <p>Confirmation#: ${appointment.confirmationNumber}</p>
-                      <p style="font-size:smaller">You will receive an email or sms booking confirmation shortly.</p>
-                  </div>
-              </div>
-          </div>
-      </div>
-  `;
+  var tmplConfirmation;
+  
+  if (appointment.bookingForms && appointment.bookingForms.bookingConfirmationPage) {
+      tmplConfirmation = appointment.bookingForms.bookingConfirmationPage;
+  }
+  else {
+    tmplConfirmation = `
+    <div class="onsched-container onsched-confirmation-container">
+        <div class="onsched-row">
+            <div class="onsched-col">
+                <div class="onsched-booking-confirmation">
+                    <h4>${appointment.businessName}</h4>
+                    <p>Your appointment has been confirmed ${appointment.name}. See details below.</p>
+                    <p> </p>
+                    <p>${formattedDate} @ ${OnSchedHelpers.FormatTime(appointment.time)}</p>
+                    <p>${appointment.serviceName} ${OnSchedHelpers.FormatDuration(appointment.duration)} - ${appointment.resourceName}</p>
+                    <p>Confirmation#: ${appointment.confirmationNumber}</p>
+                    <p style="font-size:smaller">You will receive an email or sms booking confirmation shortly.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+    `;
+  }
+
   return tmplConfirmation;
 }
 
