@@ -1,5 +1,6 @@
 import moment from 'moment'
 import { OnSchedTemplates } from '../OnSchedTemplates'
+import { OnSchedHelpers }   from '../utils/OnSchedHelpers'
 
 
 export const appointmentsList = response => {
@@ -269,7 +270,19 @@ export const bookingForm = (response, options, locale) => {
   var tmplBookingForm;
 
   if (response.bookingForms && response.bookingForms.bookingForm) {
-    tmplBookingForm = response.bookingForms.bookingForm;
+    var customTemplate = response.bookingForms.bookingForm
+
+    // Set custom parameters (not in API response)
+    response = OnSchedHelpers.CustomTemplateParameters(response);
+    
+    // Add param variable values
+    Object.keys(OnSchedHelpers.TemplateParameters).map(param => {
+        if (response[OnSchedHelpers.TemplateParameters[param]]) {
+            customTemplate = customTemplate.replace(`{${param}}`, response[OnSchedHelpers.TemplateParameters[param]]);
+        }
+    })
+    
+    tmplBookingForm = customTemplate;
   }
   else {
     tmplBookingForm = `

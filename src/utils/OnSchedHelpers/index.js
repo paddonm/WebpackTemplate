@@ -33,6 +33,8 @@ import { IsEmpty,
          DataValue,
          CheckboxChecked,
          GetFormElementDataValue }    from './IdentifierHelpers'
+import { TemplateParameters,
+         CustomTemplateParameters }   from './ParameterHelpers'
 
 
 export const OnSchedHelpers = {
@@ -71,5 +73,7 @@ export const OnSchedHelpers = {
   timeFromDisplayTime,
   ampmFromDisplayTime,
   DataValue,
-  CheckboxChecked
+  CheckboxChecked,
+  TemplateParameters,
+  CustomTemplateParameters
 }
