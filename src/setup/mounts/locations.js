@@ -1,4 +1,5 @@
 import { OnSchedRest }          from '../../OnSchedRest'
+import { OnSchedResponse }      from '../../OnSchedResponse'
 import { OnSchedWizardHelpers } from '../../utils/WizardHelpers/OnSchedWizardHelpers'
 
 
@@ -48,37 +49,61 @@ export const LocationSetupElement = element => {
       else {
           // make sure the supplied default data passed in params has busnessHours
           // if not, we'll use our default businessHours
-          if (element.params.data.businessHours == undefined)
+          if (element.params.data.businessHours == undefined) {
               element.params.data.businessHours = defaultBusinessHours;
-          el.innerHTML = OnSchedTemplates.locationSetup(element, element.params.data);
+          }
+
+          if (element.options.suppressUI) {
+            var locationUrl = element.onsched.setupApiBaseUrl + "/locations";
+            element.onsched.accessToken.then(x =>
+                OnSchedRest.Post(x, locationUrl, element.params.data, function (response) {
+                    OnSchedResponse.PostLocation(element, response);
+                })
+            );  
+          }
+          else {
+            el.innerHTML = OnSchedTemplates.locationSetup(element, element.params.data);
+          }
       }
-      OnSchedWizardHelpers.InitWizardDomElements(element);
-      OnSchedWizardHelpers.InitLocationDomElements(element);
-      OnSchedWizardHelpers.ShowWizardSection(0);
-      // default the timezone for a new location
-      if (element.params.tzOffset != undefined || element.params.tzOffset.length == 0) {
-          var elTimezoneSelect = document.querySelector(".onsched-wizard.onsched-form select[name=timezoneName");
-          elTimezoneSelect.value = element.params.tzOffset;
+      if (!element.options.suppressUI) {
+        OnSchedWizardHelpers.InitWizardDomElements(element);
+        OnSchedWizardHelpers.InitLocationDomElements(element);
+        OnSchedWizardHelpers.ShowWizardSection(0);
+        // default the timezone for a new location
+        if (element.params.tzOffset != undefined || element.params.tzOffset.length == 0) {
+            var elTimezoneSelect = document.querySelector(".onsched-wizard.onsched-form select[name=timezoneName");
+            elTimezoneSelect.value = element.params.tzOffset;
+        }
       }
   }   
   else {
-      var urlLocation = element.onsched.apiBaseUrl + "/locations/" + element.params.id;
+      var urlLocation = element.onsched.setupApiBaseUrl + "/locations/" + element.params.id;
 
       OnSchedHelpers.ShowProgress();
-      element.onsched.accessToken.then(x =>
-          OnSchedRest.Get(x, urlLocation, function (response) {
-              if (response.error) {
-                  console.log("Rest error response code=" + response.code);
-                  return;
-              }
-              // now render the initial UI from the response data
-              el.innerHTML = OnSchedTemplates.locationSetup(element, response);                    
-              OnSchedWizardHelpers.InitWizardDomElements(element);
-              OnSchedWizardHelpers.InitLocationDomElements(element);
-              OnSchedWizardHelpers.SelectOptionMatchingData("select[name=timezoneName]", "tz", response.timezoneIana);
 
-              OnSchedWizardHelpers.ShowWizardSection(0);
-          }) // end rest response
-      ); // end promise        
+      if (element.options.suppressUI && element.params.data) {
+        element.onsched.accessToken.then(x =>
+            OnSchedRest.Put(x, urlLocation, element.params.data, function (response) {
+                OnSchedResponse.PutLocation(element, response);
+            })
+        );  
+      }
+      else {
+          element.onsched.accessToken.then(x =>
+              OnSchedRest.Get(x, urlLocation, function (response) {
+                  if (response.error) {
+                      console.log("Rest error response code=" + response.code);
+                      return;
+                  }
+                  // now render the initial UI from the response data
+                  el.innerHTML = OnSchedTemplates.locationSetup(element, response);                    
+                  OnSchedWizardHelpers.InitWizardDomElements(element);
+                  OnSchedWizardHelpers.InitLocationDomElements(element);
+                  OnSchedWizardHelpers.SelectOptionMatchingData("select[name=timezoneName]", "tz", response.timezoneIana);
+    
+                  OnSchedWizardHelpers.ShowWizardSection(0);
+              }) // end rest response
+          ); // end promise        
+      }
   }
 }

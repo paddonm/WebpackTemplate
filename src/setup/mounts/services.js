@@ -1,4 +1,5 @@
 import { OnSchedRest }          from '../../OnSchedRest'
+import { OnSchedResponse }      from '../../OnSchedResponse'
 import { OnSchedWizardHelpers } from '../../utils/WizardHelpers/OnSchedWizardHelpers'
 
 
@@ -75,17 +76,39 @@ export const ServiceSetupElement = element => {
             if (element.params.data.contact == undefined)
                 element.params.data.contact = {};
 
-            el.innerHTML = OnSchedTemplates.serviceSetup(element, element.params.data);
+            if (element.options.suppressUI) {
+                var serviceUrl = element.onsched.setupApiBaseUrl + "/services";
+                element.onsched.accessToken.then(x =>
+                    OnSchedRest.Post(x, serviceUrl, element.params.data, function (response) {
+                        OnSchedResponse.PostService(element, response);
+                    })
+                );  
+            }
+            else {
+                el.innerHTML = OnSchedTemplates.serviceSetup(element, element.params.data);
+            }
         }
 
-        OnSchedWizardHelpers.InitWizardDomElements(element);
-        OnSchedWizardHelpers.InitServiceDomElements(element);
-        OnSchedWizardHelpers.ShowWizardSection(0);
+        if (!element.options.suppressUI) {
+            OnSchedWizardHelpers.InitWizardDomElements(element);
+            OnSchedWizardHelpers.InitServiceDomElements(element);
+            OnSchedWizardHelpers.ShowWizardSection(0);
+        }
     }
     else {
         console.log("Id present, get service and build UI from response data");
-        var urlService = element.onsched.apiBaseUrl + "/services/" + element.params.id;
+        var urlService = element.onsched.setupApiBaseUrl + "/services/" + element.params.id;
         OnSchedHelpers.ShowProgress();
+
+
+      if (element.options.suppressUI && element.params.data) {
+        element.onsched.accessToken.then(x =>
+            OnSchedRest.Put(x, urlService, element.params.data, function (response) {
+                OnSchedResponse.PutService(element, response);
+            })
+        );  
+      }
+      else {
         element.onsched.accessToken.then(x =>
             OnSchedRest.Get(x, urlService, function (response) {
                 if (response.error) {
@@ -100,5 +123,6 @@ export const ServiceSetupElement = element => {
                 OnSchedWizardHelpers.ShowWizardSection(0);
             }) // end rest response
         ); // end promise     
+      }
     }
 }

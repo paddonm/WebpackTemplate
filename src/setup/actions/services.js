@@ -12,7 +12,7 @@ export const CreateService = (element, response) => {
     }
     // check if we need to upload an image for this resource
     const elSystemFileUploadBtn = document.querySelector(".onsched-wizard.onsched-form input[name=onsched-system-file-upload]");
-    if (elSystemFileUploadBtn.value) {
+    if (elSystemFileUploadBtn?.value) {
 
         var image = document.getElementById("onsched-image-preview");
         const base64String = OnSchedWizardHelpers.Base64Encoded(image); 
@@ -47,7 +47,7 @@ export const ModifyService = (element, response) => {
     }
     // check if we need to upload an image for this resource
     const elSystemFileUploadBtn = document.querySelector(".onsched-wizard.onsched-form input[name=onsched-system-file-upload]");
-    if (elSystemFileUploadBtn.value) {
+    if (elSystemFileUploadBtn?.value) {
         var image = document.getElementById("onsched-image-preview");
         const base64String = OnSchedWizardHelpers.Base64Encoded(image); 
         var postData = { imageFileName:elSystemFileUploadBtn.dataset.filename, imageFileData: base64String};
