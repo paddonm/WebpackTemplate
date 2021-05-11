@@ -229,7 +229,6 @@ export const bookingFields = (data, type) => {
 
 // Prob need separate functions for input,select, checkbox etc
 const bookingField = (data, type) => {
-console.log('data,type', data, type)
     const tmplBookingField = `
         <div class="onsched-form-row">
             <div class="onsched-form-col">
