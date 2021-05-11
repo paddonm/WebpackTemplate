@@ -13,6 +13,8 @@ export const TemplateParameters = {
   ResourceName:             'resourceName',
   AddToCalendarUrl:         'downloadIcsUrlss',
   ServiceName:              'serviceName',
+  PrivacyFields:            'PrivacyFields', // Custom param
+  BookingFields:            'BookingFields', // Custom param
 }
 
 export const CustomTemplateParameters = response => {
