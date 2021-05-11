@@ -229,7 +229,7 @@ export const bookingFields = (data, type) => {
 
 // Prob need separate functions for input,select, checkbox etc
 const bookingField = (data, type) => {
-
+console.log('data,type', data, type)
     const tmplBookingField = `
         <div class="onsched-form-row">
             <div class="onsched-form-col">
@@ -277,7 +277,25 @@ export const bookingForm = (response, options, locale) => {
     
     // Add param variable values
     Object.keys(OnSchedHelpers.TemplateParameters).map(param => {
-        if (response[OnSchedHelpers.TemplateParameters[param]]) {
+        if (param === 'PrivacyFields') {
+            // Add privacy fields
+            customTemplate = customTemplate.replace(`{${param}}`, `
+                <div class="onsched-form-privacy-fields">
+                    ${privacyFields(options)}
+                </div>
+            `);
+        }
+        if (param === 'BookingFields') {
+            // Add booking fields
+            customTemplate = customTemplate.replace(`{${param}}`, `
+                <div class="onsched-form-booking-fields">
+                    ${bookingFields(response.appointmentBookingFields, "appointment")}
+                    ${bookingFields(response.customerBookingFields, "customer")}
+                </div>
+            `);
+        }
+        else if (response[OnSchedHelpers.TemplateParameters[param]]) {
+            // Value is accessible from response
             customTemplate = customTemplate.replace(`{${param}}`, response[OnSchedHelpers.TemplateParameters[param]]);
         }
     })
