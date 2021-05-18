@@ -23,7 +23,8 @@ import { ParseInt,
          FormatDuration,
          ParsePhoneNumber,
          FormatPhoneNumber,
-         FormatServiceDescription }   from './FormatHelpers'
+         FormatServiceDescription,
+         FormatServiceDuration }   from './FormatHelpers'
 import { IsEmpty,
          IsNotEmpty,
          GetFunctionName,
@@ -62,6 +63,7 @@ export const OnSchedHelpers = {
   ParseDate,
   ParseInt,
   FormatServiceDescription,
+  FormatServiceDuration,
   FormatTime,
   FormatDuration,
   FormatPhoneNumber,

@@ -12,6 +12,14 @@ export const ListItem = (event, element) => {
   else
   if (elementType == "services") {
       eventModel = { serviceId: itemClicked.dataset.id };
+
+      // Check for variable duration select
+      const duration = Array.from(document.querySelectorAll(".onsched-duration-select"))
+                            .filter(e => e.dataset.serviceid === itemClicked.dataset.id)[0]?.value
+      
+      // Add variable duration select value to clickService eventModel
+      if (duration) eventModel.duration = duration
+
       var elServices = document.getElementById(element.id);
       var getServicesEvent = new CustomEvent("clickService", { detail: eventModel });
       elServices.dispatchEvent(getServicesEvent);
