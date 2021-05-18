@@ -227,6 +227,23 @@ export const bookingFields = (data, type) => {
     return tmplBookingFields;
 }
 
+// Show group size field if size/capacity set on Location or Service
+export const groupSize = (data, options) => {
+    var tmplGroupSize = '';
+
+    const { maxGroupSize, maxCapacity } = data;
+    var groupMax = maxGroupSize <= maxCapacity ? maxGroupSize : maxCapacity;
+
+    if (groupMax || options.groupSize) {
+        tmplGroupSize = `
+            <label for="onsched-field-groupsize">Group Size${groupMax ? `: <span>${groupMax}</span> remaining` : ''}</span></label>
+            <input id="onsched-field-groupsize" type="number" min="1" ${groupMax ? `max="${groupMax}"` : ''} value="1" name="groupSize">
+        `;
+    }
+    
+    return tmplGroupSize;
+}
+
 // Prob need separate functions for input,select, checkbox etc
 const bookingField = (data, type) => {
     const tmplBookingField = `
@@ -351,6 +368,9 @@ export const bookingForm = (response, options, locale) => {
                       <div class="onsched-form-booking-fields">
                           ${bookingFields(response.appointmentBookingFields, "appointment")}
                           ${bookingFields(response.customerBookingFields, "customer")}
+                      </div>
+                      <div class="onsched-form-group-size">
+                        ${groupSize(response, options)}
                       </div>
                       <div class="onsched-form-row last">
                           <div class="onsched-form-col">

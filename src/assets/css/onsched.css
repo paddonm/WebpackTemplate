@@ -891,6 +891,13 @@ button.onsched-file-upload-btn:hover {
 .onsched-popup p + p {
     margin-top: 10px;
 }
+.onsched-form-group-size span {
+    color: steelblue;
+    font-weight: 600;
+}
+.onsched-form-group-size label {
+    display: block;
+}
 .onsched-alert {
     padding: 15px;
     margin-bottom: 20px;
