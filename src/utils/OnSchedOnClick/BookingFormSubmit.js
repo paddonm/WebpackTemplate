@@ -54,11 +54,10 @@ export const BookingFormSubmit = (event, element) => {
   appointmentBM.customerBookingFields = customerBookingFields;
 
   if (element.params.appointmentBM != null) {
-      console.log(element.params.appointmentBM);
       appointmentBM.customFields = element.params.appointmentBM.customFields;
   }
 
-  var id = document.querySelector(".onsched-form.booking-form input[name=id]").value;
+  var id = document.querySelector(".onsched-form.booking-form input[name=onsched-appointment-id]").value;
   var url = element.onsched.apiBaseUrl + "/appointments/" + id + "/book";
 
   element.onsched.accessToken.then(x =>

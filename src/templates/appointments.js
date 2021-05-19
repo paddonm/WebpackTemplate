@@ -341,7 +341,7 @@ export const bookingForm = (response, options, locale) => {
     
               <section class="onsched-popup-content">
                   <form class="onsched-form booking-form">
-                      <input type="hidden" name="id" value="${response.id}" />
+                      <input type="hidden" name="onsched-appointment-id" value="${response.id}" />
                       <div class="onsched-form-row">
                           <div class="onsched-form-col">
                               <label for="onsched-field-firstname">First Name</label>
