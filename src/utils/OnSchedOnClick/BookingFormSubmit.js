@@ -18,6 +18,9 @@ export const BookingFormSubmit = (event, element) => {
       if (e.name === "name")
           appointmentBM[e.name] = e.value;
       else
+      if (e.name === "groupSize")
+          appointmentBM[e.name] = e.value;
+      else
       if (e.name === "firstname")
           firstname = e.value;
       else
