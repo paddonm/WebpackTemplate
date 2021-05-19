@@ -22,6 +22,9 @@ export const servicesList = response => {
                                       </a>
                                       <div class="list-item-description">${service.description}</div>
                                   </div>
+                                  <div class="duration-col">
+                                    ${OnSchedHelpers.FormatServiceDuration(service)}
+                                  </div>
                                </div>`
       ).join("")}
                       </div>

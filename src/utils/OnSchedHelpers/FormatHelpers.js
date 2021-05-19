@@ -23,6 +23,31 @@ export const FormatServiceDescription = (response) => {
   return result;
 }
 
+export const FormatServiceDuration = (service) => {
+    const { duration, durationSelect, durationMin, durationMax, durationInterval } = service
+    var tmplDuration;
+    
+    tmplDuration = duration + ' min';
+
+    if (durationSelect) {
+        var durationOptions = [];
+
+        for (var i = durationMin;i <= durationMax; i += durationInterval) {
+            durationOptions.push(i);
+        }
+
+        tmplDuration = `
+            <select data-serviceid="${service.id}" class="onsched-duration-select">
+                ${durationOptions.map((opt, i) =>
+                    `<option key="${i}" value="${opt}">${opt} min</option>`
+                )}
+            </select>
+        `
+    }
+
+    return tmplDuration;
+}
+
 export const FormatTime = (time) => {
   if (time == null)
       return "";
