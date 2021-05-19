@@ -315,7 +315,13 @@ export const bookingForm = (response, options, locale) => {
             customTemplate = customTemplate.replace(`{${param}}`, response[OnSchedHelpers.TemplateParameters[param]]);
         }
     })
-    
+
+    let formPlacement = customTemplate.search('onsched-form booking-form">');
+
+    customTemplate = customTemplate.slice(0, formPlacement + 27)
+                                   .concat(`<input type="hidden" name="onsched-appointment-id" value="${response.id}" />`)
+                                   .concat(customTemplate.slice(formPlacement + 27, -1));
+
     tmplBookingForm = customTemplate;
   }
   else {
