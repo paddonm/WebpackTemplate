@@ -3,7 +3,6 @@ const HtmlWebpackPlugin      = require('html-webpack-plugin')
 const { DefinePlugin }       = require('webpack')
 const { SourceMapDevToolPlugin }       = require('webpack')
 const { CleanWebpackPlugin } = require('clean-webpack-plugin')
-const SentryWebpackPlugin        = require('@sentry/webpack-plugin')
 
 const { babelLoaderConfig,
         cssLoaderConfig,
@@ -16,7 +15,7 @@ module.exports = {
   entry: [
     'core-js/stable',
     'regenerator-runtime/runtime',
-    './src/OnSched.js'
+    './src/PetesPier.js'
   ],
   output: {
     path: path.resolve(__dirname, 'public'),

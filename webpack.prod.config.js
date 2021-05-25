@@ -2,7 +2,6 @@ const path                       = require('path')
 const { DefinePlugin,
         SourceMapDevToolPlugin } = require('webpack')
 const { CleanWebpackPlugin }     = require('clean-webpack-plugin')
-const SentryWebpackPlugin        = require('@sentry/webpack-plugin')
 
 const { babelLoaderConfig,
         cssLoaderConfig,
@@ -15,7 +14,7 @@ module.exports = {
   entry: [
     'core-js/stable',
     'regenerator-runtime/runtime',
-    './src/OnSched.js'
+    './src/PetesPier.js'
   ],
   // devtool: 'source-map',
   plugins: [
@@ -23,12 +22,6 @@ module.exports = {
       __VERSION__: JSON.stringify(require("./package.json").version)
     }),
     new CleanWebpackPlugin(),
-    new SentryWebpackPlugin({
-      release: require('./package.json').version,
-      include: path.resolve(__dirname, 'dist'),
-      ignore: ['node_modules', 'webpack.*.js'],
-      ignoreFile: '.gitignore',
-    }),
     new SourceMapDevToolPlugin({
       filename: 'index.js.map',
       exclude:  ['node_modules'],

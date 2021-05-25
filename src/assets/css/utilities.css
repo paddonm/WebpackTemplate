@@ -1,0 +1,23 @@
+.back-btn {
+  border: none;
+  background: transparent;
+  margin: 15px;
+  font-size: 1rem;
+  cursor: pointer;
+  font-weight: 500;
+  outline: none !important;
+}
+
+.back-btn:hover {
+  color: var(--primary);
+}
+
+.back-btn:hover i {
+  position: relative;
+  animation: fadeIn 200ms 1 forwards;
+}
+
+@keyframes fadeIn {
+  0% {left: 0px;}
+  100% {left: -10px;}
+}
