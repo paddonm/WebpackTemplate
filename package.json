@@ -1,9 +1,9 @@
 {
-  "name": "OnSchedJs",
-  "version": "beta-0.0.1",
+  "name": "PetesPier",
+  "version": "0.1.0-beta",
   "description": "Front end module for rapidly deploying OnSched to your app",
-  "repository": "https://github.com/Onsched/OnSchedJs",
-  "author": "John Paddon <john@onsched.com>",
+  "repository": "https://github.com/Onsched/PetesPier",
+  "author": "Mitchell Paddon <mitchell@onsched.com>",
   "license": "MIT",
   "private": false,
   "scripts": {
@@ -27,6 +27,8 @@
     "webpack-dev-server": "^3.11.0"
   },
   "dependencies": {
-    "@babel/runtime": "^7.9.6"
+    "@babel/runtime": "^7.9.6",
+    "moment": "^2.27.0",
+    "moment-timezone": "^0.5.31"
   }
 }
