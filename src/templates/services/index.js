@@ -1,9 +1,11 @@
-import { MinutesToHours } from '../../utils/ConversionHelpers'
+import { MinutesToHours }          from '../../utils/ConversionHelpers'
+import { formatDescriptionSample } from '../../utils/FormatHelpers'
+
 
 export const servicesTemplate = (response) => {
   var groups = response.data.map(service => service.serviceGroupName);
   let uniqGroups = [...new Set(groups)];
-  console.log('services', response.data)
+
   return `
     <div class="row">
       <div class="col-12">
@@ -43,7 +45,7 @@ export const servicesTemplate = (response) => {
                   <img src="${groupedService.imageUrl}" />
                   <div>
                     <h1>${groupedService.name}</h1>
-                    <p>${groupedService.description}</p>
+                    <p>${formatDescriptionSample(groupedService.description)}</p>
                     <p><b>Duration:</b> ${MinutesToHours(groupedService.duration)} (approx.)</p>
                   </div>
                 </div>

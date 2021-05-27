@@ -44,3 +44,15 @@ export const formatPhoneInput = inputElementId => {
 }
 
 export const checkParam = param => param ? param : ''
+
+export const formatEscapeSequences = str => 
+    str.replace(/(?:\r\n|\r|\n)/g, '<br>');
+
+export const formatDescriptionSample = str => {
+    str = str.replace(/(?:\r\n|\r|\n)/g, '<br>')
+    
+    if (str.indexOf('<br>'))
+        str = str.slice(0, str.indexOf('<br>'))
+
+    return str;
+}

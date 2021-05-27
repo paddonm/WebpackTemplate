@@ -3,7 +3,10 @@
 @import 'stripe.css';
 @import 'loading.css';
 @import 'utilities.css';
+@import 'availability.css';
 
+
+/* PetesPier color scheme */
 :root {
   --primary: rgb(60, 104, 180)
 }

@@ -1,5 +1,8 @@
-export const addElementToRoot = elementId => {
+export const addElementToRoot = (elementId, target) => {
   var elRoot = document.getElementById('root');
+  
+  if (target)
+    elRoot = document.getElementById(target);
 
   var newEl = document.createElement('DIV');
   newEl.id = elementId;

@@ -1,4 +1,3 @@
-
 import { createOnSchedElement }  from '../../utils/IdentifierHelpers'
 import { servicesTemplate }      from '../../templates/services'
 import { availabilityMount }     from '../availability'
@@ -35,12 +34,15 @@ export const servicesMount = () => {
             
             removeElementFromRoot('petes-services')
               .then(() => {
-                addElementToRoot('petes-availability')
+                addElementToRoot('event-page')
                   .then(() => {
-                    let availabilityParams = { locationId: '', serviceId, customerId: '101199', completeBooking: 'RS' };
-                    let availabilityOptions = { groupSize: true };
-    
-                    availabilityMount(availabilityParams, availabilityOptions);
+                    addElementToRoot('petes-availability', 'event-page')
+                      .then(() => {
+                        let availabilityParams = { locationId: '', serviceId, customerId: '', completeBooking: 'RS' };
+                        let availabilityOptions = { groupSize: true };
+        
+                        availabilityMount(availabilityParams, availabilityOptions);
+                      })
                   })
               });
           })

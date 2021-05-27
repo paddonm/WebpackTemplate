@@ -13,8 +13,11 @@ var onsched = OnSched("sbox1621548569", "sbox");
 var elements = onsched.elements();
 
 export const availabilityMount = (availabilityParams = {}, availabilityOptions = {}) => {
+  var elRoot = document.getElementById('root');
+
+  availabilityOptions.groupSize = true;
   const availabilityAction = service => {
-    createOnSchedElement('availability').then(e => {
+    createOnSchedElement('availability', 'event-page').then(e => {
       var availability = elements.create('availability', availabilityParams, availabilityOptions);
       
       var elAvailability = e;
@@ -31,7 +34,7 @@ export const availabilityMount = (availabilityParams = {}, availabilityOptions =
         };
         
         document.getElementById('petes-availability').innerHTML = availabilityTemplate(e.detail, service);
-        document.getElementById('petes-availability').prepend(elBackBtn);
+        elRoot.prepend(elBackBtn);
       })
 
       elAvailability.addEventListener('bookingConfirmation', e => {
@@ -44,7 +47,7 @@ export const availabilityMount = (availabilityParams = {}, availabilityOptions =
   }
 
   if (availabilityParams.serviceId)
-    serviceMount(availabilityParams.serviceId).then(availabilityAction)
+    serviceMount({serviceId: availabilityParams.serviceId}).then(availabilityAction)
   else
     availabilityAction()
 }
