@@ -26,3 +26,15 @@ export const removeElementFromRoot = elementId => {
   else
     return new Promise((resolve, reject) => resolve())
 }
+
+export const contentHeight = () => {
+  // create an Observer instance
+  const resizeObserver = new ResizeObserver(entries => {
+    var detail = { contentHeight: entries[0].target.clientHeight }
+    var heightChangeEvent = new CustomEvent('contentHeight', { detail })
+    window.parent.document.dispatchEvent(heightChangeEvent)
+  })
+
+  // start observing a DOM node
+  resizeObserver.observe(document.body)
+}

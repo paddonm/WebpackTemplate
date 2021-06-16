@@ -92,9 +92,13 @@
   background-color: var(--primary);
   color: #fff;
   border: none;
-  border-radius: 2px;
+  border-radius: 4px;
   font-weight: 500;
   font-size: .9rem;
   padding: 10px 15px;
   cursor: pointer;
+}
+
+#petes-services .service-item button:hover {
+  background-color: var(--primary-dark);
 }

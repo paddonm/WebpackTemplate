@@ -4,6 +4,7 @@ import { availabilityTemplate }        from '../../templates/availability'
 import { serviceMount, servicesMount } from '../services';
 import { removeElementFromRoot }       from '../../utils/RootHelpers';
 import { mountStripePayment }          from '../stripe';
+import { createGoogleMap }             from '../../utils/GoogleMapHelpers';
 
 
 // Initialize OnSched with clientId and environment 
@@ -17,32 +18,43 @@ export const availabilityMount = (availabilityParams = {}, availabilityOptions =
 
   availabilityOptions.groupSize = true;
   const availabilityAction = service => {
-    createOnSchedElement('availability', 'event-page').then(e => {
-      var availability = elements.create('availability', availabilityParams, availabilityOptions);
-      
-      var elAvailability = e;
+    createOnSchedElement('availability-container', 'event-page').then(() => {
+      createOnSchedElement('availability', 'availability-container').then(e => {
+        // Create google map 
+          // Requires "location" property on 
+          // the Service object in OnSchedApi
+        createOnSchedElement('google-map', 'availability-container').then(elMap => createGoogleMap(elMap))
 
-      elAvailability.addEventListener('getAvailability', e => {
-        loading(false)
-        var elBackBtn = document.createElement('BUTTON');
-        elBackBtn.innerHTML = '<i class="fas fa-arrow-left"></i> Back';
-        elBackBtn.className = 'back-btn';
-        elBackBtn.onclick = () => {
-          removeElementFromRoot('petes-availability')
-            .then(() => removeElementFromRoot('availability')
-            .then(() => servicesMount()))
-        };
+        var availability = elements.create('availability', availabilityParams, availabilityOptions);
         
-        document.getElementById('petes-availability').innerHTML = availabilityTemplate(e.detail, service);
-        elRoot.prepend(elBackBtn);
-      })
+        var elAvailability = e;
 
-      elAvailability.addEventListener('bookingConfirmation', e => {
-        mountStripePayment(e.detail);
-      })
-    
-      availability.mount('availability');
-      loading(true);
+        elAvailability.addEventListener('getAvailability', e => {
+          loading(false)
+          var elBackBtn = document.createElement('BUTTON');
+          elBackBtn.innerHTML = '<i class="fas fa-arrow-left"></i> Back';
+          elBackBtn.id = 'back-btn';
+          elBackBtn.className = 'back-btn';
+          elBackBtn.onclick = () => {
+            removeElementFromRoot('event-page')
+              .then(() => removeElementFromRoot('availability')
+              .then(() => elBackBtn.remove())
+              .then(() => servicesMount()))
+          };
+          
+          document.getElementById('petes-availability').innerHTML = availabilityTemplate(e.detail, service);
+
+          if (!document.getElementById('back-btn'))
+            elRoot.prepend(elBackBtn);
+        })
+
+        elAvailability.addEventListener('bookingConfirmation', e => {
+          mountStripePayment(e.detail);
+        })
+      
+        availability.mount('availability');
+        loading(true);
+      });
     });
   }
 

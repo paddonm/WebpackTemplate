@@ -14,7 +14,7 @@ var elements = onsched.elements();
 
 export const servicesMount = () => {
   createOnSchedElement('services').then(elServices => {
-    var servicesParams = { locationId: '' };
+    var servicesParams = { locationId: '', allLocations: true };
     var servicesOptions = {};
     var services = elements.create('services', servicesParams, servicesOptions);
     
@@ -31,6 +31,7 @@ export const servicesMount = () => {
           
           bookBtns.forEach(btn => btn.onclick = () => {
             let serviceId = btn.parentElement.parentElement.dataset.serviceid;
+            let locationId = btn.parentElement.parentElement.dataset.locationid;
             
             removeElementFromRoot('petes-services')
               .then(() => {
@@ -38,7 +39,7 @@ export const servicesMount = () => {
                   .then(() => {
                     addElementToRoot('petes-availability', 'event-page')
                       .then(() => {
-                        let availabilityParams = { locationId: '', serviceId, customerId: '', completeBooking: 'RS' };
+                        let availabilityParams = { locationId, serviceId, customerId: '', completeBooking: 'RS' };
                         let availabilityOptions = { groupSize: true };
         
                         availabilityMount(availabilityParams, availabilityOptions);

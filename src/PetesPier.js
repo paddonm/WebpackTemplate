@@ -8,5 +8,8 @@
 import './assets/css/index.css'; 
 
 import { servicesMount } from './mounts/services'
+import { contentHeight } from './utils/RootHelpers'
+
 
 servicesMount();
+contentHeight();

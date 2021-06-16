@@ -40,6 +40,7 @@ export const servicesTemplate = (response) => {
               <div 
                 class="service-item" 
                 data-serviceid="${groupedService.id}"
+                data-locationid="${groupedService.locationId}"
               >
                 <div class="service-details">
                   <img src="${groupedService.imageUrl}" />

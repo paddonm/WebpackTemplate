@@ -8,5 +8,10 @@
 
 /* PetesPier color scheme */
 :root {
-  --primary: rgb(60, 104, 180)
+  --primary: rgb(60, 104, 180);
+  --primary-dark: rgb(22 63 134);
+}
+
+body {
+  font-family: 'Poppins', serif;
 }
