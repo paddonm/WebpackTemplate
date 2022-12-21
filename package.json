@@ -1,8 +1,8 @@
 {
-  "name": "PetesPier",
+  "name": "WebpackTemplate",
   "version": "0.1.0-beta",
   "description": "Front end module for rapidly deploying OnSched to your app",
-  "repository": "https://github.com/Onsched/PetesPier",
+  "repository": "https://github.com/Onsched/WebpackTemplate",
   "author": "Mitchell Paddon <mitchell@onsched.com>",
   "license": "MIT",
   "private": false,

@@ -14,7 +14,7 @@ module.exports = {
   entry: [
     'core-js/stable',
     'regenerator-runtime/runtime',
-    './src/PetesPier.js'
+    './src/app.js'
   ],
   // devtool: 'source-map',
   plugins: [

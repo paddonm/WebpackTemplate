@@ -15,7 +15,7 @@ module.exports = {
   entry: [
     'core-js/stable',
     'regenerator-runtime/runtime',
-    './src/PetesPier.js'
+    './src/app.js'
   ],
   output: {
     path: path.resolve(__dirname, 'public'),
