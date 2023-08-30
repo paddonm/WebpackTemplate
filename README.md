@@ -25,7 +25,7 @@ $ yarn install
 ```
 
 ### Create App components
-Components are created in the folder src > components using the following structure:
+Components are created in the folder **src > components** using the following structure:
 - components
   - your_component
     - index.js
@@ -38,7 +38,7 @@ Functions within the actions file will execute AFTER the DOM template is mounted
 
 Below are sample templates for each of the above files:
 
-your_component > index.js
+**your_component > index.js**
 ```bash
 import utils    from "../../utils";
 import template from "./template";
@@ -47,14 +47,14 @@ import actions  from "./actions";
 export default (App) => utils.Mount('your_component', template, actions, App);
 ```
 
-your_component > actions > index.js
+**your_component > actions > index.js**
 ```bash
 export default (App) => {
   // Execute any component actions here...
 };
 ```
 
-your_component > template > index.js
+**your_component > template > index.js**
 ```bash
 export default (App) => {
   // Build HTML template to render component
@@ -62,7 +62,7 @@ export default (App) => {
 };
 ```
 
-Once the component is created, import to: src > components > index.js.
+Once the component is created, import to: **src > components > index.js**
 All components created will be executed on load, to execute components in sequence remove the looping function from within app.js and replace with individual function calls for each component.
 
 ### Manage Application state
