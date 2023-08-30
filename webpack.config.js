@@ -15,7 +15,7 @@ module.exports = {
   entry: [
     'core-js/stable',
     'regenerator-runtime/runtime',
-    './src/app.js'
+    './src/index.js'
   ],
   output: {
     path: path.resolve(__dirname, 'public'),

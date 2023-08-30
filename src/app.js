@@ -1,10 +1,23 @@
-﻿/*!
- * OnSchedJ (http://onsched.com)
- * Copyright 2014-2020 OnSched
- */
+﻿import components from "./components";
 
-'use strict';
 
-import './assets/css/index.css'; 
+const App = () => {
+  // Executing App components
+    // at once: leave existing code
+    // in sequence: comment lines 8,9 and 
+      // execute each component individually
+      
+  Object.values(components)
+    .forEach(component => component(App));
+};
 
-document.getElementById('root').innerHTML = 'loaded';
+// Create Application state
+App.state = {};
+
+// Build setState function to update Application state
+const setState = newState => new Promise(resolve => resolve(Object.assign(App.state, newState)));
+
+// Add setState function to App
+App.setState = setState;
+
+export default App;
