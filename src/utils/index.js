@@ -1,5 +1,5 @@
-import { AddToRoot } from './DOMElements'
-import { Mount }     from './Mounts'
+import { AddToRoot } from './DOMElements/index.js'
+import { Mount }     from './Mounts/index.js'
 
 export default {
   AddToRoot,

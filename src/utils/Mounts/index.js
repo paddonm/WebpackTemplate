@@ -1,4 +1,4 @@
-import utils from "..";
+import utils from "../index.js";
 
 const Mount = (id, template, actions, App) => {
   // Add a new DIV to the DOMs root with ID to match Component name
