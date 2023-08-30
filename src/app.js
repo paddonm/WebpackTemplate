@@ -3,9 +3,8 @@
 
 const App = () => {
   // Executing App components
-    // at once: leave existing code
-    // in sequence: comment lines 8,9 and 
-      // execute each component individually
+    // At once: leave existing code
+    // In sequence: remove the looping function below and execute each component individually
       
   Object.values(components)
     .forEach(component => component(App));
