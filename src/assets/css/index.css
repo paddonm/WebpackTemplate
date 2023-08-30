@@ -1,4 +1,9 @@
-/* Import new CSS file for each Component */
+/* 
+  Import new CSS file for each Component
+    If using without Webpack remove below @import statement 
+    and replace with stylesheet in index.html file
+*/
+
 /* @import './layout.css'; */
 
 /* Primary color scheme */
